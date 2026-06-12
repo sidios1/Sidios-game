@@ -4,233 +4,175 @@
 > 1. `/clear` (contexto limpio).  2. Plan Mode (Shift+Tab dos veces).  3. Pega el PROMPT de la fase.
 > 4. Aprueba el plan que propone.  5. Implementa → tests verdes → commit.  6. `/clear` y siguiente.
 >
-> Los prompts están escritos con técnicas de prompt engineering de Anthropic: estructura XML
-> (rol, contexto, instrucciones, restricciones, ejemplos, criterio de hecho), y ejemplos few-shot
-> concentrados donde hay ambigüedad de patrones (sobre todo Fase 1).
->
-> Docs de apoyo que el agente lee cada sesión: `PLAN.md`, `REGLAS_CARIOCA.md` y `CLAUDE.md`
-> (se crea en la Fase 0).
+> **Estado actual: las Fases 0 y 1 ya están hechas.** Empieza en la **Fase 2**.
+> Docs de apoyo que el agente lee cada sesión: `PLAN.md`, `REGLAS_CARIOCA.md` y `CLAUDE.md`.
 
 ---
 
-## Stack (referencia rápida)
-- **TypeScript** en todo el monorepo.
-- **carioca-core**: lógica pura, sin Three.js ni Colyseus → testeable con **Vitest**.
-- **server**: **Colyseus** (salas con código, estado autoritativo).
-- **client**: **Tauri** (escritorio) + **Three.js** (cartas, mesa, animaciones).
+## Alcance de red: LAN ahora, ONLINE próximamente
+- **Ahora:** todos en la **misma red local (WiFi)**. El **host levanta el servidor internamente**
+  al crear la partida; los demás se conectan a su IP local. Sin NAT, sin relay, sin nada que desplegar.
+- **Próximamente:** modo online (jugar a distancia). Por eso la red se construye **detrás de una
+  interfaz de transporte**: LAN es la primera implementación; online será otra implementación de la
+  misma interfaz.
+- **Principio clave (la costura):** la *autoridad de la partida* (validar con carioca-core, armar
+  vistas por jugador) se escribe una sola vez y es independiente del transporte. Agregar online
+  = un adaptador de transporte nuevo + la pantalla de conexión. No se toca core, hub, juegos ni
+  la lógica de la partida.
 
-## Estructura objetivo del repo
+## Stack
+| Capa | Tecnología | Estado |
+|------|-----------|--------|
+| Lenguaje | TypeScript | — |
+| carioca-core | lógica pura + Vitest | ✅ hecho (Fase 1) |
+| server | **Orquestador de partida** (autoritativo, sobre carioca-core) + **transporte** intercambiable; adaptador `TransporteLAN` (`ws`) embebido en el host | Fase 2 |
+| client | **Tauri** (escritorio) + **Three.js** (cartas, mesa, animaciones) | Fase 3 |
+
+## Estructura del repo
 ```
 /
 ├── PLAN.md
 ├── REGLAS_CARIOCA.md
 ├── CLAUDE.md
-├── package.json (workspaces)
 └── packages/
-    ├── carioca-core/   (lógica + tests)
-    ├── server/         (Colyseus)
-    └── client/         (Tauri + Three.js)
+    ├── carioca-core/   ✅ lógica + tests
+    ├── server/         servidor WebSocket LAN
+    └── client/         Tauri + Three.js
 ```
 
 ---
 
-# FASE 0 — Scaffolding del repo + CLAUDE.md  `[CLAUDE CODE]`
+# ✅ FASE 0 — Scaffolding + CLAUDE.md  (COMPLETADA)
+Monorepo con workspaces, TypeScript strict, Vitest, y CLAUDE.md creados. Repo compila.
 
-**Objetivo:** monorepo vacío, herramientas y `CLAUDE.md` del proyecto.
+# ✅ FASE 1 — Motor `carioca-core`  (COMPLETADA)
+Lógica pura de Carioca según REGLAS_CARIOCA.md (modelos, validadores de trío/escala,
+máquina de turnos, comodines, puntaje, 9 manos), con suite de tests en verde.
 
-**PROMPT:**
-```text
-<rol>
-Eres un ingeniero senior de TypeScript especializado en monorepos y tooling. Configuras
-proyectos limpios, con tipado estricto y separación clara de responsabilidades.
-</rol>
-
-<contexto>
-Inicio de un proyecto nuevo: una plataforma de juegos de cartas multijugador para escritorio,
-cuyo primer juego será Carioca. En la raíz están PLAN.md y REGLAS_CARIOCA.md. Léelos.
-</contexto>
-
-<instrucciones>
-Antes de tocar archivos, propón un plan y espera mi aprobación.
-Implementa SOLO la Fase 0:
-1. Monorepo con workspaces (npm o pnpm) y tres paquetes vacíos: packages/carioca-core,
-   packages/server, packages/client.
-2. TypeScript en modo strict en todos.
-3. Vitest configurado en carioca-core.
-4. Crea CLAUDE.md (menos de 200 líneas) con: stack, estructura de carpetas, convenciones
-   (TS strict, nombres en español), la regla de que carioca-core es lógica pura, que el
-   servidor es la autoridad del estado, y un apartado "qué NO hacer".
-5. git init y commit inicial.
-</instrucciones>
-
-<restricciones>
-- carioca-core NO debe depender de Three.js ni Colyseus.
-- No implementes lógica de juego todavía; esta fase es solo estructura.
-</restricciones>
-
-<criterio_de_hecho>
-`tsc` compila sin errores, `vitest` corre (aunque haya 0 tests) y existe CLAUDE.md.
-</criterio_de_hecho>
-
-<cierre>
-Commit: "chore: scaffolding monorepo + CLAUDE.md".
-</cierre>
-```
+> A partir de aquí, el agente **importa** carioca-core como dependencia y **no lo modifica**.
 
 ---
 
-# FASE 1 — Motor `carioca-core` (lógica + tests)  `[CLAUDE CODE]`
+# FASE 2 — Orquestador de partida + transporte LAN  `[CLAUDE CODE]`
 
-**Objetivo:** toda la lógica de Carioca, autoverificada, sin render ni red.
+**Objetivo:** la autoridad de la partida (validación + vistas por jugador) separada del transporte,
+con LAN como primera implementación. Diseñado para que online sea, después, solo otro adaptador.
 
 **PROMPT:**
 ```text
 <rol>
-Eres un ingeniero de TypeScript experto en motores de juegos de cartas y en diseño guiado
-por tests. Escribes lógica pura, determinista y bien cubierta por pruebas.
+Eres un ingeniero de backend experto en servidores autoritativos de juegos por turnos y en
+diseño con puertos/adaptadores (separar la lógica del transporte de red).
 </rol>
 
 <contexto>
-Lee CLAUDE.md, PLAN.md y REGLAS_CARIOCA.md. La sección 9 de REGLAS_CARIOCA.md trae los
-contratos como datos (MANOS, VALOR_PUNTOS, ESCALA); úsalos como configuración, no hardcodees.
-Trabaja SOLO en packages/carioca-core.
+Lee CLAUDE.md, PLAN.md y REGLAS_CARIOCA.md. carioca-core ya está implementado y testeado
+(Fase 1); impórtalo, NO lo modifiques. Trabaja en packages/server.
+Alcance: AHORA solo LAN (misma red, sin NAT/relay/servicios externos), pero ONLINE viene
+pronto, así que la red debe quedar detrás de una interfaz de transporte intercambiable.
 </contexto>
 
 <instrucciones>
 Antes de implementar, propón un plan y espera mi aprobación.
-Implementa:
-1. Modelos: Carta, Mazo (2 mazos ingleses + 4 comodines = 108 cartas), Mano, Jugador.
-2. Validadores: trío, escala, y cumplimiento del contrato de cada una de las 9 manos.
-3. Comodines: máximo 1 por combinación; escala sucia admite 1; escala real ninguno.
-4. Máquina de turnos: robar (mazo o pozo), descartar, bajarse (solo con el contrato exacto),
-   pegar (solo en turnos posteriores al de bajarse).
-5. Puntaje: 2-9 su número, 10/J/Q/K = 10, As = 20, comodín = 30. Quien se baja suma 0.
-6. Manos finales (sucia y real): al completar la escala de 13 se gana sin descartar.
+1. Orquestador de partida (autoritativo, INDEPENDIENTE del transporte): recibe intenciones
+   (robar, descartar, bajarse, pegar), las valida con carioca-core, actualiza el estado y
+   produce una VISTA POR JUGADOR (que oculta las cartas ajenas). Soporta 2-4 jugadores,
+   turnos y el avance entre las 9 manos.
+2. Interfaz de transporte que el orquestador usa para comunicarse, con dos roles:
+   - lado servidor/host: aceptar conexiones, recibir intenciones, enviar vistas de estado.
+   - lado cliente: conectar a una sala (por código), enviar intenciones, recibir vistas.
+3. Adaptador TransporteLAN que implementa esa interfaz con la librería `ws`:
+   escucha en 0.0.0.0 (puerto configurable); el "código" de la sala es la IP:puerto del host.
+4. El orquestador NO debe importar `ws` ni saber nada de WebSocket: solo habla con la interfaz.
+5. Actualiza CLAUDE.md: red = orquestador transport-agnóstico + adaptador LAN; online a futuro
+   será otro adaptador sin tocar el orquestador.
 </instrucciones>
 
 <ejemplos>
-<!-- Trío: 3 cartas del mismo número, cualquier pinta -->
-VÁLIDO   trío:   7♥ 7♣ 7♠
-INVÁLIDO trío:   7♥ 7♥ 8♥        (no es el mismo número)
-VÁLIDO   trío:   7♥ 7♣ [comodín] (1 comodín permitido)
+<!-- Información oculta (responsabilidad del orquestador, no del transporte) -->
+CORRECTO:   la vista del Jugador A incluye SU mano, el descarte y la mesa.
+INCORRECTO: la vista del Jugador A incluye las cartas en mano del Jugador B.
 
-<!-- Escala: 4+ consecutivas de la MISMA pinta. As es puente (K-A-2 válido), la secuencia
-     da la vuelta por el As -->
-VÁLIDO   escala: 4♦ 5♦ 6♦ 7♦
-VÁLIDO   escala: Q♠ K♠ A♠ 2♠ 3♠ (As conectando los extremos)
-INVÁLIDO escala: 4♦ 5♦ 6♣ 7♦    (pintas mezcladas)
-INVÁLIDO escala: 4♦ 5♦ 6♦       (solo 3 cartas; mínimo 4)
+<!-- La costura: el orquestador no conoce el transporte -->
+CORRECTO:   orquestador depende de la interfaz Transporte; el adaptador LAN la implementa.
+INCORRECTO: el orquestador llama directamente a `new WebSocketServer(...)`.
 </ejemplos>
 
 <restricciones>
-- No toques packages/server ni packages/client.
-- Nada de dependencias de Three.js ni Colyseus.
+- No modifiques carioca-core; la lógica de reglas vive ahí, no la dupliques.
+- El orquestador no importa `ws` ni ninguna librería de red: solo la interfaz Transporte.
+- Solo LAN por ahora: nada de Colyseus, Playroom, NAT traversal ni relay (eso es la Fase 7).
+- El adaptador LAN debe poder arrancarse desde código (lo embeberá el host en la Fase 5).
 </restricciones>
 
 <criterio_de_hecho>
-Tests en Vitest que cubran: una partida completa simulada de la mano 1 a la 9, uso de
-comodines, As como puente, manos inválidas y cálculo de puntaje. Todos en verde, sin errores
-de tipos.
+Tests: (a) un test del orquestador que simula una partida completa de 2-4 jugadores con vistas
+por jugador correctas, sin red; (b) un test de integración donde dos clientes se conectan por
+el adaptador LAN y juegan una partida completa por mensajes.
 </criterio_de_hecho>
 
 <cierre>
-Commit: "feat(core): motor de reglas de Carioca + tests".
+Commit: "feat(server): orquestador autoritativo + transporte LAN".
 </cierre>
 ```
 
+**Hecho cuando:** el orquestador pasa sus tests sin red, y dos clientes juegan una partida completa por el adaptador LAN respetando la información oculta.
+
 ---
 
-# FASE 2 — Servidor Colyseus (red)  `[CLAUDE CODE]`
+# FASE 3 — Cliente Three.js: render, animaciones y conexión  `[CLAUDE CODE]`
 
-**Objetivo:** salas con código, estado autoritativo, información oculta por jugador.
+**Objetivo:** ver y jugar Carioca, con un selector de modo "Online"/"Local" (Local activo por LAN; Online deshabilitado por ahora).
 
 **PROMPT:**
 ```text
 <rol>
-Eres un ingeniero de backend experto en multijugador en tiempo real con Colyseus y en
-arquitecturas con servidor autoritativo.
+Eres un ingeniero de frontend gráfico experto en Three.js y animación de interfaces de juego.
+Generas los visuales por código, sin assets externos.
 </rol>
 
 <contexto>
-Lee CLAUDE.md y PLAN.md. Trabaja en packages/server. Importa carioca-core como dependencia
-pero NO lo modifiques.
+Lee CLAUDE.md y PLAN.md. Usa la interfaz de transporte de la Fase 2 (no llames a WebSocket
+directamente). En desarrollo, el servidor se levanta por separado (npm run dev); la integración
+de "el host lo arranca solo" es de la Fase 5. Online vendrá después (Fase 7).
 </contexto>
 
 <instrucciones>
 Antes de implementar, propón un plan y espera mi aprobación.
-Implementa con Colyseus:
-1. CariocaRoom: crear sala devuelve un código; otros se unen pegando ese código.
-2. Estado sincronizado con @colyseus/schema. El servidor es la autoridad: el cliente envía
-   intenciones (robar, descartar, bajarse, pegar) y el servidor las valida con carioca-core.
-3. Información oculta por jugador.
-4. Soporte de 2 a 4 jugadores, turnos y avance entre las 9 manos.
-</instrucciones>
-
-<ejemplos>
-<!-- Principio de información oculta -->
-CORRECTO:   el estado que recibe el Jugador A incluye SU mano, el descarte y la mesa.
-INCORRECTO: el estado que recibe el Jugador A incluye las cartas en mano del Jugador B.
-</ejemplos>
-
-<restricciones>
-- No modifiques carioca-core; solo consúmelo.
-- La lógica de reglas vive en carioca-core, no la dupliques en el servidor.
-</restricciones>
-
-<criterio_de_hecho>
-Un test de integración simula dos clientes que se conectan por código y juegan una partida
-completa mediante mensajes (sin UI). Pasa en verde.
-</criterio_de_hecho>
-
-<cierre>
-Commit: "feat(server): CariocaRoom con salas por código".
-</cierre>
-```
-
----
-
-# FASE 3 — Cliente Three.js: render y animaciones  `[CLAUDE CODE]`
-
-**Objetivo:** ver y jugar Carioca conectado a la sala.
-
-**PROMPT:**
-```text
-<rol>
-Eres un ingeniero de frontend gráfico experto en Three.js y en animación de interfaces de
-juego. Generas visuales por código, sin depender de assets externos.
-</rol>
-
-<contexto>
-Lee CLAUDE.md y PLAN.md. Trabaja en packages/client y conéctate al servidor de la Fase 2.
-</contexto>
-
-<instrucciones>
-Antes de implementar, propón un plan y espera mi aprobación.
-Implementa con Three.js y TypeScript:
+Con Three.js y TypeScript:
 1. Escena 3D: mesa, cámara y luces.
 2. Cartas como planos con textura generada por código (canvas: número + pinta).
 3. Raycasting para seleccionar cartas con el mouse.
-4. Animaciones con tweening: repartir, robar del mazo o del pozo, descartar, bajarse.
-5. Cliente Colyseus: unirse por código y renderizar el estado sincronizado.
+4. Animaciones con tweening: repartir, robar (mazo o pozo), descartar, bajarse.
+5. Pantalla de conexión con un SELECTOR DE MODO de dos botones, "Online" ARRIBA y "Local"
+   ABAJO. El modo elegido determina qué adaptador de transporte se usa:
+   - "Local" (funcional ahora) -> TransporteLAN: "Crear partida" (el host usa su servidor
+     local) y "Unirse" (ingresar IP:puerto del host de la LAN).
+   - "Online" (ARRIBA): visible pero DESHABILITADO con etiqueta "próximamente". Reservado
+     para el adaptador online de la Fase 7; no implementes su lógica ahora.
+   Renderiza el estado sincronizado que entrega el transporte.
 6. HUD: tu mano, de quién es el turno, y el contrato de la mano actual.
 </instrucciones>
 
 <restricciones>
-- El estado de la red es la verdad; las animaciones solo lo representan, NO lo alteran.
+- El cliente habla con la INTERFAZ de transporte, no con `ws` directamente.
+- El botón "Online" queda deshabilitado; deja el punto de enganche del adaptador listo, sin lógica.
+- El estado del transporte es la verdad; las animaciones solo lo representan, NO lo alteran.
 - Nada de assets externos: las caras de las cartas se generan por código.
 </restricciones>
 
 <criterio_de_hecho>
-Se juega una partida completa de Carioca online entre dos instancias, con cartas y
-animaciones visibles.
+Dos instancias en la misma red, en modo "Local", juegan una partida completa de Carioca, con
+cartas y animaciones visibles, una como host y otra uniéndose por IP. El botón "Online" aparece
+arriba, deshabilitado.
 </criterio_de_hecho>
 
 <cierre>
-Commit: "feat(client): render Three.js + animaciones".
+Commit: "feat(client): render Three.js + animaciones + selector de modo (Local activo, Online próximamente)".
 </cierre>
 ```
 
-> Tras esta fase: **playtest tuyo** `[HUMANO]` para ajustar sensación y velocidad.
+> Tras esta fase: **playtest tuyo** `[HUMANO]` en dos máquinas de tu WiFi.
 
 ---
 
@@ -241,8 +183,8 @@ Commit: "feat(client): render Three.js + animaciones".
 **PROMPT:**
 ```text
 <rol>
-Eres un arquitecto de software experto en diseño de plugins y en interfaces que desacoplan
-módulos. Priorizas que agregar funcionalidad nueva no obligue a tocar lo existente.
+Eres un arquitecto de software experto en diseño de plugins e interfaces que desacoplan
+módulos, de modo que agregar funcionalidad nueva no obligue a tocar lo existente.
 </rol>
 
 <contexto>
@@ -251,11 +193,10 @@ Lee CLAUDE.md y PLAN.md. Trabaja en packages/client y en código compartido.
 
 <instrucciones>
 Antes de implementar, propón un plan y espera mi aprobación.
-Implementa:
-1. Una interfaz común IJuego (iniciar, sincronizarEstado, procesarAcción, finalizar) en
-   una ubicación compartida.
+1. Una interfaz común IJuego (iniciar, sincronizarEstado, procesarAcción, finalizar) en una
+   ubicación compartida.
 2. Refactoriza Carioca para que IMPLEMENTE IJuego, sin cambiar su lógica de reglas ni su red.
-3. Una pantalla de hub: sala de espera y selección de juego.
+3. Una pantalla de hub: sala de espera y selección de juego, sobre el flujo de crear/unirse LAN.
 4. Flujo: entrar al hub -> elegir Carioca -> jugar -> volver al hub.
 </instrucciones>
 
@@ -275,42 +216,46 @@ Commit: "feat(hub): interfaz IJuego + selección de juego".
 
 ---
 
-# FASE 5 — Empaquetado de escritorio (Tauri)  `[CLAUDE CODE]` + `[HUMANO]`
+# FASE 5 — Empaquetado de escritorio + servidor embebido (Tauri)  `[CLAUDE CODE]`
 
-**Objetivo:** un ejecutable de escritorio.
+**Objetivo:** un ejecutable donde el host levanta el servidor internamente al crear partida.
 
 **PROMPT:**
 ```text
 <rol>
-Eres un ingeniero experto en empaquetar aplicaciones web como apps de escritorio con Tauri.
+Eres un ingeniero experto en empaquetar apps web con Tauri, incluyendo el arranque de
+procesos/sidecars locales desde la aplicación.
 </rol>
 
 <contexto>
-Lee CLAUDE.md y PLAN.md. Trabaja en packages/client.
+Lee CLAUDE.md y PLAN.md. Trabaja en packages/client y su integración con packages/server.
+Objetivo clave: que "Crear partida" levante el servidor de la Fase 2 DENTRO de la app del host,
+sin que el usuario tenga que correr nada por separado.
 </contexto>
 
 <instrucciones>
 Antes de implementar, propón un plan y espera mi aprobación.
 1. Configura Tauri para empaquetar el cliente como app de escritorio.
-2. El build debe abrir el hub y permitir unirse a una sala por código.
-3. Documenta en CLAUDE.md cómo correr el build y dónde se configura la URL del servidor.
+2. Embebe el servidor: al crear partida, el host arranca el servidor WebSocket internamente
+   (sidecar de Tauri o proceso lanzado por la app) escuchando en la LAN.
+3. Muestra al host su dirección de la LAN (IP:puerto) para que los amigos la usen al unirse.
+4. Documenta en CLAUDE.md cómo se levanta el servidor embebido y dónde se configura el puerto.
 </instrucciones>
 
 <restricciones>
-- No cambies la lógica de juego ni la red; esta fase es solo empaquetado y configuración.
+- Solo LAN: el servidor escucha en la red local; nada de exponerlo a internet.
+- No cambies la lógica de juego ni el protocolo; esta fase es empaquetado e integración.
 </restricciones>
 
 <criterio_de_hecho>
-Se genera un ejecutable que abre el hub y conecta a una sala por código.
+Un ejecutable: el host hace "Crear partida" (sin correr nada aparte), ve su IP:puerto, y otro
+jugador de la misma WiFi se une y juegan una partida completa.
 </criterio_de_hecho>
 
 <cierre>
-Commit: "feat(client): empaquetado de escritorio con Tauri".
+Commit: "feat(client): app de escritorio con servidor LAN embebido".
 </cierre>
 ```
-
-> `[HUMANO]`, una sola vez: desplegar el servidor Colyseus en un hosting barato si quieren
-> jugar a distancia, y poner esa URL en la config del cliente.
 
 ---
 
@@ -321,18 +266,18 @@ Commit: "feat(client): empaquetado de escritorio con Tauri".
 **PROMPT:**
 ```text
 <rol>
-Eres un ingeniero que valida arquitecturas implementando casos de prueba reales contra una
-abstracción existente, sin modificarla.
+Eres un ingeniero que valida arquitecturas implementando casos reales contra una abstracción
+existente, sin modificarla.
 </rol>
 
 <contexto>
-Lee CLAUDE.md y PLAN.md. Ya existe la interfaz IJuego y el hub de la Fase 4.
+Lee CLAUDE.md y PLAN.md. Ya existen la interfaz IJuego, el hub y la red LAN.
 </contexto>
 
 <instrucciones>
 Antes de implementar, propón un plan y espera mi aprobación.
 Agrega un segundo juego simple (por ejemplo, dados de mentira tipo Liar's Bar) implementando
-la interfaz IJuego. Debe aparecer en el hub junto a Carioca.
+la interfaz IJuego. Debe aparecer en el hub junto a Carioca y funcionar sobre la misma red LAN.
 </instrucciones>
 
 <restricciones>
@@ -342,7 +287,7 @@ la interfaz IJuego. Debe aparecer en el hub junto a Carioca.
 </restricciones>
 
 <criterio_de_hecho>
-El segundo juego se juega desde el hub sin haber tocado hub, red ni core.
+El segundo juego se juega desde el hub, en LAN, sin haber tocado hub, red ni core.
 </criterio_de_hecho>
 
 <cierre>
@@ -352,10 +297,43 @@ Commit: "feat(games): segundo juego validando IJuego".
 
 ---
 
+# FASE 7 — Online (FUTURO, aún no implementar)  `[CLAUDE CODE]` + decisión `[HUMANO]`
+
+**Objetivo:** habilitar el botón "Online" agregando un adaptador de transporte para jugar a
+distancia. Gracias a la costura de la Fase 2, esto NO toca core, orquestador, hub ni juegos.
+
+**Lo que cambia (solo esto):**
+- Un nuevo adaptador de transporte (`TransporteOnline`) que implementa la MISMA interfaz que
+  `TransporteLAN`.
+- Activar el botón "Online" (ya presente, deshabilitado desde la Fase 3) y su pantalla de
+  crear/unirse con código.
+
+**Decisión previa `[HUMANO]` (al llegar aquí):** elegir el proveedor del transporte online.
+- **Servidor desplegado** (el mismo orquestador en un hosting): máximo control, requiere desplegar.
+- **Playroom u otro serverless**: sin gestionar servidor, modelo cliente-autoritativo, con límites
+  de plan. Encaja bien para hobby. *(Si se elige Playroom, el orquestador puede correr en el
+  cliente-host en vez de un servidor.)*
+
+> No se escribe el prompt definitivo de esta fase hasta elegir proveedor. El resto del sistema
+> ya está listo para recibirlo.
+
+---
+
+## Riesgos
+| Riesgo | Mitigación |
+|---|---|
+| Cablear la red a WebSocket y bloquear online | Orquestador detrás de una interfaz de transporte; LAN es solo el primer adaptador. |
+| Adelantar trabajo de online antes de tiempo | En la Fase 3 el botón "Online" queda deshabilitado; el adaptador es la Fase 7. |
+| Duplicar reglas en el servidor | La lógica vive en carioca-core; el orquestador solo valida y arma vistas. |
+| Filtrar cartas ajenas en el estado | Vista por jugador en el orquestador; test de información oculta. |
+| Animaciones que "pelean" con el estado | El estado del transporte es la verdad; las animaciones solo lo representan. |
+| Acoplar un juego nuevo al hub/red | Interfaz IJuego; la Fase 6 lo verifica a propósito. |
+
 ## Notas finales
 - **Un prompt = una sesión.** Entre fases, siempre `/clear`.
-- Si en Plan Mode el agente propone partir una fase por tamaño, acéptalo.
 - Si fallan los tests, no avances; itera en la misma sesión hasta que pasen.
 - `REGLAS_CARIOCA.md` es la única fuente de verdad de las reglas.
+- El diseño en capas deja abierto el modo online (Fase 7): se agrega un adaptador de transporte
+  y se habilita el botón "Online", sin tocar core, orquestador, hub ni juegos.
 
-*Plan con prompts por fase (estructura XML + few-shot), listo para ejecución modular con Claude Code.*
+*Plan con prompts por fase (estructura XML + few-shot). Fases 0-1 hechas; red LAN ahora, online preparado como adaptador futuro.*

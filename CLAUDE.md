@@ -11,7 +11,7 @@ Guía del proyecto para Claude Code. Léela completa antes de tocar código.
 | Capa | Tecnología | Paquete |
 |------|------------|---------|
 | Lógica de juego | TypeScript puro + Vitest | `packages/carioca-core` |
-| Servidor | Colyseus (Fase 2) | `packages/server` |
+| Servidor | Orquestador autoritativo + transporte intercambiable (adaptador LAN con `ws`) | `packages/server` |
 | Cliente | Tauri + Three.js (Fases 3 y 5) | `packages/client` |
 
 - Monorepo con **npm workspaces** (Node >= 22, npm >= 10).
@@ -28,7 +28,7 @@ Guía del proyecto para Claude Code. Léela completa antes de tocar código.
 ├── tsconfig.json         (references a los 3 paquetes)
 └── packages/
     ├── carioca-core/     (lógica + tests; src/**/*.test.ts)
-    ├── server/           (Colyseus)
+    ├── server/           (orquestador + transportes; src/**/*.test.ts)
     └── client/           (Tauri + Three.js)
 ```
 
@@ -36,7 +36,7 @@ Guía del proyecto para Claude Code. Léela completa antes de tocar código.
 ```bash
 npm install        # instala todo el monorepo (desde la raíz)
 npm run build      # tsc -b: compila los 3 paquetes
-npm test           # vitest en carioca-core
+npm test           # vitest en carioca-core y server
 ```
 
 ## Convenciones
@@ -64,16 +64,33 @@ npm test           # vitest en carioca-core
 - El cliente jamás decide reglas ni muta estado por su cuenta: solo renderiza
   lo que el servidor sincroniza.
 - Información oculta: cada jugador recibe SU mano; nunca las manos ajenas.
+  La proyección vive en `construirVista` (`packages/server/src/vista.ts`):
+  de lo ajeno y del mazo solo viajan conteos; del pozo, la carta superior.
 
-### 3. Dependencias permitidas entre paquetes
+### 3. El transporte es un adaptador (la costura LAN/online)
+- El orquestador (`packages/server/src/orquestador.ts`) solo conoce las
+  interfaces `TransporteServidor`/`TransporteCliente` de
+  `packages/server/src/transporte.ts`. No sabe si habla por LAN, online o
+  memoria; las interfaces transportan strings JSON, sin tipos de Node.
+- `transporteLan.ts` (librería `ws`, escucha en 0.0.0.0, código de sala =
+  `ip:puerto`) es la primera implementación; `transporteMemoria.ts` sirve
+  para tests y para el host embebido (Fase 5).
+- El modo online (Fase 7) será OTRO adaptador de las mismas interfaces:
+  no se toca orquestador, core, hub ni juegos.
+
+### 4. Dependencias permitidas entre paquetes
 ```
 client ──> carioca-core (solo tipos/validaciones de presentación)
+client ──> server (solo protocolo, vista e interfaz TransporteCliente)
 server ──> carioca-core
 carioca-core ──> (nada)
 ```
 
 ## Qué NO hacer
-- ❌ Importar Three.js, Colyseus o cualquier API de red/render en `carioca-core`.
+- ❌ Importar Three.js o cualquier API de red/render en `carioca-core`.
+- ❌ Importar `ws` (o cualquier API de red/Node) en `orquestador.ts`,
+  `protocolo.ts`, `vista.ts` o `transporte.ts`: solo `transporteLan.ts`
+  conoce la red. El orquestador habla únicamente con la interfaz.
 - ❌ Duplicar reglas del juego en `server` o `client`: las reglas viven SOLO en
   `carioca-core`.
 - ❌ Hardcodear contratos de manos, puntajes o longitudes de escala: usar los

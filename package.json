@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "build": "tsc -b",
-    "test": "npm run test -w @juegos/carioca-core"
+    "test": "npm run test --workspaces --if-present"
   },
   "engines": {
     "node": ">=22"
