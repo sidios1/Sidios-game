@@ -1,0 +1,16 @@
+{
+  "name": "juegos-rapidos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plataforma de juegos de cartas multijugador para escritorio",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "test": "npm run test -w @juegos/carioca-core"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

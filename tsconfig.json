@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/carioca-core" },
+    { "path": "packages/server" },
+    { "path": "packages/client" }
+  ]
+}
