@@ -12,7 +12,7 @@ Guía del proyecto para Claude Code. Léela completa antes de tocar código.
 |------|------------|---------|
 | Lógica de juego | TypeScript puro + Vitest | `packages/carioca-core` |
 | Servidor | Orquestador autoritativo + transporte intercambiable (adaptador LAN con `ws`) | `packages/server` |
-| Cliente | Tauri + Three.js (Fases 3 y 5) | `packages/client` |
+| Cliente | Three.js + Vite (app web, Fase 3); Tauri la empaqueta en la Fase 5 | `packages/client` |
 
 - Monorepo con **npm workspaces** (Node >= 22, npm >= 10).
 - Nombres de paquetes con scope: `@juegos/carioca-core`, `@juegos/server`, `@juegos/client`.
@@ -29,15 +29,29 @@ Guía del proyecto para Claude Code. Léela completa antes de tocar código.
 └── packages/
     ├── carioca-core/     (lógica + tests; src/**/*.test.ts)
     ├── server/           (orquestador + transportes; src/**/*.test.ts)
-    └── client/           (Tauri + Three.js)
+    └── client/           (Three.js + Vite; src/red, src/estado, src/escena, src/hud)
 ```
 
 ## Comandos
 ```bash
 npm install        # instala todo el monorepo (desde la raíz)
 npm run build      # tsc -b: compila los 3 paquetes
-npm test           # vitest en carioca-core y server
+npm test           # vitest en carioca-core, server y client
 ```
+
+### Desarrollo del cliente (Fase 3: el servidor corre aparte)
+```bash
+npm run build       # primero: el cliente resuelve @juegos/server contra dist/
+npm run dev:server  # sala LAN en el puerto 35711 (env PUERTO lo cambia);
+                    # imprime el código ip:puerto que usan los que se unen
+npm run dev:client  # Vite en http://localhost:5173
+```
+- El host elige "Local → Crear partida" (se conecta a `127.0.0.1:35711`); los
+  demás "Local → Unirse" con el código que imprimió la consola del servidor.
+- Para probar 2 jugadores en una máquina: segunda ventana en incógnito
+  (el token de reconexión vive en `sessionStorage`; duplicar pestaña lo copia).
+- En la Fase 5 "Crear partida" arrancará el servidor embebido (Tauri) y este
+  flujo manual desaparece.
 
 ## Convenciones
 - **TypeScript strict** en todos los paquetes (además: `noUncheckedIndexedAccess`,
@@ -77,6 +91,12 @@ npm test           # vitest en carioca-core y server
   para tests y para el host embebido (Fase 5).
 - El modo online (Fase 7) será OTRO adaptador de las mismas interfaces:
   no se toca orquestador, core, hub ni juegos.
+- En el CLIENTE, `src/red/transporteLanNavegador.ts` implementa
+  `TransporteCliente` con el WebSocket nativo del navegador (el
+  `TransporteLanCliente` del server usa `ws` de Node y no corre ahí). Es el
+  ÚNICO módulo del cliente que conoce WebSocket; `src/red/fabricaTransporte.ts`
+  elige el adaptador según el modo ("online" es el enganche de la Fase 7,
+  hoy deshabilitado en la pantalla de conexión).
 
 ### 4. Dependencias permitidas entre paquetes
 ```
@@ -85,6 +105,24 @@ client ──> server (solo protocolo, vista e interfaz TransporteCliente)
 server ──> carioca-core
 carioca-core ──> (nada)
 ```
+- El cliente importa SIEMPRE los subpaths `@juegos/server/protocolo`,
+  `@juegos/server/vista` y `@juegos/server/transporte` (definidos en el
+  `exports` del server), nunca la raíz `@juegos/server`: la raíz reexporta
+  `transporteLan.ts` y arrastraría `ws`/`node:os` al bundle del navegador.
+  (Excepción: los tests del cliente pueden importar la raíz para HOSPEDAR
+  una sala real, como hace `transporteLanNavegador.test.ts`.)
+
+### 5. En el cliente, la vista del servidor es la verdad
+- `aplicacion.ts` recibe cada `VistaPartida`, calcula un diff
+  (`estado/difVista.ts`) y el sincronizador (`escena/animaciones.ts`) lleva
+  cada malla a su pose objetivo (`escena/disposicion.ts`) con tweens
+  (`escena/interpolacion.ts`). Si llega otra vista a mitad de una animación,
+  las mallas se REDIRIGEN: el final siempre refleja la última vista.
+- Las animaciones solo representan el estado: jamás lo deciden ni lo bloquean.
+  El HUD y la máquina de interacción (`estado/maquinaInteraccion.ts`, pura)
+  leen siempre la última vista, no la escena.
+- Las validaciones locales (armar la bajada, elegir extremo al pegar) son
+  cortesía de UI con los validadores de carioca-core; el servidor revalida.
 
 ## Qué NO hacer
 - ❌ Importar Three.js o cualquier API de red/render en `carioca-core`.
@@ -96,6 +134,8 @@ carioca-core ──> (nada)
 - ❌ Hardcodear contratos de manos, puntajes o longitudes de escala: usar los
   datos de la sección 9 de REGLAS_CARIOCA.md.
 - ❌ Confiar en el cliente: toda acción se valida en el servidor.
+- ❌ Importar la raíz `@juegos/server` (o `ws`) desde el código del cliente:
+  solo los subpaths protocolo/vista/transporte (ver regla 4).
 - ❌ Enviar a un jugador información que no debería ver (manos ajenas, mazo).
 - ❌ Cambiar reglas del juego editando código: si una regla cambia, se edita
   REGLAS_CARIOCA.md primero y el código la sigue.

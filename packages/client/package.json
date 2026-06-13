@@ -2,14 +2,25 @@
   "name": "@juegos/client",
   "version": "0.1.0",
   "private": true,
-  "description": "Cliente de escritorio (Tauri + Three.js se agregan en las Fases 3 y 5)",
+  "description": "Cliente gráfico: Three.js + Vite (Fase 3); Tauri lo empaqueta en la Fase 5",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "dev": "vite",
+    "empaquetar": "tsc -b && vite build",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "typecheck:tests": "tsc -p tsconfig.pruebas.json"
+  },
+  "dependencies": {
+    "@juegos/carioca-core": "*",
+    "@juegos/server": "*",
+    "three": "^0.180.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.0"
+    "@types/three": "^0.180.0",
+    "typescript": "^5.7.0",
+    "vite": "^7.0.0",
+    "vitest": "^3.0.0"
   }
 }

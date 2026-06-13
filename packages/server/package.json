@@ -6,8 +6,27 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./protocolo": {
+      "types": "./dist/protocolo.d.ts",
+      "default": "./dist/protocolo.js"
+    },
+    "./vista": {
+      "types": "./dist/vista.d.ts",
+      "default": "./dist/vista.js"
+    },
+    "./transporte": {
+      "types": "./dist/transporte.d.ts",
+      "default": "./dist/transporte.js"
+    }
+  },
   "scripts": {
     "build": "tsc -b",
+    "dev": "tsc -b && node dist/dev.js",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "typecheck:tests": "tsc -p tsconfig.pruebas.json"

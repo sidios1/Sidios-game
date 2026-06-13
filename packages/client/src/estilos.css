@@ -1,0 +1,315 @@
+/* Estilos del HUD superpuesto. El canvas 3D vive detrás (#escena); el HUD
+   no captura el puntero salvo en sus controles. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: #101418;
+  color: #e8e4da;
+}
+
+#escena {
+  position: fixed;
+  inset: 0;
+}
+
+#escena canvas {
+  display: block;
+}
+
+#hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+#hud button,
+#hud input,
+#hud .velo,
+#hud .panel {
+  pointer-events: auto;
+}
+
+button {
+  font: inherit;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #4a5568;
+  background: #1f2937;
+  color: #e8e4da;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #2d3b4e;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.principal {
+  background: #246b43;
+  border-color: #2f8a57;
+}
+
+button.principal:hover:not(:disabled) {
+  background: #2c8152;
+}
+
+input {
+  font: inherit;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #4a5568;
+  background: #11161c;
+  color: #e8e4da;
+}
+
+/* ── Pantalla de conexión / lobby ───────────────────────────────────────── */
+
+.velo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 10, 14, 0.82);
+}
+
+.velo.oculto {
+  display: none;
+}
+
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: min(420px, 92vw);
+  padding: 2rem;
+  border-radius: 16px;
+  background: #161c24;
+  border: 1px solid #2a3442;
+  text-align: center;
+}
+
+.tarjeta h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.subtitulo,
+.nota {
+  margin: 0;
+  color: #9aa5b1;
+  font-size: 0.9rem;
+}
+
+button.modo {
+  position: relative;
+  padding: 1rem;
+  font-size: 1.15rem;
+  border-radius: 12px;
+}
+
+button.modo .etiqueta {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.6rem;
+  font-size: 0.7rem;
+  color: #d8b44a;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  text-align: left;
+  font-size: 0.85rem;
+  color: #9aa5b1;
+}
+
+.fila-botones {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.fila-botones input {
+  flex: 1;
+  min-width: 0;
+}
+
+.lista-jugadores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.lista-jugadores li {
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: #1d2530;
+}
+
+.error {
+  margin: 0;
+  color: #e07676;
+  font-size: 0.9rem;
+}
+
+/* ── HUD de partida ─────────────────────────────────────────────────────── */
+
+.hud-superior {
+  position: absolute;
+  top: 0.8rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1.2rem;
+  align-items: baseline;
+  padding: 0.5rem 1.2rem;
+  border-radius: 10px;
+  background: rgba(13, 18, 24, 0.85);
+  border: 1px solid #2a3442;
+}
+
+.hud-superior .contrato {
+  font-weight: 600;
+}
+
+.hud-superior .turno {
+  color: #9fd0ae;
+  font-size: 0.95rem;
+}
+
+.hud-jugadores {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.hud-jugadores .jugador {
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  background: rgba(13, 18, 24, 0.85);
+  border: 1px solid #2a3442;
+}
+
+.hud-jugadores .jugador.en-turno {
+  border-color: #2f8a57;
+  color: #9fd0ae;
+}
+
+.hud-acciones {
+  position: absolute;
+  bottom: 0.9rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(13, 18, 24, 0.85);
+  border: 1px solid #2a3442;
+}
+
+.hud-acciones .pista {
+  color: #9aa5b1;
+  font-size: 0.9rem;
+}
+
+.hud-panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.hud-panel.panel,
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: min(520px, 94vw);
+  padding: 1.2rem 1.4rem;
+  border-radius: 14px;
+  background: rgba(13, 18, 24, 0.94);
+  border: 1px solid #2a3442;
+}
+
+.panel h3 {
+  margin: 0;
+}
+
+.grupo-bajada {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  background: #1d2530;
+  font-size: 0.9rem;
+}
+
+.motivos {
+  margin: 0;
+  color: #d8b44a;
+  font-size: 0.85rem;
+}
+
+.panel table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.panel th,
+.panel td {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid #2a3442;
+  text-align: left;
+}
+
+.ganadores {
+  font-size: 1.1rem;
+}
+
+.hud-aviso {
+  position: absolute;
+  bottom: 4.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: rgba(70, 36, 36, 0.95);
+  border: 1px solid #8a4040;
+  opacity: 0;
+  transition: opacity 0.25s;
+  max-width: min(560px, 90vw);
+  text-align: center;
+}
+
+.hud-aviso.visible {
+  opacity: 1;
+}

@@ -8,7 +8,9 @@
   ],
   "scripts": {
     "build": "tsc -b",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "dev:server": "npm run dev --workspace=@juegos/server",
+    "dev:client": "npm run dev --workspace=@juegos/client"
   },
   "engines": {
     "node": ">=22"
