@@ -62,7 +62,11 @@ export class JuegoCarioca implements IJuego {
     this.escena = new Escena(contexto.contenedorEscena);
     const interpolador = new Interpolador();
     this.sincronizador = new Sincronizador(this.escena.cartas, interpolador);
-    this.hud = new Hud(contexto.contenedorHud, (evento) => this.despachar(evento));
+    this.hud = new Hud(
+      contexto.contenedorHud,
+      (evento) => this.despachar(evento),
+      () => contexto.reconectar(),
+    );
     this.tooltip = new TooltipCarta(contexto.contenedorHud);
     this.insignias = new InsigniasMesa(
       contexto.contenedorHud,

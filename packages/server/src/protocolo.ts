@@ -29,7 +29,10 @@ export type MensajeCliente =
       readonly extremo?: ExtremoEscala;
     }
   | { readonly tipo: "descartar"; readonly cartaId: string }
-  | { readonly tipo: "listoSiguienteMano" };
+  | { readonly tipo: "listoSiguienteMano" }
+  /** Solo el anfitrión: reabre el canal de un jugador para que pueda reentrar
+   *  (conserva su asiento, mano y estado; NO es una expulsión). */
+  | { readonly tipo: "reabrirConexion"; readonly jugadorId: string };
 
 export interface JugadorEnSala {
   readonly jugadorId: string;
@@ -161,6 +164,11 @@ export function analizarMensajeCliente(datos: string): MensajeCliente | null {
     }
     case "listoSiguienteMano":
       return { tipo: "listoSiguienteMano" };
+    case "reabrirConexion": {
+      const jugadorId = crudo["jugadorId"];
+      if (typeof jugadorId !== "string" || jugadorId.length === 0) return null;
+      return { tipo: "reabrirConexion", jugadorId };
+    }
     default:
       return null;
   }

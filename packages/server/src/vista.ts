@@ -12,6 +12,9 @@ import type {
 } from "@juegos/carioca-core";
 import { contratoActual, ganadores, puntosMano } from "@juegos/carioca-core";
 
+/** Estado de la conexión de un jugador, decidido por el orquestador. */
+export type EstadoConexion = "conectado" | "ausente" | "suspendido";
+
 export interface JugadorVista {
   readonly id: string;
   readonly nombre: string;
@@ -21,7 +24,10 @@ export interface JugadorVista {
   readonly numeroCartas: number;
   readonly puntosAcumulados: number;
   readonly seBajo: boolean;
+  /** Atajo de presentación: `estadoConexion === "conectado"`. */
   readonly conectado: boolean;
+  /** Ciclo de vida de la conexión (gracia/suspensión); lo decide el servidor. */
+  readonly estadoConexion: EstadoConexion;
   readonly listoSiguienteMano: boolean;
 }
 
@@ -42,6 +48,8 @@ export interface ResumenMano {
 export interface VistaPartida {
   readonly tuJugadorId: string;
   readonly tuMano: readonly Carta[];
+  /** Asiento anfitrión (puede reabrir conexiones); en partida es estable. */
+  readonly anfitrionId: string;
   /** En orden de asiento. */
   readonly jugadores: readonly JugadorVista[];
   readonly manoActual: number;
@@ -60,7 +68,9 @@ export interface VistaPartida {
 
 /** Lo que el orquestador sabe de la sala y el core no: conexiones y votos. */
 export interface MetaSala {
-  readonly conectados: ReadonlySet<string>;
+  /** Estado de conexión por jugador (gracia/suspensión); lo decide el servidor. */
+  readonly estados: ReadonlyMap<string, EstadoConexion>;
+  readonly anfitrionId: string;
   readonly listos: ReadonlySet<string>;
   readonly votosNecesarios: number;
   /** Avatar elegido por cada jugador (id del pool); presentación, no regla. */
@@ -96,8 +106,10 @@ export function construirVista(
   return {
     tuJugadorId: jugadorId,
     tuMano: propio.mano,
+    anfitrionId: meta.anfitrionId,
     jugadores: estado.jugadores.map((j) => {
       const avatar = meta.avatares?.get(j.id);
+      const estadoConexion = meta.estados.get(j.id) ?? "conectado";
       return {
         id: j.id,
         nombre: j.nombre,
@@ -106,7 +118,8 @@ export function construirVista(
         numeroCartas: j.mano.length,
         puntosAcumulados: j.puntosAcumulados,
         seBajo: j.turnoEnQueSeBajo !== null,
-        conectado: meta.conectados.has(j.id),
+        conectado: estadoConexion === "conectado",
+        estadoConexion,
         listoSiguienteMano: meta.listos.has(j.id),
       };
     }),

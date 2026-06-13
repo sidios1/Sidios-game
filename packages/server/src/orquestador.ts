@@ -18,6 +18,7 @@ import {
   descartar,
   iniciarSiguienteMano,
   iniciarSiguienteManoConMazo,
+  pasarTurno,
   pegar,
   robarDelMazo,
   robarDelPozo,
@@ -30,7 +31,16 @@ import type {
 } from "./protocolo.js";
 import { analizarMensajeCliente, serializarServidor } from "./protocolo.js";
 import type { IdConexion, TransporteServidor } from "./transporte.js";
+import type { EstadoConexion } from "./vista.js";
 import { construirVista } from "./vista.js";
+
+/** Programa un callback diferido y devuelve una función para cancelarlo. */
+export type Programador = (ms: number, fn: () => void) => () => void;
+
+const programadorReal: Programador = (ms, fn) => {
+  const id = setTimeout(fn, ms);
+  return () => clearTimeout(id);
+};
 
 export interface OpcionesOrquestador {
   readonly transporte: TransporteServidor;
@@ -46,6 +56,8 @@ export interface OpcionesOrquestador {
    * fijar un cupo explícito para limitar una sala.
    */
   readonly maxJugadores?: number;
+  /** Programa los temporizadores de gracia; inyectable para tests deterministas. */
+  readonly programar?: Programador;
 }
 
 type FaseSala = "lobby" | "enPartida" | "terminada";
@@ -57,10 +69,24 @@ interface Asiento {
   readonly avatar: string | undefined;
   readonly token: string;
   conexionId: IdConexion | null;
+  /** Ciclo de vida de la conexión. Arranca "conectado". */
+  estadoConexion: EstadoConexion;
+  /** Mientras la ventana de gracia corre, el ausente NO se salta (se espera). */
+  graciaActiva: boolean;
+  /** Turnos saltados acumulados; se reinicia a 0 al reconectar. */
+  turnosSaltados: number;
+  /** Cancela el temporizador de gracia pendiente (null si no hay). */
+  cancelarGracia: (() => void) | null;
 }
 
 /** Fracción de jugadores conectados que debe votar para repartir la siguiente mano. */
 const FRACCION_VOTOS = 0.75;
+
+/** Ventana de gracia tras desconectarse antes de empezar a saltar su turno. */
+const GRACIA_MS = 10_000;
+
+/** Turnos saltados que llevan a la suspensión (se salta siempre tras esto). */
+const MAX_TURNOS_SALTADOS = 2;
 
 function tokenAleatorio(): string {
   return (
@@ -74,6 +100,7 @@ export class Orquestador {
   private readonly mazoParaMano: ((numeroMano: number) => readonly Carta[]) | null;
   private readonly generarToken: () => string;
   private readonly maxJugadores: number;
+  private readonly programar: Programador;
 
   private faseSala: FaseSala = "lobby";
   private readonly asientos: Asiento[] = [];
@@ -89,6 +116,7 @@ export class Orquestador {
     this.mazoParaMano = opciones.mazoParaMano ?? null;
     this.generarToken = opciones.generarToken ?? tokenAleatorio;
     this.maxJugadores = opciones.maxJugadores ?? Number.POSITIVE_INFINITY;
+    this.programar = opciones.programar ?? programadorReal;
   }
 
   /** Arranca el transporte y devuelve el código de sala. */
@@ -101,6 +129,7 @@ export class Orquestador {
   }
 
   async detener(): Promise<void> {
+    for (const asiento of this.asientos) this.cancelarGracia(asiento);
     this.difundir({ tipo: "salaCerrada", motivo: "la sala fue cerrada" });
     await this.transporte.detener();
   }
@@ -133,6 +162,9 @@ export class Orquestador {
       case "listoSiguienteMano":
         this.procesarListo(conexionId, jugadorId);
         return;
+      case "reabrirConexion":
+        this.procesarReabrir(conexionId, jugadorId, mensaje.jugadorId);
+        return;
       default:
         this.procesarIntencion(conexionId, jugadorId, mensaje);
     }
@@ -156,8 +188,31 @@ export class Orquestador {
     // En partida el asiento se conserva para la reconexión por token.
     asiento.conexionId = null;
     this.listos.delete(jugadorId);
-    this.avanzarManoSiCorresponde();
-    this.difundirVistas();
+    this.marcarAusente(asiento);
+    this.reaccionar();
+  }
+
+  /**
+   * Inicia la ventana de gracia de un asiento desconectado. Un suspendido sigue
+   * suspendido (ya se le salta siempre); el resto pasa a "ausente" con 10s para
+   * volver sin penalización. Al expirar, si seguía ausente, su turno se saltará.
+   */
+  private marcarAusente(asiento: Asiento): void {
+    this.cancelarGracia(asiento);
+    if (asiento.estadoConexion === "suspendido") return;
+    asiento.estadoConexion = "ausente";
+    asiento.graciaActiva = true;
+    asiento.cancelarGracia = this.programar(GRACIA_MS, () => {
+      asiento.cancelarGracia = null;
+      asiento.graciaActiva = false;
+      this.reaccionar();
+    });
+  }
+
+  private cancelarGracia(asiento: Asiento): void {
+    asiento.cancelarGracia?.();
+    asiento.cancelarGracia = null;
+    asiento.graciaActiva = false;
   }
 
   // ── Mensajes del cliente ──────────────────────────────────────────────────
@@ -194,6 +249,10 @@ export class Orquestador {
       avatar,
       token: this.generarToken(),
       conexionId,
+      estadoConexion: "conectado",
+      graciaActiva: false,
+      turnosSaltados: 0,
+      cancelarGracia: null,
     };
     this.asientos.push(asiento);
     this.porConexion.set(conexionId, asiento.jugadorId);
@@ -206,25 +265,71 @@ export class Orquestador {
   }
 
   private procesarReconexion(conexionId: IdConexion, token: string): void {
-    const asiento = this.asientos.find(
-      (a) => a.token === token && a.conexionId === null,
-    );
+    // Identidad por token, sin exigir que el canal esté libre: si quedó un
+    // socket zombi reteniendo el asiento (la causa de "no me deja volver"), se
+    // cierra y se reattacha al canal nuevo. Nunca se crea un asiento nuevo.
+    const asiento = this.asientos.find((a) => a.token === token);
     if (asiento === undefined) {
       this.enviarError(conexionId, "tokenInvalido", "token de reconexión inválido");
       this.transporte.cerrarConexion(conexionId);
       return;
     }
+    const previa = asiento.conexionId;
+    if (previa !== null && previa !== conexionId) {
+      this.porConexion.delete(previa);
+      this.transporte.cerrarConexion(previa);
+    }
     this.pendientes.delete(conexionId);
     asiento.conexionId = conexionId;
     this.porConexion.set(conexionId, asiento.jugadorId);
+    // Reattach completo: vuelve a estar activo y se limpia el historial de salto.
+    this.cancelarGracia(asiento);
+    asiento.estadoConexion = "conectado";
+    asiento.turnosSaltados = 0;
     this.enviarA(conexionId, {
       tipo: "bienvenida",
       jugadorId: asiento.jugadorId,
       token: asiento.token,
     });
     // La reconexión puede cambiar el umbral de votos (sube el denominador).
-    this.avanzarManoSiCorresponde();
-    this.difundirVistas();
+    this.reaccionar();
+  }
+
+  /**
+   * El anfitrión reabre el canal de un jugador cuya reconexión automática se
+   * trabó (p. ej. un socket zombi que retiene el asiento). NO es expulsión:
+   * conserva asiento, mano, puntaje y turnos saltados; solo cierra el canal
+   * actual y deja el asiento libre para que el jugador reentre con su token.
+   */
+  private procesarReabrir(
+    conexionId: IdConexion,
+    emisorId: string,
+    objetivoId: string,
+  ): void {
+    if (this.faseSala !== "enPartida") {
+      this.enviarError(conexionId, "accionInvalida", "no hay una partida en curso");
+      return;
+    }
+    if (this.asientos[0]?.jugadorId !== emisorId) {
+      this.enviarError(conexionId, "noEresAnfitrion", "solo el anfitrión puede reabrir conexiones");
+      return;
+    }
+    const objetivo = this.asientos.find((a) => a.jugadorId === objetivoId);
+    if (objetivo === undefined) {
+      this.enviarError(conexionId, "accionInvalida", "ese jugador no está en la sala");
+      return;
+    }
+    // Suelta el canal viejo: al borrarlo de porConexion, su cierre posterior
+    // (alDesconectar) no hará nada y el asiento queda libre para el token.
+    const vieja = objetivo.conexionId;
+    if (vieja !== null) {
+      this.porConexion.delete(vieja);
+      objetivo.conexionId = null;
+      this.transporte.cerrarConexion(vieja);
+    }
+    // Conserva el estado del jugador; solo reabre su ventana para volver.
+    this.marcarAusente(objetivo);
+    this.reaccionar();
   }
 
   private procesarIniciarPartida(conexionId: IdConexion, jugadorId: string): void {
@@ -276,7 +381,8 @@ export class Orquestador {
     if (resultado.valor.fase === "partidaTerminada") {
       this.faseSala = "terminada";
     }
-    this.difundirVistas();
+    // Tras la jugada el turno puede caer en un ausente con gracia expirada.
+    this.reaccionar();
   }
 
   /** Traduce la intención a la función del core. Cero reglas propias. */
@@ -313,8 +419,7 @@ export class Orquestador {
       return;
     }
     this.listos.add(jugadorId);
-    this.avanzarManoSiCorresponde();
-    this.difundirVistas();
+    this.reaccionar();
   }
 
   // ── Avance de mano por votos ──────────────────────────────────────────────
@@ -358,6 +463,48 @@ export class Orquestador {
     this.listos.clear();
   }
 
+  // ── Reacción a cambios de estado (turnos de ausentes) ─────────────────────
+
+  /**
+   * Post-procesado común tras cualquier cambio de estado en partida: avanza la
+   * mano si toca, salta los turnos de los ausentes/suspendidos y difunde.
+   */
+  private reaccionar(): void {
+    this.avanzarManoSiCorresponde(); // solo actúa en manoTerminada
+    this.saltarTurnosAusentes(); // solo actúa en jugandoMano
+    this.difundirVistas();
+  }
+
+  /**
+   * Salta el turno mientras le toque a un ausente con la gracia expirada o a un
+   * suspendido. Si el de turno está conectado o aún dentro de su gracia, se
+   * detiene (se le espera). Tras MAX_TURNOS_SALTADOS saltos, el ausente queda
+   * suspendido. La cota por número de asientos evita un bucle infinito si nadie
+   * puede jugar (todos ausentes/suspendidos).
+   */
+  private saltarTurnosAusentes(): void {
+    if (this.faseSala !== "enPartida") return;
+    for (let i = 0; i < this.asientos.length; i++) {
+      const estado = this.estado;
+      if (estado === null || estado.fase !== "jugandoMano") return;
+      const enTurno = this.asientos.find((a) => a.jugadorId === estado.turno.jugadorId);
+      if (enTurno === undefined) return;
+      const debeJugar =
+        enTurno.estadoConexion === "conectado" ||
+        (enTurno.estadoConexion === "ausente" && enTurno.graciaActiva);
+      if (debeJugar) return;
+      if (enTurno.estadoConexion !== "suspendido") {
+        enTurno.turnosSaltados += 1;
+        if (enTurno.turnosSaltados >= MAX_TURNOS_SALTADOS) {
+          enTurno.estadoConexion = "suspendido";
+        }
+      }
+      const resultado = pasarTurno(estado, enTurno.jugadorId);
+      if (!resultado.ok) return;
+      this.estado = resultado.valor;
+    }
+  }
+
   // ── Envío de mensajes ─────────────────────────────────────────────────────
 
   private enviarA(conexionId: IdConexion, mensaje: MensajeServidor): void {
@@ -394,13 +541,14 @@ export class Orquestador {
   private difundirVistas(): void {
     if (this.estado === null) return;
     const avatares = new Map<string, string>();
+    const estados = new Map<string, EstadoConexion>();
     for (const a of this.asientos) {
       if (a.avatar !== undefined) avatares.set(a.jugadorId, a.avatar);
+      estados.set(a.jugadorId, a.estadoConexion);
     }
     const meta = {
-      conectados: new Set(
-        this.asientos.filter((a) => a.conexionId !== null).map((a) => a.jugadorId),
-      ),
+      estados,
+      anfitrionId: this.asientos[0]?.jugadorId ?? "",
       listos: this.listos,
       votosNecesarios: this.votosNecesarios(),
       avatares,

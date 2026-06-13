@@ -72,6 +72,8 @@ export type EventoInteraccion =
   | { readonly tipo: "elegirExtremo"; readonly extremo: ExtremoEscala }
   | { readonly tipo: "cancelarExtremo" }
   | { readonly tipo: "votarListo" }
+  /** El anfitrión reabre el canal de un jugador trabado (no es expulsión). */
+  | { readonly tipo: "reabrirConexion"; readonly jugadorId: string }
   // Gestos de arrastre (cada uno dispara la MISMA intención que su click).
   | { readonly tipo: "soltarEnPozo"; readonly cartaId: string }
   | { readonly tipo: "soltarEnCombinacion"; readonly cartaId: string; readonly mesaIdx: number }
@@ -143,6 +145,14 @@ export function transicion(
       return sinCambios({ ...estado, modo: "descartar", pegadaPendiente: null });
     case "votarListo":
       return alVotarListo(estado);
+    case "reabrirConexion":
+      // Solo el anfitrión la dispara desde el HUD; el servidor revalida y, si
+      // no lo eres, responde noEresAnfitrion. El estado local no cambia.
+      return {
+        estado,
+        comandos: [{ tipo: "reabrirConexion", jugadorId: evento.jugadorId }],
+        aviso: null,
+      };
     case "soltarEnPozo":
       return alSoltarEnPozo(estado, evento.cartaId);
     case "soltarEnCombinacion":

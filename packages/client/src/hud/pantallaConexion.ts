@@ -244,18 +244,29 @@ export class PantallaConexion {
     this.velo.appendChild(tarjeta);
   }
 
-  mostrarMensajeFinal(mensaje: string): void {
+  /**
+   * Mensaje final con velo. Si se pasa `alReconectar`, ofrece un botón
+   * "Reconectar" (reintenta con el token) además de "Volver a empezar".
+   */
+  mostrarMensajeFinal(mensaje: string, alReconectar?: () => void): void {
     this.velo.replaceChildren();
     this.velo.classList.remove("oculto");
     const tarjeta = document.createElement("div");
     tarjeta.className = "tarjeta";
     const texto = document.createElement("p");
     texto.textContent = mensaje;
+    tarjeta.append(texto);
+    if (alReconectar !== undefined) {
+      const reconectar = document.createElement("button");
+      reconectar.className = "principal";
+      reconectar.textContent = "Reconectar";
+      reconectar.addEventListener("click", () => alReconectar());
+      tarjeta.append(reconectar);
+    }
     const recargar = document.createElement("button");
-    recargar.className = "principal";
     recargar.textContent = "Volver a empezar";
     recargar.addEventListener("click", () => window.location.reload());
-    tarjeta.append(texto, recargar);
+    tarjeta.append(recargar);
     this.velo.appendChild(tarjeta);
   }
 

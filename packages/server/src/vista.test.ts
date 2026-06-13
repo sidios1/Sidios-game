@@ -29,7 +29,11 @@ function ok(resultado: Resultado<EstadoPartida>): EstadoPartida {
 
 function meta(parcial?: Partial<MetaSala>): MetaSala {
   return {
-    conectados: new Set(["ana", "beto"]),
+    estados: new Map([
+      ["ana", "conectado"],
+      ["beto", "conectado"],
+    ]),
+    anfitrionId: "ana",
     listos: new Set(),
     votosNecesarios: 2,
     ...parcial,
@@ -98,6 +102,28 @@ describe("construirVista: proyección por jugador", () => {
     const estado = partidaMano1();
     const vista = construirVista(estado, "ana", meta());
     expect(vista.jugadores.find((j) => j.id === "ana")?.avatar).toBeUndefined();
+  });
+
+  it("proyecta el estado de conexión y el anfitrión desde la meta", () => {
+    const estado = partidaMano1();
+    const vista = construirVista(
+      estado,
+      "ana",
+      meta({
+        estados: new Map([
+          ["ana", "conectado"],
+          ["beto", "suspendido"],
+        ]),
+        anfitrionId: "ana",
+      }),
+    );
+    expect(vista.anfitrionId).toBe("ana");
+    const beto = vista.jugadores.find((j) => j.id === "beto");
+    expect(beto?.estadoConexion).toBe("suspendido");
+    expect(beto?.conectado).toBe(false);
+    const ana = vista.jugadores.find((j) => j.id === "ana");
+    expect(ana?.estadoConexion).toBe("conectado");
+    expect(ana?.conectado).toBe(true);
   });
 
   it("no filtra ninguna carta ajena ni del mazo (invariante recursiva)", () => {

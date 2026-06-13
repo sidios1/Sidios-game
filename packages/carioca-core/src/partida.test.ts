@@ -15,6 +15,7 @@ import {
   descartar,
   ganadores,
   iniciarSiguienteManoConMazo,
+  pasarTurno,
   pegar,
   robarDelMazo,
   robarDelPozo,
@@ -329,5 +330,35 @@ describe("reposición del mazo desde el pozo", () => {
     expect(jugador(resultado, "ana").mano.map((c) => c.id)).toEqual([enManoAna.id, c2.id]);
     expect(resultado.pozo.map((c) => c.id)).toEqual([c3.id]);
     expect(resultado.mazo.map((c) => c.id)).toEqual([c1.id]);
+  });
+});
+
+describe("pasarTurno", () => {
+  it("avanza al siguiente jugador y sube el número, sin tocar cartas ni puntaje", () => {
+    const estado = ok(crearPartida(DATOS, crearGeneradorSemilla(99)));
+    // En la mano 1 abre Beto (siguiente del repartidor 0).
+    expect(estado.turno).toEqual({ jugadorId: "beto", fase: "robar", numero: 1 });
+
+    const pasado = ok(pasarTurno(estado, "beto"));
+    expect(pasado.turno).toEqual({ jugadorId: "ana", fase: "robar", numero: 2 });
+    // Manos, mazo, pozo, mesa y puntajes intactos: pasar no mueve ninguna carta.
+    expect(pasado.jugadores.map((j) => j.mano)).toEqual(estado.jugadores.map((j) => j.mano));
+    expect(pasado.mazo).toEqual(estado.mazo);
+    expect(pasado.pozo).toEqual(estado.pozo);
+    expect(pasado.mesa).toEqual(estado.mesa);
+    expect(pasado.jugadores.map((j) => j.puntosAcumulados)).toEqual(
+      estado.jugadores.map((j) => j.puntosAcumulados),
+    );
+  });
+
+  it("rechaza pasar fuera de turno", () => {
+    const estado = ok(crearPartida(DATOS, crearGeneradorSemilla(99)));
+    expect(codigo(pasarTurno(estado, "ana"))).toBe("NO_ES_TU_TURNO");
+  });
+
+  it("rechaza pasar si la mano no está en curso", () => {
+    const estado = ok(crearPartida(DATOS, crearGeneradorSemilla(99)));
+    const terminada: EstadoPartida = { ...estado, fase: "manoTerminada" };
+    expect(codigo(pasarTurno(terminada, "beto"))).toBe("FASE_INCORRECTA");
   });
 });

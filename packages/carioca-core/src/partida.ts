@@ -568,3 +568,34 @@ export function descartar(
     },
   });
 }
+
+/**
+ * Pasar el turno (sin jugar): avanza al jugador siguiente como hace el final de
+ * `descartar`, pero SIN mover cartas. El servidor la usa para saltar a un
+ * jugador ausente; no altera reglas de combinaciones ni puntaje. Las cartas en
+ * mano del saltado se cuentan normalmente al cerrar la mano.
+ */
+export function pasarTurno(
+  estado: EstadoPartida,
+  jugadorId: string,
+): Resultado<EstadoPartida> {
+  if (estado.fase !== "jugandoMano") {
+    return fallo("FASE_INCORRECTA", "no hay una mano en curso");
+  }
+  if (estado.turno.jugadorId !== jugadorId) {
+    return fallo("NO_ES_TU_TURNO", "no es tu turno");
+  }
+  const idx = estado.jugadores.findIndex((j) => j.id === jugadorId);
+  const siguiente = estado.jugadores[(idx + 1) % estado.jugadores.length];
+  if (siguiente === undefined) {
+    return fallo("JUGADORES_INVALIDOS", "no hay jugador siguiente");
+  }
+  return exito({
+    ...estado,
+    turno: {
+      jugadorId: siguiente.id,
+      fase: "robar",
+      numero: estado.turno.numero + 1,
+    },
+  });
+}

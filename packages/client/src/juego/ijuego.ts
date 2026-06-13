@@ -18,6 +18,8 @@ export interface ContextoJuego {
   readonly enviar: (mensaje: MensajeCliente) => void;
   /** El juego pide volver al menú del hub (p. ej. al terminar la partida). */
   readonly salirAlHub: () => void;
+  /** Reinicia el intento de reconexión al anfitrión con el token guardado. */
+  readonly reconectar: () => void;
 }
 
 /** Señal del servidor dirigida al juego que NO es estado completo. */

@@ -53,6 +53,9 @@ export class Coordinador {
   private conexion: Conexion | null = null;
   private juego: IJuego | null = null;
   private reintentando = false;
+  /** Modo y código de la sala actual; el botón "Reconectar" los reutiliza. */
+  private modoActual: ModoConexion | null = null;
+  private codigoActual: string | null = null;
 
   constructor(opciones: OpcionesCoordinador) {
     this.contenedorEscena = opciones.contenedorEscena;
@@ -146,8 +149,27 @@ export class Coordinador {
     void detenerServidorEmbebido();
     this.juegoSeleccionado = null;
     this.reintentando = false;
+    this.modoActual = null;
+    this.codigoActual = null;
     this.conexionUI.ocultar();
     this.hub.mostrar();
+  }
+
+  /**
+   * Reinicia el intento de reconexión con el anfitrión: cierra el canal actual
+   * (libera el asiento en el servidor) y vuelve a conectar con el token
+   * guardado, que reattacha al mismo asiento y mano.
+   */
+  async reconectar(): Promise<void> {
+    const modo = this.modoActual;
+    const codigo = this.codigoActual;
+    if (modo === null || codigo === null) return;
+    // Tragamos el alDesconectar del canal viejo (igual que el reintento de
+    // token) para no parpadear el overlay mientras reconectamos.
+    this.reintentando = true;
+    await this.conexion?.desconectar();
+    this.conexion = null;
+    await this.conectar(modo, codigo);
   }
 
   /**
@@ -178,6 +200,9 @@ export class Coordinador {
       this.abrirPerfil(() => this.conexionUI.mostrarPortada());
       return;
     }
+    // Recordamos la sala para que "Reconectar" pueda reintentar con el token.
+    this.modoActual = modo;
+    this.codigoActual = codigo;
     let transporte: TransporteCliente;
     try {
       transporte = this.crearTransporte(modo);
@@ -235,7 +260,10 @@ export class Coordinador {
             return;
           }
           this.conexionUI.mostrarMensajeFinal(
-            "Se perdió la conexión con el anfitrión. Vuelve a unirte para reconectar.",
+            "Se perdió la conexión con el anfitrión.",
+            () => {
+              void this.reconectar();
+            },
           );
         },
       });
@@ -260,6 +288,9 @@ export class Coordinador {
       contenedorHud: this.contenedorHud,
       enviar: (mensaje) => this.conexion?.enviarMensaje(mensaje),
       salirAlHub: () => this.volverAlHub(),
+      reconectar: () => {
+        void this.reconectar();
+      },
     };
   }
 }

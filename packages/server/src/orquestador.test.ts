@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import type { Carta } from "@juegos/carioca-core";
-import { crearGeneradorSemilla } from "@juegos/carioca-core";
+import { crearGeneradorSemilla, esComodin } from "@juegos/carioca-core";
 import { idsSegunEspecs } from "../../carioca-core/src/apoyoPruebas.js";
 import { Orquestador } from "./orquestador.js";
 import type { OpcionesOrquestador } from "./orquestador.js";
@@ -25,6 +25,45 @@ import type { GuionMano } from "./pruebas/guion.js";
 /** Deja vaciar la cola de microtareas: asienta todos los mensajes en vuelo. */
 function asentar(): Promise<void> {
   return new Promise((resolver) => setTimeout(resolver, 0));
+}
+
+/**
+ * Reloj manual para las gracias de desconexión: acumula los callbacks y los
+ * dispara con `avanzar()`. Así los tests controlan la expiración de los 10s sin
+ * esperar tiempo real ni interferir con el `setTimeout(0)` de `asentar()`.
+ */
+class RelojManual {
+  private pendientes = new Map<number, () => void>();
+  private contador = 0;
+
+  readonly programar = (_ms: number, fn: () => void): (() => void) => {
+    const id = this.contador++;
+    this.pendientes.set(id, fn);
+    return () => {
+      this.pendientes.delete(id);
+    };
+  };
+
+  /** Dispara (y descarta) todos los temporizadores pendientes. */
+  avanzar(): void {
+    const aDisparar = [...this.pendientes.values()];
+    this.pendientes.clear();
+    for (const fn of aDisparar) fn();
+  }
+}
+
+/** B roba y descarta una carta normal: cierra su turno sin ganar la mano. */
+async function jugarTurnoSimple(cliente: ClientePrueba): Promise<void> {
+  cliente.enviar({ tipo: "robarDelMazo" });
+  await asentar();
+  const carta = cliente.ultimaVista().tuMano.find((c) => !esComodin(c));
+  if (carta === undefined) throw new Error("no hay carta normal para descartar");
+  cliente.enviar({ tipo: "descartar", cartaId: carta.id });
+  await asentar();
+}
+
+function estadoConexionDe(cliente: ClientePrueba, jugadorId: string): string | undefined {
+  return cliente.ultimaVista().jugadores.find((j) => j.id === jugadorId)?.estadoConexion;
 }
 
 class ClientePrueba {
@@ -352,6 +391,25 @@ describe("orquestador: reconexión", () => {
     await sala.orquestador.detener();
   });
 
+  it("reattacha aunque el canal anterior siga vivo (cierra el socket zombi)", async () => {
+    const sala = await abrirSala(["A", "B"], { mazoParaMano: fabricaMazoParaMano(GUIONES) });
+    await iniciarPartida(sala);
+    const a = sala.clientes[0];
+    if (a === undefined) throw new Error("sin cliente");
+    const manoA = a.ultimaVista().tuMano.map((c) => c.id);
+
+    // A reconecta SIN desconectar antes: el canal viejo sigue abierto.
+    const rep = new ClientePrueba(sala.transporte.crearCliente());
+    await rep.conectar(sala.codigo);
+    rep.enviar({ tipo: "unirse", nombre: "A", token: a.token });
+    await asentar();
+
+    expect(rep.jugadorId).toBe(a.jugadorId);
+    expect(rep.ultimaVista().tuMano.map((c) => c.id)).toEqual(manoA);
+    expect(a.desconectado).toBe(true); // el zombi se cerró
+    await sala.orquestador.detener();
+  });
+
   it("rechaza un token inválido y cierra esa conexión", async () => {
     const sala = await abrirSala(["A", "B"], { mazoParaMano: fabricaMazoParaMano(GUIONES) });
     await iniciarPartida(sala);
@@ -429,5 +487,165 @@ describe("orquestador: votos para la siguiente mano (75% de conectados)", () => 
       expect(ganador.ultimaVista().manoActual).toBe(2);
       await sala.orquestador.detener();
     }
+  });
+});
+
+describe("orquestador: gracia, salto de turno y suspensión", () => {
+  /** Sala de 2 con mano 1 guionizada y reloj manual para las gracias. */
+  async function salaConReloj(): Promise<{ sala: Sala; reloj: RelojManual }> {
+    const reloj = new RelojManual();
+    const sala = await abrirSala(["A", "B"], {
+      mazoParaMano: fabricaMazoParaMano(GUIONES),
+      programar: reloj.programar,
+    });
+    await iniciarPartida(sala);
+    return { sala, reloj };
+  }
+
+  it("reconectar dentro de la gracia vuelve a conectado sin saltar el turno", async () => {
+    const { sala } = await salaConReloj();
+    const [a, b] = sala.clientes;
+    if (a === undefined || b === undefined) throw new Error("sin clientes");
+    const manoA = a.ultimaVista().tuMano.map((c) => c.id);
+
+    await a.desconectar(); // a (j1) no es el de turno (abre j2)
+    await asentar();
+    expect(estadoConexionDe(b, a.jugadorId)).toBe("ausente");
+
+    const rep = new ClientePrueba(sala.transporte.crearCliente());
+    await rep.conectar(sala.codigo);
+    rep.enviar({ tipo: "unirse", nombre: "A", token: a.token });
+    await asentar();
+
+    expect(rep.jugadorId).toBe(a.jugadorId);
+    expect(rep.ultimaVista().tuMano.map((c) => c.id)).toEqual(manoA);
+    expect(estadoConexionDe(rep, a.jugadorId)).toBe("conectado");
+    // El turno nunca se movió: sigue en B y A no fue saltado.
+    expect(rep.ultimaVista().turno.jugadorId).toBe(b.jugadorId);
+    await sala.orquestador.detener();
+  });
+
+  it("al expirar la gracia se salta el turno del ausente", async () => {
+    const { sala, reloj } = await salaConReloj();
+    const [a, b] = sala.clientes;
+    if (a === undefined || b === undefined) throw new Error("sin clientes");
+
+    await a.desconectar();
+    await asentar();
+    // B juega: el turno pasa a A, pero A está en gracia → se espera (no se salta).
+    await jugarTurnoSimple(b);
+    expect(b.ultimaVista().turno.jugadorId).toBe(a.jugadorId);
+
+    reloj.avanzar(); // expira la gracia de A
+    await asentar();
+    expect(b.ultimaVista().turno.jugadorId).toBe(b.jugadorId);
+    await sala.orquestador.detener();
+  });
+
+  it("si se desconecta el jugador en turno, se espera su gracia antes de saltar", async () => {
+    const { sala, reloj } = await salaConReloj();
+    const [a, b] = sala.clientes;
+    if (a === undefined || b === undefined) throw new Error("sin clientes");
+
+    await b.desconectar(); // B (j2) es el de turno
+    await asentar();
+    // No se salta mientras corre la gracia: el turno sigue en B.
+    expect(a.ultimaVista().turno.jugadorId).toBe(b.jugadorId);
+    expect(estadoConexionDe(a, b.jugadorId)).toBe("ausente");
+
+    reloj.avanzar();
+    await asentar();
+    expect(a.ultimaVista().turno.jugadorId).toBe(a.jugadorId);
+    await sala.orquestador.detener();
+  });
+
+  it("tras dos turnos saltados queda suspendido y se le salta siempre", async () => {
+    const { sala, reloj } = await salaConReloj();
+    const [a, b] = sala.clientes;
+    if (a === undefined || b === undefined) throw new Error("sin clientes");
+
+    await a.desconectar();
+    await asentar();
+
+    await jugarTurnoSimple(b); // turno → A (en gracia)
+    reloj.avanzar(); // expira gracia → salta A (1) → turno B
+    await asentar();
+    expect(estadoConexionDe(b, a.jugadorId)).toBe("ausente");
+
+    await jugarTurnoSimple(b); // turno → A (gracia expirada) → salta A (2) → suspendido
+    expect(estadoConexionDe(b, a.jugadorId)).toBe("suspendido");
+    expect(b.ultimaVista().turno.jugadorId).toBe(b.jugadorId);
+
+    // Suspendido: se le sigue saltando solo en cada ronda.
+    await jugarTurnoSimple(b);
+    expect(b.ultimaVista().turno.jugadorId).toBe(b.jugadorId);
+    await sala.orquestador.detener();
+  });
+
+  it("el suspendido se reconecta, vuelve a conectado y recupera asiento y mano", async () => {
+    const { sala, reloj } = await salaConReloj();
+    const [a, b] = sala.clientes;
+    if (a === undefined || b === undefined) throw new Error("sin clientes");
+    const manoA = a.ultimaVista().tuMano.map((c) => c.id);
+
+    await a.desconectar();
+    await asentar();
+    await jugarTurnoSimple(b);
+    reloj.avanzar();
+    await asentar();
+    await jugarTurnoSimple(b); // A queda suspendido
+    expect(estadoConexionDe(b, a.jugadorId)).toBe("suspendido");
+
+    const rep = new ClientePrueba(sala.transporte.crearCliente());
+    await rep.conectar(sala.codigo);
+    rep.enviar({ tipo: "unirse", nombre: "A", token: a.token });
+    await asentar();
+
+    expect(rep.jugadorId).toBe(a.jugadorId);
+    expect(rep.ultimaVista().tuMano.map((c) => c.id)).toEqual(manoA);
+    expect(estadoConexionDe(rep, a.jugadorId)).toBe("conectado");
+    await sala.orquestador.detener();
+  });
+});
+
+describe("orquestador: el anfitrión reabre la conexión (sin expulsar)", () => {
+  it("cierra el canal trabado y el jugador reentra con su token conservando todo", async () => {
+    const reloj = new RelojManual();
+    const sala = await abrirSala(["A", "B"], {
+      mazoParaMano: fabricaMazoParaMano(GUIONES),
+      programar: reloj.programar,
+    });
+    await iniciarPartida(sala);
+    const [anfitrion, atascado] = sala.clientes;
+    if (anfitrion === undefined || atascado === undefined) throw new Error("sin clientes");
+    const manoB = atascado.ultimaVista().tuMano.map((c) => c.id);
+
+    // El anfitrión (asiento 0) reabre el canal de B (que seguía "conectado").
+    anfitrion.enviar({ tipo: "reabrirConexion", jugadorId: atascado.jugadorId });
+    await asentar();
+    expect(atascado.desconectado).toBe(true);
+
+    // B reentra con su token: mismo asiento y misma mano (no se creó uno nuevo).
+    const repuesto = new ClientePrueba(sala.transporte.crearCliente());
+    await repuesto.conectar(sala.codigo);
+    repuesto.enviar({ tipo: "unirse", nombre: "B bis", token: atascado.token });
+    await asentar();
+    expect(repuesto.jugadorId).toBe(atascado.jugadorId);
+    expect(repuesto.ultimaVista().tuMano.map((c) => c.id)).toEqual(manoB);
+    expect(estadoConexionDe(repuesto, atascado.jugadorId)).toBe("conectado");
+    // Nadie fue expulsado: el asiento sigue presente.
+    expect(anfitrion.ultimaVista().jugadores).toHaveLength(2);
+    await sala.orquestador.detener();
+  });
+
+  it("un no-anfitrión que intenta reabrir recibe noEresAnfitrion", async () => {
+    const sala = await abrirSala(["A", "B"], { mazoParaMano: fabricaMazoParaMano(GUIONES) });
+    await iniciarPartida(sala);
+    const noAnfitrion = sala.clientes[1];
+    if (noAnfitrion === undefined) throw new Error("sin cliente");
+    noAnfitrion.enviar({ tipo: "reabrirConexion", jugadorId: "j1" });
+    await asentar();
+    expect(noAnfitrion.ultimoError().codigo).toBe("noEresAnfitrion");
+    await sala.orquestador.detener();
   });
 });

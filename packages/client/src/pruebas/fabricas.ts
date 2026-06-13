@@ -34,6 +34,7 @@ export function jugadorVista(
     puntosAcumulados: 0,
     seBajo: false,
     conectado: true,
+    estadoConexion: "conectado",
     listoSiguienteMano: false,
     ...parcial,
   };
@@ -43,6 +44,7 @@ export function crearVista(parcial: Partial<VistaPartida> = {}): VistaPartida {
   const base: VistaPartida = {
     tuJugadorId: "j1",
     tuMano: [],
+    anfitrionId: "j1",
     jugadores: [jugadorVista("j1"), jugadorVista("j2")],
     manoActual: 1,
     contrato: contrato(1),

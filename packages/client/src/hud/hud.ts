@@ -24,6 +24,8 @@ export class Hud {
   constructor(
     raiz: HTMLElement,
     private readonly despachar: (evento: EventoInteraccion) => void,
+    /** Reinicia el intento de reconexión al anfitrión (token guardado). */
+    private readonly reconectar: () => void = () => {},
   ) {
     this.superior = crearSeccion(raiz, "hud-superior");
     this.jugadores = crearSeccion(raiz, "hud-jugadores");
@@ -73,7 +75,12 @@ export class Hud {
     const contrato = document.createElement("div");
     contrato.className = "contrato";
     contrato.textContent = `Mano ${vista.manoActual}/9 · ${vista.contrato.nombre}`;
-    this.superior.append(contrato, this.crearBannerTurno(estado, vista));
+    const reconectar = document.createElement("button");
+    reconectar.className = "reconectar";
+    reconectar.textContent = "Reconectar";
+    reconectar.title = "Reinicia la conexión con el anfitrión";
+    reconectar.addEventListener("click", () => this.reconectar());
+    this.superior.append(contrato, this.crearBannerTurno(estado, vista), reconectar);
   }
 
   /** Banner destacado del jugador EN TURNO: su avatar grande + nickname. */
@@ -99,6 +106,7 @@ export class Hud {
 
   private renderJugadores(vista: VistaPartida): void {
     this.jugadores.replaceChildren();
+    const soyAnfitrion = vista.anfitrionId === vista.tuJugadorId;
     for (const jugador of vista.jugadores) {
       const fila = document.createElement("div");
       fila.className = "jugador";
@@ -113,7 +121,8 @@ export class Hud {
         `${jugador.puntosAcumulados} pts`,
       ];
       if (jugador.seBajo) detalles.push("bajado");
-      if (!jugador.conectado) detalles.push("desconectado");
+      const etiqueta = etiquetaConexion(jugador.estadoConexion);
+      if (etiqueta !== null) detalles.push(etiqueta);
       if (vista.fase === "manoTerminada" && jugador.listoSiguienteMano) {
         detalles.push("listo");
       }
@@ -122,6 +131,21 @@ export class Hud {
       texto.className = "jugador-texto";
       texto.textContent = `${quien} — ${detalles.join(" · ")}`;
       fila.append(avatar, texto);
+      // El anfitrión puede reabrir el canal de un jugador ausente/suspendido
+      // (no es expulsión: conserva asiento y mano).
+      if (
+        soyAnfitrion &&
+        jugador.id !== vista.tuJugadorId &&
+        jugador.estadoConexion !== "conectado"
+      ) {
+        const reabrir = document.createElement("button");
+        reabrir.className = "reabrir";
+        reabrir.textContent = "Reabrir conexión";
+        reabrir.addEventListener("click", () =>
+          this.despachar({ tipo: "reabrirConexion", jugadorId: jugador.id }),
+        );
+        fila.appendChild(reabrir);
+      }
       this.jugadores.appendChild(fila);
     }
   }
@@ -228,6 +252,18 @@ function meBaje(vista: VistaPartida): boolean {
 /** Avatar del jugador, con fallback determinista si no eligió uno. */
 function avatarDe(jugador: JugadorVista): string {
   return jugador.avatar ?? avatarPorDefecto(jugador.id);
+}
+
+/** Texto del estado de conexión, o null si está conectado (sin etiqueta). */
+function etiquetaConexion(estado: JugadorVista["estadoConexion"]): string | null {
+  switch (estado) {
+    case "conectado":
+      return null;
+    case "ausente":
+      return "ausente";
+    case "suspendido":
+      return "suspendido";
+  }
 }
 
 function textoDeTurno(estado: EstadoInteraccion, vista: VistaPartida): string {
