@@ -406,6 +406,27 @@ button.salir-hub {
   opacity: 1;
 }
 
+/* Tooltip de detalle de carta/combinación al hacer hover (solo visual). */
+.tooltip-carta {
+  position: fixed;
+  pointer-events: none;
+  z-index: 20;
+  display: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(13, 18, 24, 0.92);
+  border: 1px solid #3a4452;
+  color: #e8e4da;
+  font-family: "Consolas", "Menlo", monospace;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.tooltip-carta.visible {
+  display: block;
+}
+
 /* ── Perfil: insignia, cabecera y picker de avatares ────────────────────── */
 
 .insignia-perfil {

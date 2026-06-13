@@ -20,9 +20,11 @@ import { indiceManoDesdeX } from "../../escena/disposicion.js";
 import { Escena } from "../../escena/escena.js";
 import { InsigniasMesa } from "../../escena/insigniasMesa.js";
 import { Interpolador } from "../../escena/interpolacion.js";
-import type { DestinoArrastre } from "../../escena/seleccion.js";
+import type { DestinoArrastre, ObjetivoHover } from "../../escena/seleccion.js";
 import { Seleccionador } from "../../escena/seleccion.js";
 import { Hud } from "../../hud/hud.js";
+import { etiquetaCombinacion, etiquetaCorta } from "../../hud/formatoCarta.js";
+import { TooltipCarta } from "../../hud/tooltipCarta.js";
 
 /** Altura a la que flota una carta mientras se la arrastra. */
 const ALTURA_ARRASTRE = 1.6;
@@ -34,6 +36,7 @@ export class JuegoCarioca implements IJuego {
   private sincronizador: Sincronizador | null = null;
   private seleccionador: Seleccionador | null = null;
   private hud: Hud | null = null;
+  private tooltip: TooltipCarta | null = null;
   private insignias: InsigniasMesa | null = null;
   private botonSalir: HTMLButtonElement | null = null;
   /** Orden de la mano elegido por el jugador (presentación, no estado de juego). */
@@ -47,6 +50,7 @@ export class JuegoCarioca implements IJuego {
     const interpolador = new Interpolador();
     this.sincronizador = new Sincronizador(this.escena.cartas, interpolador);
     this.hud = new Hud(contexto.contenedorHud, (evento) => this.despachar(evento));
+    this.tooltip = new TooltipCarta(contexto.contenedorHud);
     this.insignias = new InsigniasMesa(
       contexto.contenedorHud,
       this.escena.camara,
@@ -60,6 +64,7 @@ export class JuegoCarioca implements IJuego {
         alMover: (mundo, destino) => this.moverArrastre(mundo, destino),
         alSoltar: (destino) => this.soltarArrastre(destino),
       },
+      (objetivo) => this.mostrarTooltip(objetivo),
     );
     this.botonSalir = crearBotonSalir(contexto.contenedorHud, () =>
       contexto.salirAlHub(),
@@ -81,12 +86,14 @@ export class JuegoCarioca implements IJuego {
     this.escena?.dispose();
     this.seleccionador?.destruir();
     this.hud?.destruir();
+    this.tooltip?.destruir();
     this.insignias?.destruir();
     this.botonSalir?.remove();
     this.escena = null;
     this.sincronizador = null;
     this.seleccionador = null;
     this.hud = null;
+    this.tooltip = null;
     this.insignias = null;
     this.botonSalir = null;
     this.contexto = null;
@@ -130,6 +137,28 @@ export class JuegoCarioca implements IJuego {
       new Set(this.estado.seleccion),
       { orden: this.orden, arrastre: this.arrastre },
     );
+  }
+
+  /** Tooltip de hover: traduce el objetivo a texto desde la última vista. */
+  private mostrarTooltip(objetivo: ObjetivoHover | null): void {
+    const vista = this.estado.vista;
+    if (objetivo === null || vista === null) {
+      this.tooltip?.ocultar();
+      return;
+    }
+    let texto: string | null = null;
+    if (objetivo.tipo === "cartaPropia") {
+      const carta = vista.tuMano.find((c) => c.id === objetivo.cartaId);
+      if (carta !== undefined) texto = etiquetaCorta(carta);
+    } else {
+      const enMesa = vista.mesa[objetivo.mesaIdx];
+      if (enMesa !== undefined) texto = etiquetaCombinacion(enMesa.combinacion.cartas);
+    }
+    if (texto === null) {
+      this.tooltip?.ocultar();
+      return;
+    }
+    this.tooltip?.mostrar(texto, objetivo.x, objetivo.y);
   }
 
   // ── Arrastre de cartas (visual): dispara las MISMAS intenciones al soltar ──
