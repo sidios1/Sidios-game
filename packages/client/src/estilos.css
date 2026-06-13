@@ -221,11 +221,25 @@ button.salir-hub {
 
 /* ── HUD de partida ─────────────────────────────────────────────────────── */
 
-.hud-superior {
+/* Barra superior en 3 lanes: izquierda libre (botón ← Hub), centro (contrato +
+   turno) y derecha (lista de jugadores). El grid impide que se solapen. */
+.hud-top {
   position: absolute;
   top: 0.8rem;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: 1rem;
+  padding: 0 0.8rem;
+  pointer-events: none;
+}
+
+.hud-superior {
+  grid-column: 2;
+  justify-self: center;
+  max-width: min(60vw, 560px);
   display: flex;
   gap: 1.2rem;
   align-items: center;
@@ -279,9 +293,9 @@ button.salir-hub {
 }
 
 .hud-jugadores {
-  position: absolute;
-  top: 0.8rem;
-  right: 0.8rem;
+  grid-column: 3;
+  justify-self: end;
+  max-width: 18rem;
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -298,6 +312,14 @@ button.salir-hub {
   border: 1px solid #2a3442;
 }
 
+/* Nombre + detalles del jugador: se recorta para no empujar ni pisar. */
+.hud-jugadores .jugador-texto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .hud-jugadores .jugador.en-turno {
   border-color: #2f8a57;
   color: #9fd0ae;
@@ -309,6 +331,27 @@ button.salir-hub {
   height: 28px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+/* Estado pasivo ("Esperando a X…"): centrado bajo la barra superior, nunca
+   sobre la mano. Sin texto no ocupa ni pinta caja. */
+.hud-estado {
+  position: absolute;
+  top: 4.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(13, 18, 24, 0.85);
+  border: 1px solid #2a3442;
+  color: #9aa5b1;
+  font-size: 0.9rem;
+  text-align: center;
+  max-width: min(560px, 90vw);
+}
+
+.hud-estado:empty {
+  display: none;
 }
 
 .hud-acciones {
@@ -404,7 +447,7 @@ button.salir-hub {
 
 .hud-aviso {
   position: absolute;
-  bottom: 4.4rem;
+  top: 7rem;
   left: 50%;
   transform: translateX(-50%);
   padding: 0.5rem 1rem;

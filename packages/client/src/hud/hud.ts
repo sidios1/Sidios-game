@@ -13,8 +13,10 @@ import { renderPanelBajada } from "./panelBajada.js";
 import { renderPanelResumen } from "./panelResumen.js";
 
 export class Hud {
+  private readonly top: HTMLElement;
   private readonly superior: HTMLElement;
   private readonly jugadores: HTMLElement;
+  private readonly estado: HTMLElement;
   private readonly acciones: HTMLElement;
   private readonly panel: HTMLElement;
   private readonly aviso: HTMLElement;
@@ -27,18 +29,17 @@ export class Hud {
     /** Reinicia el intento de reconexión al anfitrión (token guardado). */
     private readonly reconectar: () => void = () => {},
   ) {
-    this.superior = crearSeccion(raiz, "hud-superior");
-    this.jugadores = crearSeccion(raiz, "hud-jugadores");
+    // Barra superior en grid: contrato/turno (centro) y jugadores (derecha) en
+    // columnas distintas, así no se solapan por más que crezca su contenido.
+    this.top = crearSeccion(raiz, "hud-top");
+    this.superior = crearSeccion(this.top, "hud-superior");
+    this.jugadores = crearSeccion(this.top, "hud-jugadores");
+    // Mensajes de estado pasivos ("Esperando a X…") arriba, fuera de la mano.
+    this.estado = crearSeccion(raiz, "hud-estado");
     this.acciones = crearSeccion(raiz, "hud-acciones");
     this.panel = crearSeccion(raiz, "hud-panel");
     this.aviso = crearSeccion(raiz, "hud-aviso");
-    this.secciones = [
-      this.superior,
-      this.jugadores,
-      this.acciones,
-      this.panel,
-      this.aviso,
-    ];
+    this.secciones = [this.top, this.estado, this.acciones, this.panel, this.aviso];
   }
 
   /** Cancela el aviso pendiente y quita todas las secciones del DOM. */
@@ -75,12 +76,17 @@ export class Hud {
     const contrato = document.createElement("div");
     contrato.className = "contrato";
     contrato.textContent = `Mano ${vista.manoActual}/9 · ${vista.contrato.nombre}`;
-    const reconectar = document.createElement("button");
-    reconectar.className = "reconectar";
-    reconectar.textContent = "Reconectar";
-    reconectar.title = "Reinicia la conexión con el anfitrión";
-    reconectar.addEventListener("click", () => this.reconectar());
-    this.superior.append(contrato, this.crearBannerTurno(estado, vista), reconectar);
+    this.superior.append(contrato, this.crearBannerTurno(estado, vista));
+    // Solo el anfitrión reinicia el canal desde el HUD; los demás recuperan por
+    // la pantalla de desconexión.
+    if (vista.anfitrionId === vista.tuJugadorId) {
+      const reconectar = document.createElement("button");
+      reconectar.className = "reconectar";
+      reconectar.textContent = "Reconectar";
+      reconectar.title = "Reinicia la conexión con el anfitrión";
+      reconectar.addEventListener("click", () => this.reconectar());
+      this.superior.appendChild(reconectar);
+    }
   }
 
   /** Banner destacado del jugador EN TURNO: su avatar grande + nickname. */
@@ -152,6 +158,7 @@ export class Hud {
 
   private renderAcciones(estado: EstadoInteraccion, vista: VistaPartida): void {
     this.acciones.replaceChildren();
+    this.estado.textContent = "";
     const pista = document.createElement("span");
     pista.className = "pista";
     switch (estado.modo) {
@@ -183,9 +190,9 @@ export class Hud {
         return;
       }
       case "esperandoTurno": {
+        // Estado pasivo: va arriba (.hud-estado), nunca sobre la mano.
         const turno = vista.jugadores.find((j) => j.id === vista.turno.jugadorId);
-        pista.textContent = `Esperando a ${turno?.nombre ?? "otro jugador"}…`;
-        this.acciones.appendChild(pista);
+        this.estado.textContent = `Esperando a ${turno?.nombre ?? "otro jugador"}…`;
         return;
       }
       default:

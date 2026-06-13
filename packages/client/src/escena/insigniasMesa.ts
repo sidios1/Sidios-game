@@ -14,6 +14,10 @@ import { proyectarAPantalla } from "./proyeccion.js";
 /** Altura sobre la mesa a la que flota la insignia (unidades de mundo). */
 const ELEVACION = 0.8;
 const TAM_AVATAR = 40;
+/** Fracción de alto reservada abajo para la mano: ninguna insignia la invade. */
+const FRACCION_BANDA_MANO = 0.6;
+/** Margen lateral mínimo (px) para que las insignias no salgan por los bordes. */
+const MARGEN_LATERAL = 24;
 
 export class InsigniasMesa {
   private readonly contenedor: HTMLElement;
@@ -66,8 +70,13 @@ export class InsigniasMesa {
         insignia.classList.add("en-turno");
       }
       if (!jugador.conectado) insignia.classList.add("desconectado");
-      insignia.style.left = `${punto.x}px`;
-      insignia.style.top = `${punto.y}px`;
+      // Acotamos la insignia al área superior y dentro de los bordes: nunca cae
+      // sobre la banda inferior reservada a la mano del jugador.
+      const limiteInferior = alto * FRACCION_BANDA_MANO;
+      const left = Math.min(Math.max(punto.x, MARGEN_LATERAL), ancho - MARGEN_LATERAL);
+      const top = Math.min(punto.y, limiteInferior);
+      insignia.style.left = `${left}px`;
+      insignia.style.top = `${top}px`;
 
       const avatar = crearAvatar(
         jugador.avatar ?? avatarPorDefecto(jugador.id),
