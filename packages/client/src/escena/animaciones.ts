@@ -10,12 +10,18 @@
 import type * as THREE from "three";
 import type { VistaPartida } from "@juegos/server/vista";
 import type { CambioVista } from "../estado/difVista.js";
-import type { MapaObjetivos, Objetivo, Pose } from "./disposicion.js";
+import type {
+  MapaObjetivos,
+  Objetivo,
+  Pose,
+  PresentacionMano,
+} from "./disposicion.js";
 import {
   calcularDisposicion,
   POSE_MAZO,
   POSE_POZO,
   poseManoJugador,
+  PRESENTACION_VACIA,
 } from "./disposicion.js";
 import type { ManejadorTween } from "./interpolacion.js";
 import { easeOut, Interpolador } from "./interpolacion.js";
@@ -64,12 +70,22 @@ export class Sincronizador {
     private readonly interpolador: Interpolador,
   ) {}
 
+  /** La malla de una carta concreta (para que el arrastre la mueva en vivo). */
+  mallaDeCarta(cartaId: string): THREE.Mesh | undefined {
+    return this.mallas.get(`carta:${cartaId}`);
+  }
+
   aplicar(
     vista: VistaPartida,
     cambios: readonly CambioVista[],
     seleccion: ReadonlySet<string>,
+    presentacion: PresentacionMano = PRESENTACION_VACIA,
   ): void {
-    const objetivos: MapaObjetivos = calcularDisposicion(vista, seleccion);
+    const objetivos: MapaObjetivos = calcularDisposicion(
+      vista,
+      seleccion,
+      presentacion,
+    );
     const reparto = cambios.some((c) => c.tipo === "repartoInicial");
     if (reparto) this.reiniciar();
 
@@ -82,6 +98,12 @@ export class Sincronizador {
       const existente = this.mallas.get(clave);
       if (existente !== undefined) {
         asignarInteraccion(existente, objetivo.interaccion);
+        // Carta arrastrada: su transform lo fija el arrastre, no el tween.
+        if (objetivo.congelado === true) {
+          this.tweens.get(clave)?.cancelar();
+          this.tweens.delete(clave);
+          continue;
+        }
         this.tweenHacia(clave, existente, objetivo.pose, 0);
         continue;
       }
@@ -96,6 +118,7 @@ export class Sincronizador {
       colocar(malla, aparicion.pose);
       this.raiz.add(malla);
       this.mallas.set(clave, malla);
+      if (objetivo.congelado === true) continue;
       this.tweenHacia(clave, malla, objetivo.pose, aparicion.retraso);
     }
   }

@@ -15,6 +15,7 @@ export type DatosInteraccion =
   | { readonly tipo: "mazo" }
   | { readonly tipo: "pozo" }
   | { readonly tipo: "combinacion"; readonly mesaIdx: number }
+  | { readonly tipo: "mesaBajada" }
   | { readonly tipo: "decoracion" };
 
 const geometriaCarta = new THREE.BoxGeometry(ANCHO_CARTA, ALTO_CARTA, GROSOR_CARTA);

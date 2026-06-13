@@ -89,8 +89,22 @@ export class Escena {
     zonaPozo.position.set(POSE_POZO.x, 0.002, POSE_POZO.z);
     asignarInteraccion(zonaPozo, { tipo: "pozo" });
 
-    this.escena.add(zonaMazo, zonaPozo);
-    this.zonasFijas.push(zonaMazo, zonaPozo);
+    // Zona central de bajada: sutil afordancia para "soltar aquí para bajarse".
+    const zonaMesa = new THREE.Mesh(
+      new THREE.PlaneGeometry(9, 6),
+      new THREE.MeshLambertMaterial({
+        color: "#1f6e44",
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.14,
+      }),
+    );
+    zonaMesa.rotation.x = -Math.PI / 2;
+    zonaMesa.position.set(0, 0.001, -1.2);
+    asignarInteraccion(zonaMesa, { tipo: "mesaBajada" });
+
+    this.escena.add(zonaMazo, zonaPozo, zonaMesa);
+    this.zonasFijas.push(zonaMazo, zonaPozo, zonaMesa);
   }
 
   /** Arranca el bucle de render; alTick recibe el delta en segundos. */

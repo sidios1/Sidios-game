@@ -67,7 +67,11 @@ export type EventoInteraccion =
   | { readonly tipo: "botonDescartar" }
   | { readonly tipo: "elegirExtremo"; readonly extremo: ExtremoEscala }
   | { readonly tipo: "cancelarExtremo" }
-  | { readonly tipo: "votarListo" };
+  | { readonly tipo: "votarListo" }
+  // Gestos de arrastre (cada uno dispara la MISMA intención que su click).
+  | { readonly tipo: "soltarEnPozo"; readonly cartaId: string }
+  | { readonly tipo: "soltarEnCombinacion"; readonly cartaId: string; readonly mesaIdx: number }
+  | { readonly tipo: "soltarEnMesaBajada"; readonly cartaId: string };
 
 export interface ResultadoInteraccion {
   readonly estado: EstadoInteraccion;
@@ -133,6 +137,12 @@ export function transicion(
       return sinCambios({ ...estado, modo: "descartar", pegadaPendiente: null });
     case "votarListo":
       return alVotarListo(estado);
+    case "soltarEnPozo":
+      return alSoltarEnPozo(estado, evento.cartaId);
+    case "soltarEnCombinacion":
+      return alSoltarEnCombinacion(estado, evento.cartaId, evento.mesaIdx);
+    case "soltarEnMesaBajada":
+      return alSoltarEnMesaBajada(estado, evento.cartaId);
   }
 }
 
@@ -297,14 +307,24 @@ function alClickCombinacion(
   if (estado.modo !== "descartar" || estado.vista === null) {
     return sinCambios(estado);
   }
-  const vista = estado.vista;
-  if (!meBaje(vista)) {
+  if (!meBaje(estado.vista)) {
     return conAviso(estado, "debes bajarte antes de pegar cartas");
   }
   const cartaId = estado.seleccion[0];
   if (estado.seleccion.length !== 1 || cartaId === undefined) {
     return conAviso(estado, "selecciona la carta que quieres pegar");
   }
+  return intentarPegar(estado, cartaId, mesaIdx);
+}
+
+/** Pegar una carta concreta a una combinación (compartido por click y drag). */
+function intentarPegar(
+  estado: EstadoInteraccion,
+  cartaId: string,
+  mesaIdx: number,
+): ResultadoInteraccion {
+  const vista = estado.vista;
+  if (vista === null) return sinCambios(estado);
   const carta = vista.tuMano.find((c) => c.id === cartaId);
   const enMesa = vista.mesa[mesaIdx];
   if (carta === undefined || enMesa === undefined) return sinCambios(estado);
@@ -336,6 +356,67 @@ function alClickCombinacion(
     comandos: [{ tipo: "pegar", cartaId, mesaIdx, extremo }],
     aviso: null,
   };
+}
+
+// ── Gestos de arrastre: misma intención que el click equivalente ─────────────
+
+function alSoltarEnPozo(
+  estado: EstadoInteraccion,
+  cartaId: string,
+): ResultadoInteraccion {
+  if (estado.modo !== "descartar" || estado.vista === null) {
+    return sinCambios(estado);
+  }
+  if (!estado.vista.tuMano.some((c) => c.id === cartaId)) {
+    return sinCambios(estado);
+  }
+  if (cartasComprometidas(estado.propuesta).has(cartaId)) {
+    return conAviso(estado, "esa carta está reservada en tu bajada");
+  }
+  return {
+    estado: { ...estado, seleccion: [] },
+    comandos: [{ tipo: "descartar", cartaId }],
+    aviso: null,
+  };
+}
+
+function alSoltarEnCombinacion(
+  estado: EstadoInteraccion,
+  cartaId: string,
+  mesaIdx: number,
+): ResultadoInteraccion {
+  if (estado.modo !== "descartar" || estado.vista === null) {
+    return sinCambios(estado);
+  }
+  if (!meBaje(estado.vista)) {
+    return conAviso(estado, "debes bajarte antes de pegar cartas");
+  }
+  return intentarPegar(estado, cartaId, mesaIdx);
+}
+
+function alSoltarEnMesaBajada(
+  estado: EstadoInteraccion,
+  cartaId: string,
+): ResultadoInteraccion {
+  if (estado.vista === null) return sinCambios(estado);
+  if (estado.modo !== "descartar" && estado.modo !== "construyendoBajada") {
+    return sinCambios(estado);
+  }
+  if (meBaje(estado.vista)) {
+    return conAviso(estado, "ya te bajaste en esta mano");
+  }
+  if (!estado.vista.tuMano.some((c) => c.id === cartaId)) {
+    return sinCambios(estado);
+  }
+  if (cartasComprometidas(estado.propuesta).has(cartaId)) {
+    return conAviso(estado, "esa carta ya está en un grupo de tu bajada");
+  }
+  // Abre el panel de bajada (si no lo estaba) y deja la carta "staged" para
+  // que el jugador la agrupe y confirme con la validación de siempre.
+  const seleccion = estado.seleccion.includes(cartaId)
+    ? estado.seleccion
+    : [...estado.seleccion, cartaId];
+  return sinCambios({ ...estado, modo: "construyendoBajada", seleccion });
 }
 
 function alElegirExtremo(

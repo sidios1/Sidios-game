@@ -258,6 +258,83 @@ describe("maquinaInteraccion: pegar", () => {
   });
 });
 
+describe("maquinaInteraccion: gestos de arrastre", () => {
+  const mano = manoConDosTrios();
+
+  it("soltar en el pozo descarta esa carta concreta, sin selección previa", () => {
+    const id = mano[6]?.id ?? "";
+    const estado = aplicar([{ tipo: "vista", vista: vistaMiTurnoDescartar() }]);
+    const resultado = transicion(estado, { tipo: "soltarEnPozo", cartaId: id });
+    expect(resultado.comandos).toEqual([{ tipo: "descartar", cartaId: id }]);
+  });
+
+  it("soltar en el pozo fuera de la fase de descarte no hace nada", () => {
+    const id = mano[6]?.id ?? "";
+    const enRobar = aplicar([{ tipo: "vista", vista: crearVista() }]);
+    const resultado = transicion(enRobar, { tipo: "soltarEnPozo", cartaId: id });
+    expect(resultado.comandos).toEqual([]);
+  });
+
+  it("soltar en una combinación pega como el click equivalente", () => {
+    const nueve = carta("diamantes", 9, "c");
+    const vista = vistaMiTurnoDescartar({
+      tuMano: [nueve],
+      jugadores: [jugadorVista("j1", { seBajo: true }), jugadorVista("j2")],
+      mesa: [
+        {
+          duenoId: "j2",
+          combinacion: {
+            tipo: "trio",
+            cartas: [carta("picas", 9), carta("treboles", 9), carta("corazones", 9)],
+          },
+        },
+      ],
+    });
+    const estado = aplicar([{ tipo: "vista", vista }]);
+    const resultado = transicion(estado, {
+      tipo: "soltarEnCombinacion",
+      cartaId: nueve.id,
+      mesaIdx: 0,
+    });
+    expect(resultado.comandos).toEqual([
+      { tipo: "pegar", cartaId: nueve.id, mesaIdx: 0 },
+    ]);
+  });
+
+  it("soltar en una combinación sin haberse bajado avisa", () => {
+    const estado = aplicar([{ tipo: "vista", vista: vistaMiTurnoDescartar() }]);
+    const resultado = transicion(estado, {
+      tipo: "soltarEnCombinacion",
+      cartaId: mano[0]?.id ?? "",
+      mesaIdx: 0,
+    });
+    expect(resultado.comandos).toEqual([]);
+    expect(resultado.aviso).toContain("bajarte");
+  });
+
+  it("soltar en la zona de mesa abre la bajada y deja la carta staged", () => {
+    const id = mano[0]?.id ?? "";
+    const estado = aplicar([{ tipo: "vista", vista: vistaMiTurnoDescartar() }]);
+    const resultado = transicion(estado, { tipo: "soltarEnMesaBajada", cartaId: id });
+    expect(resultado.estado.modo).toBe("construyendoBajada");
+    expect(resultado.estado.seleccion).toEqual([id]);
+    expect(resultado.comandos).toEqual([]);
+  });
+
+  it("soltar en la zona de mesa si ya te bajaste avisa", () => {
+    const vista = vistaMiTurnoDescartar({
+      jugadores: [jugadorVista("j1", { seBajo: true }), jugadorVista("j2")],
+    });
+    const estado = aplicar([{ tipo: "vista", vista }]);
+    const resultado = transicion(estado, {
+      tipo: "soltarEnMesaBajada",
+      cartaId: mano[0]?.id ?? "",
+    });
+    expect(resultado.aviso).not.toBeNull();
+    expect(resultado.estado.modo).toBe("descartar");
+  });
+});
+
 describe("maquinaInteraccion: fin de mano", () => {
   it("vota listo una sola vez", () => {
     const estado = aplicar([
