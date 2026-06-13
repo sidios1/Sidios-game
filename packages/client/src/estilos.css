@@ -172,6 +172,53 @@ button.modo .etiqueta {
   font-size: 0.9rem;
 }
 
+button.secundario {
+  background: transparent;
+  border-color: transparent;
+  color: #9aa5b1;
+}
+
+button.secundario:hover:not(:disabled) {
+  background: #1d2530;
+}
+
+/* ── Menú del hub (selección de juego) ──────────────────────────────────── */
+
+.lista-juegos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+button.juego {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  text-align: left;
+}
+
+.juego-nombre {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.juego-descripcion {
+  font-size: 0.85rem;
+  color: #9aa5b1;
+}
+
+/* Volver al hub desde la partida: botón discreto en una esquina. */
+button.salir-hub {
+  position: absolute;
+  top: 0.8rem;
+  left: 0.8rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.85rem;
+  background: rgba(13, 18, 24, 0.85);
+}
+
 /* ── HUD de partida ─────────────────────────────────────────────────────── */
 
 .hud-superior {

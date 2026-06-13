@@ -16,6 +16,7 @@ export class Hud {
   private readonly acciones: HTMLElement;
   private readonly panel: HTMLElement;
   private readonly aviso: HTMLElement;
+  private readonly secciones: readonly HTMLElement[];
   private temporizadorAviso: number | null = null;
 
   constructor(
@@ -27,6 +28,22 @@ export class Hud {
     this.acciones = crearSeccion(raiz, "hud-acciones");
     this.panel = crearSeccion(raiz, "hud-panel");
     this.aviso = crearSeccion(raiz, "hud-aviso");
+    this.secciones = [
+      this.superior,
+      this.jugadores,
+      this.acciones,
+      this.panel,
+      this.aviso,
+    ];
+  }
+
+  /** Cancela el aviso pendiente y quita todas las secciones del DOM. */
+  destruir(): void {
+    if (this.temporizadorAviso !== null) {
+      window.clearTimeout(this.temporizadorAviso);
+      this.temporizadorAviso = null;
+    }
+    for (const seccion of this.secciones) seccion.remove();
   }
 
   mostrarAviso(texto: string): void {

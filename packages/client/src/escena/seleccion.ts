@@ -16,17 +16,20 @@ export class Seleccionador {
   private readonly rayo = new THREE.Raycaster();
   private readonly puntero = new THREE.Vector2();
   private resaltada: THREE.Mesh | null = null;
+  private readonly lienzo: HTMLCanvasElement;
+  private readonly alMover: (evento: PointerEvent) => void;
+  private readonly alBajar: (evento: PointerEvent) => void;
 
   constructor(
     private readonly escena: Escena,
     alEvento: (evento: EventoPuntero) => void,
   ) {
-    const lienzo = escena.renderer.domElement;
-    lienzo.addEventListener("pointermove", (evento) => {
+    this.lienzo = escena.renderer.domElement;
+    this.alMover = (evento) => {
       this.actualizarPuntero(evento);
       this.actualizarResaltado();
-    });
-    lienzo.addEventListener("pointerdown", (evento) => {
+    };
+    this.alBajar = (evento) => {
       this.actualizarPuntero(evento);
       const interseccion = this.intersectar();
       if (interseccion === null) return;
@@ -48,7 +51,15 @@ export class Seleccionador {
         case "decoracion":
           return;
       }
-    });
+    };
+    this.lienzo.addEventListener("pointermove", this.alMover);
+    this.lienzo.addEventListener("pointerdown", this.alBajar);
+  }
+
+  /** Quita los listeners del puntero. */
+  destruir(): void {
+    this.lienzo.removeEventListener("pointermove", this.alMover);
+    this.lienzo.removeEventListener("pointerdown", this.alBajar);
   }
 
   private actualizarPuntero(evento: PointerEvent): void {

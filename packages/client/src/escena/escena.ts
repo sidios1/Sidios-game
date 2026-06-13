@@ -15,8 +15,11 @@ export class Escena {
   readonly zonasFijas: THREE.Object3D[] = [];
 
   private detenido = false;
+  private readonly contenedor: HTMLElement;
+  private readonly ajustar: () => void;
 
   constructor(contenedor: HTMLElement) {
+    this.contenedor = contenedor;
     this.escena = new THREE.Scene();
     this.escena.background = new THREE.Color("#101418");
 
@@ -35,15 +38,15 @@ export class Escena {
     this.armarLuces();
     this.armarZonas();
 
-    const ajustar = () => {
+    this.ajustar = () => {
       const ancho = contenedor.clientWidth || window.innerWidth;
       const alto = contenedor.clientHeight || window.innerHeight;
       this.camara.aspect = ancho / alto;
       this.camara.updateProjectionMatrix();
       this.renderer.setSize(ancho, alto);
     };
-    ajustar();
-    window.addEventListener("resize", ajustar);
+    this.ajustar();
+    window.addEventListener("resize", this.ajustar);
   }
 
   private armarMesa(): void {
@@ -106,5 +109,15 @@ export class Escena {
 
   detener(): void {
     this.detenido = true;
+  }
+
+  /** Detiene el bucle y libera el render: quita el canvas y sus listeners. */
+  dispose(): void {
+    this.detener();
+    window.removeEventListener("resize", this.ajustar);
+    this.renderer.dispose();
+    if (this.renderer.domElement.parentNode === this.contenedor) {
+      this.contenedor.removeChild(this.renderer.domElement);
+    }
   }
 }

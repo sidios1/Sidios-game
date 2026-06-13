@@ -11,11 +11,27 @@ export const PUERTO_LOCAL_POR_DEFECTO = 35711;
 export interface AccionesConexion {
   readonly alConectar: (modo: ModoConexion, codigo: string, nombre: string) => void;
   readonly alIniciarPartida: () => void;
+  /** Volver al menú del hub desde la portada de modo (opcional). */
+  readonly alVolver?: () => void;
 }
+
+/** Datos del juego elegido que la pantalla muestra (título y cupo de la sala). */
+export interface JuegoElegido {
+  readonly nombre: string;
+  readonly minJugadores: number;
+  readonly maxJugadores: number;
+}
+
+const JUEGO_POR_DEFECTO: JuegoElegido = {
+  nombre: "Partida local",
+  minJugadores: 2,
+  maxJugadores: 4,
+};
 
 export class PantallaConexion {
   private readonly velo: HTMLElement;
   private miJugadorId: string | null = null;
+  private juego: JuegoElegido = JUEGO_POR_DEFECTO;
 
   constructor(
     raiz: HTMLElement,
@@ -24,7 +40,11 @@ export class PantallaConexion {
     this.velo = document.createElement("div");
     this.velo.className = "velo";
     raiz.appendChild(this.velo);
-    this.mostrarPortada();
+  }
+
+  /** Ajusta título y cupo según el juego elegido en el hub. */
+  configurarJuego(juego: JuegoElegido): void {
+    this.juego = juego;
   }
 
   mostrarPortada(): void {
@@ -35,7 +55,7 @@ export class PantallaConexion {
     tarjeta.className = "tarjeta";
 
     const titulo = document.createElement("h1");
-    titulo.textContent = "Carioca";
+    titulo.textContent = this.juego.nombre;
     const subtitulo = document.createElement("p");
     subtitulo.className = "subtitulo";
     subtitulo.textContent = "Elige el modo de juego";
@@ -58,6 +78,14 @@ export class PantallaConexion {
     local.textContent = "Local";
     local.addEventListener("click", () => this.mostrarFormularioLocal());
     tarjeta.appendChild(local);
+
+    if (this.acciones.alVolver !== undefined) {
+      const volver = document.createElement("button");
+      volver.className = "secundario";
+      volver.textContent = "← Volver al hub";
+      volver.addEventListener("click", () => this.acciones.alVolver?.());
+      tarjeta.appendChild(volver);
+    }
 
     this.velo.appendChild(tarjeta);
   }
@@ -159,13 +187,13 @@ export class PantallaConexion {
       const iniciar = document.createElement("button");
       iniciar.className = "principal";
       iniciar.textContent = "Iniciar partida";
-      iniciar.disabled = jugadores.length < 2;
+      iniciar.disabled = jugadores.length < this.juego.minJugadores;
       iniciar.addEventListener("click", () => this.acciones.alIniciarPartida());
       tarjeta.appendChild(iniciar);
-      if (jugadores.length < 2) {
+      if (jugadores.length < this.juego.minJugadores) {
         const nota = document.createElement("p");
         nota.className = "nota";
-        nota.textContent = "Se necesitan 2 a 4 jugadores.";
+        nota.textContent = `Se necesitan ${this.juego.minJugadores} a ${this.juego.maxJugadores} jugadores.`;
         tarjeta.appendChild(nota);
       }
     } else {
