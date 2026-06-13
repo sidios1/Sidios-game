@@ -83,6 +83,13 @@ export const POSE_POZO: Pose = {
 const MAX_DORSOS_MAZO = 8;
 const MAX_DORSOS_POZO = 4;
 
+// Montaje de mi mano: baseline único + cascada de profundidad ligada al índice.
+const BASELINE_Y_MANO = 1.15;   // misma altura para toda la mano
+const LEVANTE_SELECCION = 0.42; // cuánto sube la carta seleccionada
+const Z_BASE_MANO = 4.7;        // profundidad de la carta más a la izquierda
+const PASO_Z_MANO = 0.02;       // acercamiento por carta hacia la cámara (orden de solape)
+const GIRO_ABANICO = 0.045;     // giro sutil de abanico por carta
+
 /**
  * Jugadores AJENOS en orden de asiento, empezando por el que me sigue. El total
  * de asientos (incl. el mío) es `vista.jugadores.length`; yo ocupo el asiento 0
@@ -134,8 +141,12 @@ export function indiceManoDesdeX(x: number, total: number): number {
 
 /**
  * Pose de una carta de mi mano en el "slot" dado.
- * - Montada (reposo): abanico solapado, con curva y giro.
- * - Desmontada (arrastrando): fila lado a lado, sin solape ni giro.
+ * - Montada (reposo): cascada de solape limpia con un baseline de altura único
+ *   y abanico sutil; el solape va de izquierda a derecha (la carta 0 al fondo,
+ *   cada una a la derecha más cerca de la cámara → encima).
+ * - Desmontada (arrastrando): fila lado a lado, sin abanico.
+ * El orden de profundidad se deriva SOLO del índice (`slot`): el depth-test lo
+ * resuelve por la `z` monótona, sin depender de renderOrder ni de la cámara.
  */
 function poseMiCarta(
   slot: number,
@@ -147,14 +158,16 @@ function poseMiCarta(
     ? Math.min(0.68, 8.4 / Math.max(total, 1))
     : espaciadoDesmontado(total);
   const offset = (slot - (total - 1) / 2) * espaciado;
-  const curva = montada ? Math.abs(offset) : 0;
   return {
     x: offset,
-    y: 1.15 - curva * 0.05 + (seleccionada ? 0.42 : 0),
-    z: 4.7 + curva * 0.08,
+    // Baseline único: misma altura para toda la mano; solo la seleccionada sube.
+    y: BASELINE_Y_MANO + (seleccionada ? LEVANTE_SELECCION : 0),
+    // Profundidad ligada al índice: cada carta a la derecha, un paso hacia la cámara.
+    z: Z_BASE_MANO + slot * PASO_Z_MANO,
     rotX: -0.5,
     rotY: 0,
-    rotZ: montada ? -offset * 0.045 : 0,
+    // Abanico sutil en reposo; recta al arrastrar.
+    rotZ: montada ? -offset * GIRO_ABANICO : 0,
   };
 }
 

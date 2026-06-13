@@ -22,6 +22,58 @@ describe("calcularDisposicion", () => {
     expect(clavesDorsoAjeno).toEqual([]);
   });
 
+  describe("montaje de mi mano (baseline y cascada de solape)", () => {
+    const mano = [
+      carta("corazones", 3),
+      carta("picas", 7),
+      carta("treboles", 10),
+      carta("diamantes", 12),
+      carta("corazones", 5),
+    ];
+    const vista = crearVista({ tuJugadorId: "j1", tuMano: mano });
+
+    /** Poses de mi mano en el orden de `tuMano` (el Map conserva inserción). */
+    function posesMano(seleccion: ReadonlySet<string> = new Set()) {
+      const objetivos = calcularDisposicion(vista, seleccion);
+      return mano.map((c) => {
+        const objetivo = objetivos.get(`carta:${c.id}`);
+        if (objetivo === undefined) throw new Error(`falta carta:${c.id}`);
+        return objetivo.pose;
+      });
+    }
+
+    it("baseline único: sin selección, todas a la misma altura (mismo Y)", () => {
+      const ys = posesMano().map((p) => p.y);
+      expect(new Set(ys).size).toBe(1);
+    });
+
+    it("cascada por índice: Z estrictamente creciente de izquierda a derecha", () => {
+      const zs = posesMano().map((p) => p.z);
+      for (let i = 1; i < zs.length; i++) {
+        expect(zs[i]!).toBeGreaterThan(zs[i - 1]!);
+      }
+    });
+
+    it("espaciado constante: X creciente con diferencia uniforme entre vecinas", () => {
+      const xs = posesMano().map((p) => p.x);
+      const paso = xs[1]! - xs[0]!;
+      expect(paso).toBeGreaterThan(0);
+      for (let i = 1; i < xs.length; i++) {
+        expect(xs[i]! - xs[i - 1]!).toBeCloseTo(paso);
+      }
+    });
+
+    it("la carta seleccionada sobresale; las demás siguen en el baseline", () => {
+      const idSel = mano[2]!.id;
+      const poses = posesMano(new Set([idSel]));
+      const baseline = poses[0]!.y;
+      expect(poses[2]!.y).toBeGreaterThan(baseline);
+      poses.forEach((p, i) => {
+        if (i !== 2) expect(p.y).toBeCloseTo(baseline);
+      });
+    });
+  });
+
   it("las combinaciones bajadas siguen siendo clickeables para pegar", () => {
     const vista = crearVista({
       mesa: [
