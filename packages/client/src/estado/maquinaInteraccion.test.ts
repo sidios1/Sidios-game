@@ -335,6 +335,26 @@ describe("maquinaInteraccion: gestos de arrastre", () => {
   });
 });
 
+describe("maquinaInteraccion: preferencia ocultarStaged", () => {
+  it("alterna el flag con cada evento", () => {
+    expect(ESTADO_INICIAL.ocultarStaged).toBe(false);
+    const tras1 = transicion(ESTADO_INICIAL, { tipo: "alternarOcultarStaged" });
+    expect(tras1.estado.ocultarStaged).toBe(true);
+    const tras2 = transicion(tras1.estado, { tipo: "alternarOcultarStaged" });
+    expect(tras2.estado.ocultarStaged).toBe(false);
+  });
+
+  it("el flag sobrevive a la llegada de una vista nueva", () => {
+    const activado = aplicar([{ tipo: "alternarOcultarStaged" }]);
+    expect(activado.ocultarStaged).toBe(true);
+    const trasVista = aplicar(
+      [{ tipo: "vista", vista: vistaMiTurnoDescartar() }],
+      activado,
+    );
+    expect(trasVista.ocultarStaged).toBe(true);
+  });
+});
+
 describe("maquinaInteraccion: fin de mano", () => {
   it("vota listo una sola vez", () => {
     const estado = aplicar([

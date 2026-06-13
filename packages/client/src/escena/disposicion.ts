@@ -48,9 +48,15 @@ export interface PresentacionMano {
   /** Orden elegido por el jugador (ids); las ausentes caen al final. */
   readonly orden: readonly string[];
   readonly arrastre: ArrastreVisual | null;
+  /** Ids que el cliente oculta de la mano (cartas cargadas en el modal de bajar). */
+  readonly ocultas: ReadonlySet<string>;
 }
 
-export const PRESENTACION_VACIA: PresentacionMano = { orden: [], arrastre: null };
+export const PRESENTACION_VACIA: PresentacionMano = {
+  orden: [],
+  arrastre: null,
+  ocultas: new Set(),
+};
 
 const BOCA_ARRIBA = -Math.PI / 2;
 const BOCA_ABAJO = Math.PI / 2;
@@ -224,8 +230,14 @@ export function calcularDisposicion(
 ): MapaObjetivos {
   const objetivos = new Map<string, Objetivo>();
 
-  // Mi mano: caras reales en el orden elegido por el cliente.
-  const mano = ordenarMano(vista.tuMano, presentacion.orden);
+  // Mi mano: caras reales en el orden elegido por el cliente. Las cartas
+  // ocultas (cargadas en el modal de bajar) se omiten del abanico; las
+  // restantes re-abanican sin huecos porque `total` se recalcula.
+  const manoOrdenada = ordenarMano(vista.tuMano, presentacion.orden);
+  const mano =
+    presentacion.ocultas.size === 0
+      ? manoOrdenada
+      : manoOrdenada.filter((c) => !presentacion.ocultas.has(c.id));
   const total = mano.length;
   const arrastre =
     presentacion.arrastre !== null &&

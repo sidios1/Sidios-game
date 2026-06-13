@@ -14,6 +14,12 @@ import {
   reconciliarMano,
   reordenar,
 } from "../../estado/manoPresentacion.js";
+import { cartasComprometidas } from "../../estado/propuesta.js";
+import {
+  almacenPreferenciasPorDefecto,
+  guardarOcultarStaged,
+  leerOcultarStaged,
+} from "../../perfil/preferencias.js";
 import { Sincronizador } from "../../escena/animaciones.js";
 import type { ArrastreVisual } from "../../escena/disposicion.js";
 import { indiceManoDesdeX } from "../../escena/disposicion.js";
@@ -43,9 +49,16 @@ export class JuegoCarioca implements IJuego {
   private orden: string[] = [];
   /** Arrastre en curso (null en reposo). */
   private arrastre: ArrastreVisual | null = null;
+  /** Storage de preferencias locales (null si el entorno no lo permite). */
+  private almacen: Storage | null = null;
 
   iniciar(contexto: ContextoJuego): void {
     this.contexto = contexto;
+    this.almacen = almacenPreferenciasPorDefecto();
+    this.estado = {
+      ...ESTADO_INICIAL,
+      ocultarStaged: this.almacen ? leerOcultarStaged(this.almacen) : false,
+    };
     this.escena = new Escena(contexto.contenedorEscena);
     const interpolador = new Interpolador();
     this.sincronizador = new Sincronizador(this.escena.cartas, interpolador);
@@ -108,6 +121,9 @@ export class JuegoCarioca implements IJuego {
   ): void {
     const resultado = transicion(this.estado, evento);
     this.estado = resultado.estado;
+    if (evento.tipo === "alternarOcultarStaged" && this.almacen !== null) {
+      guardarOcultarStaged(this.almacen, this.estado.ocultarStaged);
+    }
     for (const comando of resultado.comandos) {
       this.contexto?.enviar(comando);
     }
@@ -119,7 +135,7 @@ export class JuegoCarioca implements IJuego {
         this.estado.vista,
         cambios,
         new Set(this.estado.seleccion),
-        { orden: this.orden, arrastre: this.arrastre },
+        { orden: this.orden, arrastre: this.arrastre, ocultas: this.cartasOcultas() },
       );
     }
     if (this.estado.vista !== null) {
@@ -135,8 +151,19 @@ export class JuegoCarioca implements IJuego {
       this.estado.vista,
       [],
       new Set(this.estado.seleccion),
-      { orden: this.orden, arrastre: this.arrastre },
+      { orden: this.orden, arrastre: this.arrastre, ocultas: this.cartasOcultas() },
     );
+  }
+
+  /**
+   * Cartas que se ocultan de la mano: solo con la preferencia activa y el modal
+   * de bajar abierto, las cargadas en grupos de la propuesta (staging visual).
+   */
+  private cartasOcultas(): ReadonlySet<string> {
+    if (!this.estado.ocultarStaged || this.estado.modo !== "construyendoBajada") {
+      return new Set();
+    }
+    return cartasComprometidas(this.estado.propuesta);
   }
 
   /** Tooltip de hover: traduce el objetivo a texto desde la última vista. */

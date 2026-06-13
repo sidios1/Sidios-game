@@ -42,6 +42,8 @@ export interface EstadoInteraccion {
   readonly propuesta: EstadoPropuesta;
   readonly pegadaPendiente: PegadaPendiente | null;
   readonly votoEmitido: boolean;
+  /** Preferencia local: ocultar de la mano las cartas cargadas en el modal. */
+  readonly ocultarStaged: boolean;
 }
 
 export const ESTADO_INICIAL: EstadoInteraccion = {
@@ -51,6 +53,7 @@ export const ESTADO_INICIAL: EstadoInteraccion = {
   propuesta: PROPUESTA_VACIA,
   pegadaPendiente: null,
   votoEmitido: false,
+  ocultarStaged: false,
 };
 
 export type EventoInteraccion =
@@ -61,6 +64,7 @@ export type EventoInteraccion =
   | { readonly tipo: "clickCombinacion"; readonly mesaIdx: number }
   | { readonly tipo: "abrirBajada" }
   | { readonly tipo: "cerrarBajada" }
+  | { readonly tipo: "alternarOcultarStaged" }
   | { readonly tipo: "agregarGrupo"; readonly tipoCombinacion: TipoCombinacion }
   | { readonly tipo: "quitarGrupo"; readonly indice: number }
   | { readonly tipo: "confirmarBajada" }
@@ -118,6 +122,8 @@ export function transicion(
     case "cerrarBajada":
       if (estado.modo !== "construyendoBajada") return sinCambios(estado);
       return sinCambios({ ...estado, modo: "descartar", seleccion: [] });
+    case "alternarOcultarStaged":
+      return sinCambios({ ...estado, ocultarStaged: !estado.ocultarStaged });
     case "agregarGrupo":
       return alAgregarGrupo(estado, evento.tipoCombinacion);
     case "quitarGrupo":
@@ -168,6 +174,7 @@ function alLlegarVista(
     propuesta,
     pegadaPendiente,
     votoEmitido: vista.fase === "manoTerminada" ? estado.votoEmitido : false,
+    ocultarStaged: estado.ocultarStaged,
   });
 }
 

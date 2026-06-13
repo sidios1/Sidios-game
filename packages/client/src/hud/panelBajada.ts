@@ -28,6 +28,19 @@ export function renderPanelBajada(
   titulo.textContent = `Bajarse — ${vista.contrato.nombre}`;
   contenedor.appendChild(titulo);
 
+  // Toggle de presentación: ocultar de la mano las cartas ya cargadas en grupos.
+  const toggle = document.createElement("button");
+  toggle.className = "toggle-ocultar";
+  toggle.classList.toggle("activo", estado.ocultarStaged);
+  toggle.setAttribute("aria-pressed", String(estado.ocultarStaged));
+  toggle.textContent = `Ocultar cartas cargadas: ${
+    estado.ocultarStaged ? "activado" : "desactivado"
+  }`;
+  toggle.addEventListener("click", () =>
+    despachar({ tipo: "alternarOcultarStaged" }),
+  );
+  contenedor.appendChild(toggle);
+
   const porId = new Map(vista.tuMano.map((c) => [c.id, c]));
 
   // Grupos ya armados.

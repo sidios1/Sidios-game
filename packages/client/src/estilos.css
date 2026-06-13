@@ -353,6 +353,21 @@ button.salir-hub {
   margin: 0;
 }
 
+.toggle-ocultar {
+  align-self: flex-start;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.7rem;
+}
+
+.toggle-ocultar.activo {
+  background: #246b43;
+  border-color: #2f8a57;
+}
+
+.toggle-ocultar.activo:hover:not(:disabled) {
+  background: #2c8152;
+}
+
 .grupo-bajada {
   display: flex;
   justify-content: space-between;
