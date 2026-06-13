@@ -45,8 +45,8 @@ export interface DefinicionJuego {
   readonly descripcion: string;
   /** Mínimo de jugadores (lo muestra la sala de espera). */
   readonly minJugadores: number;
-  /** Máximo de jugadores (lo muestra la sala de espera). */
-  readonly maxJugadores: number;
+  /** Máximo de jugadores; omitido = sin tope (lo muestra la sala de espera). */
+  readonly maxJugadores?: number;
   /** Crea una instancia nueva del juego, sin montar nada todavía. */
   crear(): IJuego;
 }

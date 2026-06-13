@@ -66,6 +66,22 @@ export const TRIO: ConfigTrio = {
   longitudMin: 3,
 };
 
+// §1: los materiales escalan con la cantidad de jugadores (sin tope superior).
+//   mazos     = mazosPorBloque × máx(1, piso(jugadores / jugadoresPorBloque))
+//   comodines = mazos × comodinesPorMazo
+// La fórmula se aplica en mazo.ts; aquí viven solo sus parámetros como dato.
+export interface ConfigMateriales {
+  readonly jugadoresPorBloque: number; // 4: cada 4 jugadores agrega un bloque de mazos
+  readonly mazosPorBloque: number; // 2: los mazos se agregan de a pares
+  readonly comodinesPorMazo: number; // 2: comodines por mazo (4 por par de mazos)
+}
+
+export const MATERIALES: ConfigMateriales = {
+  jugadoresPorBloque: 4,
+  mazosPorBloque: 2,
+  comodinesPorMazo: 2,
+};
+
 export function contratoDeMano(numero: number): ContratoMano | undefined {
   return MANOS.find((mano) => mano.numero === numero);
 }

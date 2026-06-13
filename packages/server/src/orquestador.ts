@@ -40,7 +40,11 @@ export interface OpcionesOrquestador {
   readonly mazoParaMano?: (numeroMano: number) => readonly Carta[];
   /** Tokens de reconexión; el default basta para una LAN entre amigos. */
   readonly generarToken?: () => string;
-  /** Cupo del lobby; la regla 2-4 la valida el core al iniciar. */
+  /**
+   * Cupo del lobby. Por defecto SIN tope (jugadores ilimitados): los mazos
+   * escalan en el core, que solo exige el mínimo de 2 al iniciar. Se puede
+   * fijar un cupo explícito para limitar una sala.
+   */
   readonly maxJugadores?: number;
 }
 
@@ -82,7 +86,7 @@ export class Orquestador {
     this.rng = opciones.rng ?? crearGeneradorSemilla(Date.now());
     this.mazoParaMano = opciones.mazoParaMano ?? null;
     this.generarToken = opciones.generarToken ?? tokenAleatorio;
-    this.maxJugadores = opciones.maxJugadores ?? 4;
+    this.maxJugadores = opciones.maxJugadores ?? Number.POSITIVE_INFINITY;
   }
 
   /** Arranca el transporte y devuelve el código de sala. */

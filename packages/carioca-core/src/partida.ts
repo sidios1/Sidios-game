@@ -106,12 +106,14 @@ export interface PropuestaCombinacion {
   readonly cartaIds: readonly string[];
 }
 
-// §1: 2 a 4 jugadores.
+// §1: mínimo 2 jugadores; sin tope superior (los mazos escalan, ver mazo.ts).
 const MIN_JUGADORES = 2;
-const MAX_JUGADORES = 4;
 
-function validarMazoCompleto(mazo: readonly Carta[]): string | null {
-  const referencia = crearMazoCompleto();
+function validarMazoCompleto(
+  mazo: readonly Carta[],
+  numJugadores: number,
+): string | null {
+  const referencia = crearMazoCompleto(numJugadores);
   if (mazo.length !== referencia.length) {
     return `el mazo debe tener ${referencia.length} cartas`;
   }
@@ -131,7 +133,7 @@ function comenzarMano(
   repartidorIdx: number,
   mazoOrdenado: readonly Carta[],
 ): Resultado<EstadoPartida> {
-  const errorMazo = validarMazoCompleto(mazoOrdenado);
+  const errorMazo = validarMazoCompleto(mazoOrdenado, jugadoresPrevios.length);
   if (errorMazo !== null) return fallo("MAZO_INVALIDO", errorMazo);
   const reparto = repartir(
     mazoOrdenado,
@@ -174,7 +176,10 @@ export function crearPartida(
   datos: readonly DatosJugador[],
   rng: GeneradorAleatorio,
 ): Resultado<EstadoPartida> {
-  return crearPartidaConMazo(datos, barajar(crearMazoCompleto(), rng));
+  return crearPartidaConMazo(
+    datos,
+    barajar(crearMazoCompleto(datos.length), rng),
+  );
 }
 
 /** Variante determinista: recibe el mazo ya ordenado (tests, repeticiones). */
@@ -182,10 +187,10 @@ export function crearPartidaConMazo(
   datos: readonly DatosJugador[],
   mazoOrdenado: readonly Carta[],
 ): Resultado<EstadoPartida> {
-  if (datos.length < MIN_JUGADORES || datos.length > MAX_JUGADORES) {
+  if (datos.length < MIN_JUGADORES) {
     return fallo(
       "JUGADORES_INVALIDOS",
-      `la partida es de ${MIN_JUGADORES} a ${MAX_JUGADORES} jugadores`,
+      `se necesitan al menos ${MIN_JUGADORES} jugadores`,
     );
   }
   if (new Set(datos.map((d) => d.id)).size !== datos.length) {
@@ -208,7 +213,10 @@ export function iniciarSiguienteMano(
   estado: EstadoPartida,
   rng: GeneradorAleatorio,
 ): Resultado<EstadoPartida> {
-  return iniciarSiguienteManoConMazo(estado, barajar(crearMazoCompleto(), rng));
+  return iniciarSiguienteManoConMazo(
+    estado,
+    barajar(crearMazoCompleto(estado.jugadores.length), rng),
+  );
 }
 
 export function iniciarSiguienteManoConMazo(

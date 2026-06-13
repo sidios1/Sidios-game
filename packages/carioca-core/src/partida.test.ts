@@ -67,11 +67,22 @@ describe("crearPartida", () => {
     expect(estado.turno).toEqual({ jugadorId: "beto", fase: "robar", numero: 1 });
   });
 
-  it("rechaza menos de 2 o más de 4 jugadores", () => {
+  it("rechaza menos de 2 jugadores", () => {
     const rng = crearGeneradorSemilla(1);
     expect(codigo(crearPartida([{ id: "solo", nombre: "Solo" }], rng))).toBe("JUGADORES_INVALIDOS");
-    const cinco = ["a", "b", "c", "d", "e"].map((id) => ({ id, nombre: id }));
-    expect(codigo(crearPartida(cinco, rng))).toBe("JUGADORES_INVALIDOS");
+  });
+
+  it("acepta más de 4 jugadores y reparte 12 a cada uno", () => {
+    for (const cantidad of [5, 6, 8]) {
+      const datos = Array.from({ length: cantidad }, (_, i) => ({
+        id: `j${i}`,
+        nombre: `J${i}`,
+      }));
+      const estado = ok(crearPartida(datos, crearGeneradorSemilla(7)));
+      expect(estado.jugadores).toHaveLength(cantidad);
+      for (const j of estado.jugadores) expect(j.mano).toHaveLength(12);
+      expect(estado.pozo).toHaveLength(1);
+    }
   });
 
   it("rechaza un mazo que no sea el juego completo de 108 cartas", () => {

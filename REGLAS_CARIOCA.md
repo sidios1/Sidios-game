@@ -6,9 +6,20 @@
 ---
 
 ## 1. Materiales y jugadores
-- **2 mazos ingleses + 4 comodines = 108 cartas.**
-- Cada carta existe por duplicado (dos mazos).
-- **2 a 4 jugadores.**
+- **Los mazos escalan con la cantidad de jugadores** (sin tope superior):
+
+  ```
+  mazos     = 2 × máx(1, piso(jugadores / 4))
+  comodines = 2 por mazo  (= 4 comodines por cada par de mazos)
+  ```
+
+  | jugadores | 2 | 4 | 6 | 8 | 12 | 16 |
+  |-----------|---|---|---|---|----|----|
+  | mazos     | 2 | 2 | 2 | 4 |  6 |  8 |
+
+  Con el mínimo (2–6 jugadores) son **2 mazos ingleses + 4 comodines = 108 cartas**.
+- Cada carta normal existe en tantas copias como mazos haya.
+- **2 jugadores en adelante** (sin tope; los materiales crecen según la fórmula).
 - Se reparten **12 cartas** por jugador.
 - El reparto rota de jugador en jugador en cada mano.
 
@@ -144,6 +155,15 @@ export const VALOR_PUNTOS = {
 export const ESCALA = {
   longitudMin: 4,
   asPuente: true, // K-A-2 válido; la secuencia da la vuelta por el As
+};
+
+// Materiales escalables (§1): mazos y comodines según número de jugadores.
+//   mazos     = mazosPorBloque × máx(1, piso(jugadores / jugadoresPorBloque))
+//   comodines = mazos × comodinesPorMazo
+export const MATERIALES = {
+  jugadoresPorBloque: 4, // cada 4 jugadores agrega un bloque de mazos
+  mazosPorBloque: 2,     // los mazos se agregan de a pares
+  comodinesPorMazo: 2,   // 2 comodines por mazo (4 por par de mazos)
 };
 ```
 

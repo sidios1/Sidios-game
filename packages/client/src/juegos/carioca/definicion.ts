@@ -7,8 +7,9 @@ import { JuegoCarioca } from "./juegoCarioca.js";
 export const definicionCarioca: DefinicionJuego = {
   id: "carioca",
   nombre: "Carioca",
-  descripcion: "Juego de cartas por turnos. Completa las 9 manos. 2 a 4 jugadores.",
+  descripcion:
+    "Juego de cartas por turnos. Completa las 9 manos. 2 jugadores en adelante.",
   minJugadores: 2,
-  maxJugadores: 4,
+  // Sin tope: los mazos escalan con la cantidad de jugadores (carioca-core).
   crear: () => new JuegoCarioca(),
 };

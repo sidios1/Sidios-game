@@ -81,7 +81,10 @@ export class Coordinador {
     this.conexionUI.configurarJuego({
       nombre: definicion.nombre,
       minJugadores: definicion.minJugadores,
-      maxJugadores: definicion.maxJugadores,
+      // Omitido cuando el juego no tiene tope (exactOptionalPropertyTypes).
+      ...(definicion.maxJugadores !== undefined
+        ? { maxJugadores: definicion.maxJugadores }
+        : {}),
     });
     this.conexionUI.mostrarPortada();
   }

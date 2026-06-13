@@ -222,8 +222,24 @@ describe("orquestador: partida completa sin red (transporte en memoria)", () => 
 });
 
 describe("orquestador: lobby y casos borde", () => {
-  it("rechaza al quinto jugador con salaLlena y cierra su conexión", async () => {
+  it("por defecto no hay tope: un quinto jugador se une sin problema", async () => {
     const sala = await abrirSala(["A", "B", "C", "D"]);
+    const quinto = new ClientePrueba(sala.transporte.crearCliente());
+    await quinto.conectar(sala.codigo);
+    quinto.enviar({ tipo: "unirse", nombre: "E" });
+    await asentar();
+    expect(quinto.desconectado).toBe(false);
+    expect(quinto.jugadorId).not.toBeNull();
+    const estadoSala = [...quinto.mensajes]
+      .reverse()
+      .find((m) => m.tipo === "estadoSala");
+    if (estadoSala?.tipo !== "estadoSala") throw new Error("no llegó estadoSala");
+    expect(estadoSala.jugadores).toHaveLength(5);
+    await sala.orquestador.detener();
+  });
+
+  it("con un cupo explícito (maxJugadores) rechaza al excedente con salaLlena", async () => {
+    const sala = await abrirSala(["A", "B", "C", "D"], { maxJugadores: 4 });
     const quinto = new ClientePrueba(sala.transporte.crearCliente());
     await quinto.conectar(sala.codigo);
     quinto.enviar({ tipo: "unirse", nombre: "E" });
@@ -233,7 +249,7 @@ describe("orquestador: lobby y casos borde", () => {
     await sala.orquestador.detener();
   });
 
-  it("solo el anfitrión inicia, y la regla 2-4 la valida el core", async () => {
+  it("solo el anfitrión inicia, y el mínimo de 2 lo valida el core", async () => {
     const sala = await abrirSala(["A", "B"]);
     sala.clientes[1]?.enviar({ tipo: "iniciarPartida" });
     await asentar();

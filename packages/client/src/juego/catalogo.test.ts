@@ -6,7 +6,10 @@ describe("catálogo de juegos", () => {
     const carioca = CATALOGO.find((d) => d.id === "carioca");
     expect(carioca).toBeDefined();
     expect(carioca?.nombre).toBe("Carioca");
-    expect(carioca?.minJugadores).toBeLessThanOrEqual(carioca?.maxJugadores ?? 0);
+    // maxJugadores opcional: undefined = sin tope; si está, debe ser ≥ min.
+    if (carioca?.maxJugadores !== undefined) {
+      expect(carioca.minJugadores).toBeLessThanOrEqual(carioca.maxJugadores);
+    }
     expect(carioca?.minJugadores).toBeGreaterThanOrEqual(2);
   });
 

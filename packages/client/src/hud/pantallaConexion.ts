@@ -24,13 +24,13 @@ export interface AccionesConexion {
 export interface JuegoElegido {
   readonly nombre: string;
   readonly minJugadores: number;
-  readonly maxJugadores: number;
+  /** Máximo de jugadores; omitido = sin tope. */
+  readonly maxJugadores?: number;
 }
 
 const JUEGO_POR_DEFECTO: JuegoElegido = {
   nombre: "Partida local",
   minJugadores: 2,
-  maxJugadores: 4,
 };
 
 export class PantallaConexion {
@@ -218,7 +218,10 @@ export class PantallaConexion {
       if (jugadores.length < this.juego.minJugadores) {
         const nota = document.createElement("p");
         nota.className = "nota";
-        nota.textContent = `Se necesitan ${this.juego.minJugadores} a ${this.juego.maxJugadores} jugadores.`;
+        nota.textContent =
+          this.juego.maxJugadores === undefined
+            ? `Se necesitan al menos ${this.juego.minJugadores} jugadores.`
+            : `Se necesitan ${this.juego.minJugadores} a ${this.juego.maxJugadores} jugadores.`;
         tarjeta.appendChild(nota);
       }
     } else {

@@ -51,7 +51,8 @@ export interface OpcionesMazoDeDos {
  */
 export function mazoParaDos(opciones: OpcionesMazoDeDos): Carta[] {
   const cartasPorJugador = opciones.cartasPorJugador ?? 12;
-  const pool = crearMazoCompleto();
+  // 2 jugadores → 2 mazos (108 cartas), igual que el mazo clásico.
+  const pool = crearMazoCompleto(2);
   const explicitaP0 =
     opciones.manoP0 === "relleno"
       ? null

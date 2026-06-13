@@ -4,24 +4,43 @@
 
 import type { Carta } from "./carta.js";
 import { crearCartaNormal, crearComodin, PINTAS, VALORES } from "./carta.js";
+import { MATERIALES } from "./contratos.js";
 
-/** §1: dos mazos ingleses; los ids distinguen cada copia. */
-export const COPIAS_DE_MAZO: readonly string[] = ["a", "b"];
+/**
+ * §1: cantidad de mazos según el número de jugadores (sin tope superior).
+ * mazos = mazosPorBloque × máx(1, piso(jugadores / jugadoresPorBloque)).
+ * Ej.: 2/4/6 → 2 mazos, 8 → 4, 12 → 6, 16 → 8.
+ */
+export function mazosParaJugadores(numJugadores: number): number {
+  return (
+    MATERIALES.mazosPorBloque *
+    Math.max(1, Math.floor(numJugadores / MATERIALES.jugadoresPorBloque))
+  );
+}
 
-/** §1: 4 comodines. */
-export const CANTIDAD_COMODINES = 4;
+/** §1: comodines según el número de jugadores (2 por mazo). */
+export function comodinesParaJugadores(numJugadores: number): number {
+  return mazosParaJugadores(numJugadores) * MATERIALES.comodinesPorMazo;
+}
 
-/** 2 mazos ingleses + 4 comodines = 108 cartas (§1). */
-export function crearMazoCompleto(): Carta[] {
+/**
+ * Mazo completo para `numJugadores`: tantas copias de cada carta normal como
+ * mazos correspondan, más sus comodines (§1). El id distingue cada copia por
+ * índice, así no hay tope de mazos. Con 2–6 jugadores son las 108 cartas
+ * clásicas (2 mazos + 4 comodines).
+ */
+export function crearMazoCompleto(numJugadores: number): Carta[] {
+  const numMazos = mazosParaJugadores(numJugadores);
   const cartas: Carta[] = [];
-  for (const copia of COPIAS_DE_MAZO) {
+  for (let copia = 0; copia < numMazos; copia++) {
     for (const pinta of PINTAS) {
       for (const valor of VALORES) {
-        cartas.push(crearCartaNormal(pinta, valor, copia));
+        cartas.push(crearCartaNormal(pinta, valor, String(copia)));
       }
     }
   }
-  for (let i = 1; i <= CANTIDAD_COMODINES; i++) {
+  const comodines = comodinesParaJugadores(numJugadores);
+  for (let i = 1; i <= comodines; i++) {
     cartas.push(crearComodin(i));
   }
   return cartas;

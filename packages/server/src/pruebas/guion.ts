@@ -239,7 +239,8 @@ export function mazoApilado(
     readonly robos: readonly EspecCarta[];
   },
 ): Carta[] {
-  const pool = crearMazoCompleto();
+  // 2–4 jugadores → 2 mazos (108 cartas); el pool calza con el del core.
+  const pool = crearMazoCompleto(numJugadores);
   const sacar = (espec: EspecCarta): Carta => {
     const idx = pool.findIndex((carta) => coincide(carta, espec));
     if (idx === -1) {
