@@ -29,7 +29,9 @@ Guía del proyecto para Claude Code. Léela completa antes de tocar código.
 └── packages/
     ├── carioca-core/     (lógica + tests; src/**/*.test.ts)
     ├── server/           (orquestador + transportes; src/**/*.test.ts)
+    │                     (src/embebido.ts + scripts/construir-sidecar.mjs: sidecar Fase 5)
     └── client/           (Three.js + Vite; src/red, src/estado, src/escena, src/hud)
+        └── src-tauri/    (app de escritorio Tauri, Fase 5; binaries/ = sidecar del servidor)
 ```
 
 ## Comandos
@@ -39,19 +41,50 @@ npm run build      # tsc -b: compila los 3 paquetes
 npm test           # vitest en carioca-core, server y client
 ```
 
-### Desarrollo del cliente (Fase 3: el servidor corre aparte)
+### Desarrollo web del cliente (servidor aparte)
 ```bash
 npm run build       # primero: el cliente resuelve @juegos/server contra dist/
 npm run dev:server  # sala LAN en el puerto 35711 (env PUERTO lo cambia);
                     # imprime el código ip:puerto que usan los que se unen
 npm run dev:client  # Vite en http://localhost:5173
 ```
-- El host elige "Local → Crear partida" (se conecta a `127.0.0.1:35711`); los
-  demás "Local → Unirse" con el código que imprimió la consola del servidor.
+- En el NAVEGADOR (sin Tauri) el host elige "Local → Crear partida" (se conecta a
+  `127.0.0.1:35711`, asumiendo `dev:server` corriendo); los demás "Local → Unirse"
+  con el código que imprimió la consola del servidor.
 - Para probar 2 jugadores en una máquina: segunda ventana en incógnito
   (el token de reconexión vive en `sessionStorage`; duplicar pestaña lo copia).
-- En la Fase 5 "Crear partida" arrancará el servidor embebido (Tauri) y este
-  flujo manual desaparece.
+
+### App de escritorio con servidor LAN embebido (Fase 5)
+En la app empaquetada con Tauri, "Crear partida" arranca el servidor por dentro:
+el flujo manual de `dev:server` ya NO hace falta.
+```bash
+npm run empaquetar:sidecar -w @juegos/server  # construye el sidecar (Node SEA)
+npm run tauri:dev   -w @juegos/client         # app en desarrollo (requiere Rust)
+npm run tauri:build -w @juegos/client         # ejecutable/instalador distribuible
+```
+- Requisitos para compilar Tauri: **toolchain de Rust** (`rustup`) y WebView2 (ya
+  viene en Windows 11). El sidecar se construye solo con Node (sin Rust).
+- Flujo del host: "Local → Crear partida" arranca el sidecar, que escucha en la LAN
+  e imprime su `ip:puerto`; la app se une a ese código y lo muestra en la sala para
+  compartir. Los amigos de la misma WiFi entran con "Local → Unirse".
+- Primer arranque en Windows: el Firewall pedirá permitir la app en redes privadas.
+
+#### Cómo y dónde se levanta el servidor embebido
+- **Sidecar:** `packages/server/src/embebido.ts` (mismo orquestador + adaptador LAN
+  de la Fase 2; imprime una línea marcador `CODIGO=ip:puerto`). Se empaqueta como
+  ejecutable autocontenido con **Node SEA** vía `packages/server/scripts/construir-sidecar.mjs`
+  (esbuild → blob SEA → postject) y queda en `packages/client/src-tauri/binaries/`
+  con el target triple que exige `bundle.externalBin` de Tauri.
+- **Lanzador (cliente):** `packages/client/src/red/servidorEmbebido.ts` es el ÚNICO
+  módulo del cliente que conoce `@tauri-apps/*` (vía `import()` dinámico, para no
+  arrastrar Tauri al bundle web ni a los tests). `hayServidorEmbebido()` detecta la
+  app; `iniciarServidorEmbebido()` lanza el sidecar (`Command.sidecar`) y resuelve
+  con su código; `detenerServidorEmbebido()` lo apaga al volver al hub.
+- **Puerto:** constante `PUERTO_EMBEBIDO` en `servidorEmbebido.ts` (default `35711`),
+  que se pasa al sidecar como env `PUERTO`. Cámbialo en ese único lugar.
+- **Permiso/seguridad Tauri:** `src-tauri/capabilities/default.json` autoriza ejecutar
+  el sidecar `binaries/servidor`; el CSP de `tauri.conf.json` permite `ws://` en la LAN.
+  Solo LAN: el servidor escucha en `0.0.0.0` sin exponerse a internet.
 
 ## Convenciones
 - **TypeScript strict** en todos los paquetes (además: `noUncheckedIndexedAccess`,
@@ -88,7 +121,8 @@ npm run dev:client  # Vite en http://localhost:5173
   memoria; las interfaces transportan strings JSON, sin tipos de Node.
 - `transporteLan.ts` (librería `ws`, escucha en 0.0.0.0, código de sala =
   `ip:puerto`) es la primera implementación; `transporteMemoria.ts` sirve
-  para tests y para el host embebido (Fase 5).
+  para tests. En la Fase 5 el host embebido usa el adaptador LAN dentro de un
+  sidecar (ver "App de escritorio con servidor LAN embebido"), no la memoria.
 - El modo online (Fase 7) será OTRO adaptador de las mismas interfaces:
   no se toca orquestador, core, hub ni juegos.
 - En el CLIENTE, `src/red/transporteLanNavegador.ts` implementa

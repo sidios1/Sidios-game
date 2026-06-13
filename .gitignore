@@ -3,3 +3,9 @@ dist/
 *.tsbuildinfo
 .DS_Store
 dist-web/
+
+# Tauri (Fase 5)
+packages/server/build-sidecar/
+packages/client/src-tauri/binaries/
+packages/client/src-tauri/target/
+packages/client/src-tauri/gen/

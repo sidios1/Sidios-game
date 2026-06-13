@@ -11,6 +11,11 @@ export const PUERTO_LOCAL_POR_DEFECTO = 35711;
 export interface AccionesConexion {
   readonly alConectar: (modo: ModoConexion, codigo: string, nombre: string) => void;
   readonly alIniciarPartida: () => void;
+  /**
+   * Crear partida con el servidor EMBEBIDO (Fase 5, app de escritorio): el host
+   * arranca su propio servidor LAN. Solo se invoca si servidorEmbebidoDisponible.
+   */
+  readonly alCrearPartida?: (nombre: string) => void;
   /** Volver al menú del hub desde la portada de modo (opcional). */
   readonly alVolver?: () => void;
 }
@@ -36,6 +41,8 @@ export class PantallaConexion {
   constructor(
     raiz: HTMLElement,
     private readonly acciones: AccionesConexion,
+    /** En la app de escritorio (Tauri) el host arranca su propio servidor. */
+    private readonly servidorEmbebidoDisponible = false,
   ) {
     this.velo = document.createElement("div");
     this.velo.className = "velo";
@@ -104,19 +111,30 @@ export class PantallaConexion {
     nombre.maxLength = 20;
     tarjeta.appendChild(campo("Nombre", nombre));
 
-    // Crear: en desarrollo el servidor corre aparte (npm run dev); la app
-    // del host se conecta a su propia máquina. En la Fase 5 lo arrancará sola.
+    // Crear partida. En la app de escritorio (Tauri) el host arranca su propio
+    // servidor LAN embebido y luego se une a él. En desarrollo web el servidor
+    // corre aparte (npm run dev:server) y el host se conecta a su propia máquina.
     const crear = document.createElement("button");
     crear.className = "principal";
     crear.textContent = "Crear partida";
     const notaCrear = document.createElement("p");
     notaCrear.className = "nota";
-    notaCrear.textContent =
-      `Requiere el servidor local corriendo (npm run dev:server). ` +
-      `Comparte con tus amigos el código ip:puerto que imprime su consola.`;
-    crear.addEventListener("click", () => {
-      this.conectarSiHayNombre(nombre, `127.0.0.1:${PUERTO_LOCAL_POR_DEFECTO}`);
-    });
+    if (this.servidorEmbebidoDisponible) {
+      notaCrear.textContent =
+        `Se iniciará el servidor en tu equipo y aparecerá un código ip:puerto; ` +
+        `compártelo con tus amigos de la misma WiFi para que se unan.`;
+      crear.addEventListener("click", () => {
+        const valor = this.exigirNombre(nombre);
+        if (valor !== null) this.acciones.alCrearPartida?.(valor);
+      });
+    } else {
+      notaCrear.textContent =
+        `Requiere el servidor local corriendo (npm run dev:server). ` +
+        `Comparte con tus amigos el código ip:puerto que imprime su consola.`;
+      crear.addEventListener("click", () => {
+        this.conectarSiHayNombre(nombre, `127.0.0.1:${PUERTO_LOCAL_POR_DEFECTO}`);
+      });
+    }
 
     const codigo = document.createElement("input");
     codigo.placeholder = "ip:puerto del anfitrión";
@@ -138,13 +156,20 @@ export class PantallaConexion {
     this.velo.appendChild(tarjeta);
   }
 
-  private conectarSiHayNombre(nombre: HTMLInputElement, codigo: string): void {
+  /** Devuelve el nombre validado o null (y muestra el error) si falta. */
+  private exigirNombre(nombre: HTMLInputElement): string | null {
     const valor = nombre.value.trim();
     if (valor.length === 0) {
       this.mostrarError("escribe tu nombre primero");
       nombre.focus();
-      return;
+      return null;
     }
+    return valor;
+  }
+
+  private conectarSiHayNombre(nombre: HTMLInputElement, codigo: string): void {
+    const valor = this.exigirNombre(nombre);
+    if (valor === null) return;
     if (codigo.length === 0 || !codigo.includes(":")) {
       this.mostrarError("el código de sala tiene la forma ip:puerto");
       return;

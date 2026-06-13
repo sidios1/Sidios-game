@@ -10,14 +10,20 @@
     "empaquetar": "tsc -b && vite build",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "typecheck:tests": "tsc -p tsconfig.pruebas.json"
+    "typecheck:tests": "tsc -p tsconfig.pruebas.json",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
     "@juegos/carioca-core": "*",
     "@juegos/server": "*",
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-shell": "^2.0.0",
     "three": "^0.180.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
     "@types/three": "^0.180.0",
     "jsdom": "^29.1.1",
     "typescript": "^5.7.0",

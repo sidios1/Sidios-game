@@ -1,0 +1,19 @@
+[package]
+name = "juegos-rapidos"
+version = "0.1.0"
+description = "Juegos rápidos — plataforma de juegos de cartas LAN"
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+# El nombre del crate de librería que main.rs invoca (run()).
+name = "juegos_rapidos_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+# Plugin shell: necesario para arrancar el sidecar del servidor LAN (Command.sidecar).
+tauri-plugin-shell = "2"

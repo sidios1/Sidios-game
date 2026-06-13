@@ -9,6 +9,11 @@ import { Conexion } from "../red/conexion.js";
 import type { ModoConexion } from "../red/fabricaTransporte.js";
 import { crearTransporte as crearTransportePorDefecto } from "../red/fabricaTransporte.js";
 import { borrarSesion, guardarSesion, leerSesion } from "../red/sesion.js";
+import {
+  detenerServidorEmbebido,
+  hayServidorEmbebido,
+  iniciarServidorEmbebido,
+} from "../red/servidorEmbebido.js";
 import { PantallaConexion } from "../hud/pantallaConexion.js";
 import type { ContextoJuego, DefinicionJuego, IJuego } from "../juego/ijuego.js";
 import { PantallaHub } from "./pantallaHub.js";
@@ -45,15 +50,22 @@ export class Coordinador {
     this.hub = new PantallaHub(this.contenedorHud, opciones.catalogo, {
       alElegir: (definicion) => this.elegirJuego(definicion),
     });
-    this.conexionUI = new PantallaConexion(this.contenedorHud, {
-      alConectar: (modo, codigo, nombre) => {
-        void this.conectar(modo, codigo, nombre);
+    this.conexionUI = new PantallaConexion(
+      this.contenedorHud,
+      {
+        alConectar: (modo, codigo, nombre) => {
+          void this.conectar(modo, codigo, nombre);
+        },
+        alCrearPartida: (nombre) => {
+          void this.crearPartidaEmbebida(nombre);
+        },
+        alIniciarPartida: () => {
+          this.conexion?.enviarMensaje({ tipo: "iniciarPartida" });
+        },
+        alVolver: () => this.volverAlHub(),
       },
-      alIniciarPartida: () => {
-        this.conexion?.enviarMensaje({ tipo: "iniciarPartida" });
-      },
-      alVolver: () => this.volverAlHub(),
-    });
+      hayServidorEmbebido(),
+    );
     this.conexionUI.ocultar();
   }
 
@@ -80,10 +92,30 @@ export class Coordinador {
     this.juego = null;
     void this.conexion?.desconectar();
     this.conexion = null;
+    // Si éramos el host con servidor embebido, lo apagamos al cerrar la sala.
+    void detenerServidorEmbebido();
     this.juegoSeleccionado = null;
     this.reintentando = false;
     this.conexionUI.ocultar();
     this.hub.mostrar();
+  }
+
+  /**
+   * "Crear partida" en la app de escritorio: arranca el servidor LAN embebido y
+   * se une a él con el código `ip:puerto` que anuncia (mismo código que comparten
+   * los amigos para unirse desde la misma WiFi).
+   */
+  private async crearPartidaEmbebida(nombre: string): Promise<void> {
+    let codigo: string;
+    try {
+      codigo = await iniciarServidorEmbebido();
+    } catch (error) {
+      this.conexionUI.mostrarError(
+        error instanceof Error ? error.message : "no se pudo iniciar el servidor",
+      );
+      return;
+    }
+    await this.conectar("local", codigo, nombre);
   }
 
   async conectar(
