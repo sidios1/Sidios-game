@@ -4,9 +4,15 @@
 // aquí sin tocar esta pantalla.
 
 import type { DefinicionJuego } from "../juego/ijuego.js";
+import type { Perfil } from "../perfil/perfil.js";
+import { crearInsigniaPerfil } from "../perfil/insigniaPerfil.js";
 
 export interface AccionesHub {
   readonly alElegir: (definicion: DefinicionJuego) => void;
+  /** Perfil activo a mostrar en la cabecera (opcional). */
+  readonly perfil?: () => Perfil | null;
+  /** Abrir el editor de perfil desde la cabecera (opcional). */
+  readonly alEditarPerfil?: () => void;
 }
 
 export class PantallaHub {
@@ -28,6 +34,14 @@ export class PantallaHub {
 
     const tarjeta = document.createElement("div");
     tarjeta.className = "tarjeta";
+
+    const perfil = this.acciones.perfil?.() ?? null;
+    if (perfil !== null) {
+      const cabecera = crearInsigniaPerfil(perfil, "Editar", () =>
+        this.acciones.alEditarPerfil?.(),
+      );
+      tarjeta.appendChild(cabecera);
+    }
 
     const titulo = document.createElement("h1");
     titulo.textContent = "Juegos rápidos";

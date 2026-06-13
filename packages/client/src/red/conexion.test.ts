@@ -81,26 +81,39 @@ function crearAlmacenFalso(): Storage {
 }
 
 describe("Conexion", () => {
-  it("unirse sin token no incluye la propiedad token en el mensaje", async () => {
+  it("unirse sin avatar ni token no incluye esas propiedades", async () => {
     const transporte = new TransporteFalso();
     const conexion = new Conexion(transporte);
     await conexion.conectar("127.0.0.1:35711", crearOyentes().oyentes);
     conexion.unirse("Ana");
-    // toEqual es estricto con claves extra: prueba que token NO viaja.
+    // toEqual es estricto con claves extra: prueba que avatar y token NO viajan.
     expect(JSON.parse(transporte.enviados[0] ?? "")).toEqual({
       tipo: "unirse",
       nombre: "Ana",
     });
   });
 
-  it("unirse con token lo incluye (reconexión)", async () => {
+  it("unirse incluye el avatar cuando se pasa", async () => {
     const transporte = new TransporteFalso();
     const conexion = new Conexion(transporte);
     await conexion.conectar("127.0.0.1:35711", crearOyentes().oyentes);
-    conexion.unirse("Ana", "token-abc");
+    conexion.unirse("Ana", "identicon-2");
     expect(JSON.parse(transporte.enviados[0] ?? "")).toEqual({
       tipo: "unirse",
       nombre: "Ana",
+      avatar: "identicon-2",
+    });
+  });
+
+  it("unirse con avatar y token los incluye (reconexión)", async () => {
+    const transporte = new TransporteFalso();
+    const conexion = new Conexion(transporte);
+    await conexion.conectar("127.0.0.1:35711", crearOyentes().oyentes);
+    conexion.unirse("Ana", "identicon-2", "token-abc");
+    expect(JSON.parse(transporte.enviados[0] ?? "")).toEqual({
+      tipo: "unirse",
+      nombre: "Ana",
+      avatar: "identicon-2",
       token: "token-abc",
     });
   });

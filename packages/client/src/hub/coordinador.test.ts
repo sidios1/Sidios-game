@@ -8,6 +8,10 @@ import type {
   SenalJuego,
 } from "../juego/ijuego.js";
 import { Coordinador } from "./coordinador.js";
+import { POOL_AVATARES } from "../perfil/avatares.js";
+import { guardarPerfil } from "../perfil/perfil.js";
+
+const AVATAR = POOL_AVATARES[0] ?? "identicon-1";
 
 /** Transporte falso: guarda lo enviado e inyecta mensajes crudos del servidor. */
 class TransporteFalso implements TransporteCliente {
@@ -107,12 +111,15 @@ function crearCoordinador(espia: ReturnType<typeof crearEspia>, transporte: Tran
   const contenedorEscena = document.createElement("div");
   const contenedorHud = document.createElement("div");
   document.body.append(contenedorEscena, contenedorHud);
+  const almacenPerfil = almacenFalso();
+  guardarPerfil(almacenPerfil, { nickname: "Ana", avatarId: AVATAR });
   const coordinador = new Coordinador({
     contenedorEscena,
     contenedorHud,
     catalogo: [espia.definicion],
     crearTransporte: () => transporte,
     almacen: almacenFalso(),
+    almacenPerfil,
   });
   return { coordinador, contenedorHud };
 }
@@ -131,11 +138,12 @@ describe("Coordinador", () => {
     const { coordinador } = crearCoordinador(espia, transporte);
     coordinador.iniciar();
     coordinador.elegirJuego(espia.definicion);
-    await coordinador.conectar("local", "127.0.0.1:35711", "Ana");
+    await coordinador.conectar("local", "127.0.0.1:35711");
     expect(transporte.oyentes).not.toBeNull();
     expect(transporte.enviados.map((d) => JSON.parse(d))).toContainEqual({
       tipo: "unirse",
       nombre: "Ana",
+      avatar: AVATAR,
     });
     expect(espia.iniciados).toBe(0);
   });
@@ -146,7 +154,7 @@ describe("Coordinador", () => {
     const { coordinador } = crearCoordinador(espia, transporte);
     coordinador.iniciar();
     coordinador.elegirJuego(espia.definicion);
-    await coordinador.conectar("local", "127.0.0.1:35711", "Ana");
+    await coordinador.conectar("local", "127.0.0.1:35711");
 
     transporte.recibir(vista(1));
     expect(espia.iniciados).toBe(1);
@@ -163,7 +171,7 @@ describe("Coordinador", () => {
     const { coordinador } = crearCoordinador(espia, transporte);
     coordinador.iniciar();
     coordinador.elegirJuego(espia.definicion);
-    await coordinador.conectar("local", "127.0.0.1:35711", "Ana");
+    await coordinador.conectar("local", "127.0.0.1:35711");
     transporte.recibir(vista(1));
     transporte.recibir(
       JSON.stringify({ tipo: "error", codigo: "accionInvalida", mensaje: "no puedes" }),
@@ -177,7 +185,7 @@ describe("Coordinador", () => {
     const { coordinador, contenedorHud } = crearCoordinador(espia, transporte);
     coordinador.iniciar();
     coordinador.elegirJuego(espia.definicion);
-    await coordinador.conectar("local", "127.0.0.1:35711", "Ana");
+    await coordinador.conectar("local", "127.0.0.1:35711");
     transporte.recibir(vista(1));
 
     // El juego pide volver al hub a través de su contexto.

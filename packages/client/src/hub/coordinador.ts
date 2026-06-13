@@ -1,8 +1,12 @@
 // Coordinador del hub: orquesta el ciclo de vida completo
-//   menú de juegos → conexión/sala LAN → juego → volver al menú.
+//   perfil → menú de juegos → conexión/sala LAN → juego → volver al menú.
 // Conoce solo el catálogo, la interfaz IJuego, la Conexion y las pantallas;
 // NUNCA importa un juego concreto. Por eso agregar un juego (vía catálogo) no
 // obliga a tocar este archivo ni la capa de red.
+//
+// El coordinador es el dueño del Perfil (nickname + avatar): lo carga al
+// arrancar, abre el editor cuando falta o se pide, y lo inyecta en cada unión a
+// una sala. El nickname/avatar del perfil son los que viajan a la partida.
 
 import type { TransporteCliente } from "@juegos/server/transporte";
 import { Conexion } from "../red/conexion.js";
@@ -15,6 +19,9 @@ import {
   iniciarServidorEmbebido,
 } from "../red/servidorEmbebido.js";
 import { PantallaConexion } from "../hud/pantallaConexion.js";
+import type { Perfil } from "../perfil/perfil.js";
+import { almacenPerfilPorDefecto, guardarPerfil, leerPerfil } from "../perfil/perfil.js";
+import { PantallaPerfil } from "../perfil/pantallaPerfil.js";
 import type { ContextoJuego, DefinicionJuego, IJuego } from "../juego/ijuego.js";
 import { PantallaHub } from "./pantallaHub.js";
 
@@ -24,8 +31,10 @@ export interface OpcionesCoordinador {
   readonly catalogo: readonly DefinicionJuego[];
   /** Fábrica de transporte; inyectable para tests. Por defecto, LAN/online. */
   readonly crearTransporte?: (modo: ModoConexion) => TransporteCliente;
-  /** Almacén de sesión; inyectable para tests. Por defecto, sessionStorage. */
+  /** Almacén de sesión (token por sala); inyectable. Por defecto, sessionStorage. */
   readonly almacen?: Storage;
+  /** Almacén del perfil; inyectable. Por defecto, localStorage (persiste al reabrir). */
+  readonly almacenPerfil?: Storage;
 }
 
 export class Coordinador {
@@ -33,9 +42,13 @@ export class Coordinador {
   private readonly contenedorHud: HTMLElement;
   private readonly crearTransporte: (modo: ModoConexion) => TransporteCliente;
   private readonly almacen: Storage;
+  private readonly almacenPerfil: Storage;
   private readonly hub: PantallaHub;
   private readonly conexionUI: PantallaConexion;
+  private readonly perfilUI: PantallaPerfil;
 
+  private perfil: Perfil | null;
+  private volverDePerfil: () => void = () => this.hub.mostrar();
   private juegoSeleccionado: DefinicionJuego | null = null;
   private conexion: Conexion | null = null;
   private juego: IJuego | null = null;
@@ -46,32 +59,66 @@ export class Coordinador {
     this.contenedorHud = opciones.contenedorHud;
     this.crearTransporte = opciones.crearTransporte ?? crearTransportePorDefecto;
     this.almacen = opciones.almacen ?? sessionStorage;
+    this.almacenPerfil =
+      opciones.almacenPerfil ?? almacenPerfilPorDefecto() ?? this.almacen;
+    this.perfil = leerPerfil(this.almacenPerfil);
 
     this.hub = new PantallaHub(this.contenedorHud, opciones.catalogo, {
       alElegir: (definicion) => this.elegirJuego(definicion),
+      perfil: () => this.perfil,
+      alEditarPerfil: () => this.abrirPerfil(() => this.hub.mostrar()),
     });
     this.conexionUI = new PantallaConexion(
       this.contenedorHud,
       {
-        alConectar: (modo, codigo, nombre) => {
-          void this.conectar(modo, codigo, nombre);
+        alConectar: (modo, codigo) => {
+          void this.conectar(modo, codigo);
         },
-        alCrearPartida: (nombre) => {
-          void this.crearPartidaEmbebida(nombre);
+        alCrearPartida: () => {
+          void this.crearPartidaEmbebida();
         },
         alIniciarPartida: () => {
           this.conexion?.enviarMensaje({ tipo: "iniciarPartida" });
         },
         alVolver: () => this.volverAlHub(),
+        perfil: () => this.perfil,
+        alEditarPerfil: () => this.abrirPerfil(() => this.conexionUI.mostrarPortada()),
       },
       hayServidorEmbebido(),
     );
+    this.perfilUI = new PantallaPerfil(this.contenedorHud, {
+      alGuardar: (perfil) => this.guardarPerfilYVolver(perfil),
+      alCancelar: () => {
+        this.perfilUI.ocultar();
+        this.volverDePerfil();
+      },
+    });
     this.conexionUI.ocultar();
+    this.perfilUI.ocultar();
   }
 
-  /** Arranca en el menú de juegos. */
+  /** Arranca pidiendo perfil si falta; si no, en el menú de juegos. */
   iniciar(): void {
-    this.hub.mostrar();
+    if (this.perfil === null) {
+      this.abrirPerfil(() => this.hub.mostrar());
+    } else {
+      this.hub.mostrar();
+    }
+  }
+
+  /** Abre el editor de perfil; `volver` decide a dónde regresar al cerrarlo. */
+  private abrirPerfil(volver: () => void): void {
+    this.volverDePerfil = volver;
+    this.hub.ocultar();
+    this.conexionUI.ocultar();
+    this.perfilUI.mostrar(this.perfil);
+  }
+
+  private guardarPerfilYVolver(perfil: Perfil): void {
+    guardarPerfil(this.almacenPerfil, perfil);
+    this.perfil = perfil;
+    this.perfilUI.ocultar();
+    this.volverDePerfil();
   }
 
   /** El usuario eligió un juego: pasa a la conexión/sala LAN. */
@@ -108,7 +155,7 @@ export class Coordinador {
    * se une a él con el código `ip:puerto` que anuncia (mismo código que comparten
    * los amigos para unirse desde la misma WiFi).
    */
-  private async crearPartidaEmbebida(nombre: string): Promise<void> {
+  private async crearPartidaEmbebida(): Promise<void> {
     let codigo: string;
     try {
       codigo = await iniciarServidorEmbebido();
@@ -118,15 +165,19 @@ export class Coordinador {
       );
       return;
     }
-    await this.conectar("local", codigo, nombre);
+    await this.conectar("local", codigo);
   }
 
   async conectar(
     modo: ModoConexion,
     codigo: string,
-    nombre: string,
     usarToken = true,
   ): Promise<void> {
+    const perfil = this.perfil;
+    if (perfil === null) {
+      this.abrirPerfil(() => this.conexionUI.mostrarPortada());
+      return;
+    }
     let transporte: TransporteCliente;
     try {
       transporte = this.crearTransporte(modo);
@@ -141,7 +192,11 @@ export class Coordinador {
       await nueva.conectar(codigo, {
         alBienvenida: (jugadorId, token) => {
           this.conexionUI.registrarJugadorId(jugadorId);
-          guardarSesion(this.almacen, codigo, { token, nombre });
+          guardarSesion(this.almacen, codigo, {
+            token,
+            nombre: perfil.nickname,
+            avatar: perfil.avatarId,
+          });
         },
         alEstadoSala: (jugadores) => {
           this.conexionUI.mostrarSala(jugadores, codigo);
@@ -162,7 +217,7 @@ export class Coordinador {
             // se reintenta una vez como jugador nuevo.
             borrarSesion(this.almacen, codigo);
             this.reintentando = true;
-            void this.conectar(modo, codigo, nombre, false);
+            void this.conectar(modo, codigo, false);
             return;
           }
           if (this.conexionUI.visible) {
@@ -193,9 +248,9 @@ export class Coordinador {
     this.conexion = nueva;
     const sesion = usarToken ? leerSesion(this.almacen, codigo) : null;
     if (sesion === null) {
-      nueva.unirse(nombre);
+      nueva.unirse(perfil.nickname, perfil.avatarId);
     } else {
-      nueva.unirse(sesion.nombre, sesion.token);
+      nueva.unirse(sesion.nombre, sesion.avatar ?? perfil.avatarId, sesion.token);
     }
   }
 

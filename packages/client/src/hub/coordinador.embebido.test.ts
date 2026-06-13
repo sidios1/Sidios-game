@@ -15,10 +15,14 @@ vi.mock("../red/servidorEmbebido.js", () => ({
 import type { OyentesCliente, TransporteCliente } from "@juegos/server/transporte";
 import type { ContextoJuego, DefinicionJuego, IJuego, SenalJuego } from "../juego/ijuego.js";
 import { Coordinador } from "./coordinador.js";
+import { POOL_AVATARES } from "../perfil/avatares.js";
+import { guardarPerfil } from "../perfil/perfil.js";
 import {
   detenerServidorEmbebido,
   iniciarServidorEmbebido,
 } from "../red/servidorEmbebido.js";
+
+const AVATAR = POOL_AVATARES[0] ?? "identicon-1";
 
 /** Transporte falso que recuerda con qué código se le pidió conectar. */
 class TransporteFalso implements TransporteCliente {
@@ -82,20 +86,21 @@ describe("Coordinador con servidor embebido (escritorio)", () => {
     const contenedorEscena = document.createElement("div");
     const contenedorHud = document.createElement("div");
     document.body.append(contenedorEscena, contenedorHud);
+    const almacenPerfil = almacenFalso();
+    guardarPerfil(almacenPerfil, { nickname: "Ana", avatarId: AVATAR });
     const coordinador = new Coordinador({
       contenedorEscena,
       contenedorHud,
       catalogo: [definicion],
       crearTransporte: () => transporte,
       almacen: almacenFalso(),
+      almacenPerfil,
     });
     coordinador.iniciar();
     coordinador.elegirJuego(definicion);
 
     boton(contenedorHud, "Local").click();
-    const nombre = contenedorHud.querySelector("input");
-    if (nombre === null) throw new Error("falta el campo de nombre");
-    nombre.value = "Ana";
+    // El nickname/avatar vienen del perfil; "Crear partida" ya no pide nombre.
     boton(contenedorHud, "Crear partida").click();
 
     await vi.waitFor(() => expect(transporte.codigo).toBe("192.168.1.50:35711"));
@@ -103,6 +108,7 @@ describe("Coordinador con servidor embebido (escritorio)", () => {
     expect(transporte.enviados.map((d) => JSON.parse(d))).toContainEqual({
       tipo: "unirse",
       nombre: "Ana",
+      avatar: AVATAR,
     });
 
     // Al volver al hub, el host apaga su servidor embebido.

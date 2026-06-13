@@ -5,6 +5,8 @@
 export interface DatosSesion {
   readonly token: string;
   readonly nombre: string;
+  /** Avatar con el que se entró; se reusa al reconectar. */
+  readonly avatar?: string;
 }
 
 const PREFIJO = "carioca-sesion:";
@@ -33,8 +35,10 @@ export function leerSesion(almacen: Storage, codigo: string): DatosSesion | null
   if (!esObjeto(datos)) return null;
   const token = datos["token"];
   const nombre = datos["nombre"];
+  const avatar = datos["avatar"];
   if (typeof token !== "string" || typeof nombre !== "string") return null;
-  return { token, nombre };
+  if (avatar !== undefined && typeof avatar !== "string") return null;
+  return { token, nombre, ...(avatar !== undefined ? { avatar } : {}) };
 }
 
 export function borrarSesion(almacen: Storage, codigo: string): void {

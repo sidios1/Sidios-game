@@ -37,12 +37,14 @@ export class Conexion {
   }
 
   /** Une al jugador a la sala; con token reconecta a su asiento. */
-  unirse(nombre: string, token?: string): void {
-    this.enviarMensaje(
-      token === undefined
-        ? { tipo: "unirse", nombre }
-        : { tipo: "unirse", nombre, token },
-    );
+  unirse(nombre: string, avatar?: string, token?: string): void {
+    // exactOptionalPropertyTypes: solo viajan las claves presentes.
+    this.enviarMensaje({
+      tipo: "unirse",
+      nombre,
+      ...(avatar !== undefined ? { avatar } : {}),
+      ...(token !== undefined ? { token } : {}),
+    });
   }
 
   enviarMensaje(mensaje: MensajeCliente): void {

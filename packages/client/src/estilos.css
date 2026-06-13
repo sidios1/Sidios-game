@@ -228,7 +228,7 @@ button.salir-hub {
   transform: translateX(-50%);
   display: flex;
   gap: 1.2rem;
-  align-items: baseline;
+  align-items: center;
   padding: 0.5rem 1.2rem;
   border-radius: 10px;
   background: rgba(13, 18, 24, 0.85);
@@ -244,6 +244,40 @@ button.salir-hub {
   font-size: 0.95rem;
 }
 
+/* Banner del jugador en turno: avatar grande + texto, con realce si es el mío. */
+.turno-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.2rem 0.7rem 0.2rem 0.25rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.turno-banner.propio {
+  border-color: #2f8a57;
+  background: rgba(36, 107, 67, 0.28);
+}
+
+.turno-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #2f8a57;
+  box-shadow: 0 0 10px rgba(47, 138, 87, 0.6);
+  animation: latido-turno 1.8s ease-in-out infinite;
+}
+
+@keyframes latido-turno {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(47, 138, 87, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(47, 138, 87, 0.85);
+  }
+}
+
 .hud-jugadores {
   position: absolute;
   top: 0.8rem;
@@ -255,6 +289,9 @@ button.salir-hub {
 }
 
 .hud-jugadores .jugador {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.35rem 0.7rem;
   border-radius: 8px;
   background: rgba(13, 18, 24, 0.85);
@@ -264,6 +301,14 @@ button.salir-hub {
 .hud-jugadores .jugador.en-turno {
   border-color: #2f8a57;
   color: #9fd0ae;
+  box-shadow: 0 0 0 1px rgba(47, 138, 87, 0.5);
+}
+
+.avatar-mini {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .hud-acciones {
@@ -359,4 +404,126 @@ button.salir-hub {
 
 .hud-aviso.visible {
   opacity: 1;
+}
+
+/* ── Perfil: insignia, cabecera y picker de avatares ────────────────────── */
+
+.insignia-perfil {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 12px;
+  background: #1d2530;
+  border: 1px solid #2a3442;
+}
+
+.insignia-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.insignia-nombre {
+  font-weight: 600;
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.insignia-accion {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.campo-etiqueta {
+  text-align: left;
+  font-size: 0.85rem;
+  color: #9aa5b1;
+}
+
+.perfil-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+button.perfil-avatar {
+  padding: 0.3rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button.perfil-avatar canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+}
+
+button.perfil-avatar.seleccionado {
+  border-color: #2f8a57;
+  box-shadow: 0 0 0 2px rgba(47, 138, 87, 0.7);
+}
+
+/* Filas del lobby con avatar. */
+.lista-jugadores li.jugador-sala {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-align: left;
+}
+
+/* ── Insignias ancladas sobre la mesa 3D ────────────────────────────────── */
+
+.insignias-mesa {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.insignia-mesa {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 10px;
+  background: rgba(13, 18, 24, 0.78);
+  border: 1px solid #2a3442;
+}
+
+.insignia-mesa-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.insignia-mesa-nombre {
+  font-size: 0.8rem;
+  max-width: 7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.insignia-mesa.en-turno {
+  border-color: #2f8a57;
+  box-shadow: 0 0 12px rgba(47, 138, 87, 0.75);
+}
+
+.insignia-mesa.en-turno .insignia-mesa-avatar {
+  border: 2px solid #2f8a57;
+}
+
+.insignia-mesa.desconectado {
+  opacity: 0.5;
 }

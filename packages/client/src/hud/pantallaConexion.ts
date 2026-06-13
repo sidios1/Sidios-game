@@ -4,20 +4,27 @@
 
 import type { JugadorEnSala } from "@juegos/server/protocolo";
 import type { ModoConexion } from "../red/fabricaTransporte.js";
+import { crearAvatar, avatarPorDefecto } from "../perfil/avatares.js";
+import { crearInsigniaPerfil } from "../perfil/insigniaPerfil.js";
+import type { Perfil } from "../perfil/perfil.js";
 
 /** Puerto del servidor de desarrollo (packages/server: npm run dev). */
 export const PUERTO_LOCAL_POR_DEFECTO = 35711;
 
 export interface AccionesConexion {
-  readonly alConectar: (modo: ModoConexion, codigo: string, nombre: string) => void;
+  readonly alConectar: (modo: ModoConexion, codigo: string) => void;
   readonly alIniciarPartida: () => void;
   /**
    * Crear partida con el servidor EMBEBIDO (Fase 5, app de escritorio): el host
    * arranca su propio servidor LAN. Solo se invoca si servidorEmbebidoDisponible.
    */
-  readonly alCrearPartida?: (nombre: string) => void;
+  readonly alCrearPartida?: () => void;
   /** Volver al menú del hub desde la portada de modo (opcional). */
   readonly alVolver?: () => void;
+  /** Perfil activo (nickname + avatar) que se usará al unirse. */
+  readonly perfil?: () => Perfil | null;
+  /** Abrir el editor de perfil (opcional). */
+  readonly alEditarPerfil?: () => void;
 }
 
 /** Datos del juego elegido que la pantalla muestra (título y cupo de la sala). */
@@ -68,6 +75,9 @@ export class PantallaConexion {
     subtitulo.textContent = "Elige el modo de juego";
     tarjeta.append(titulo, subtitulo);
 
+    const cabecera = this.cabeceraPerfil();
+    if (cabecera !== null) tarjeta.appendChild(cabecera);
+
     // ARRIBA: Online, visible pero deshabilitado (adaptador de la Fase 7).
     const online = document.createElement("button");
     online.className = "modo";
@@ -106,10 +116,8 @@ export class PantallaConexion {
     titulo.textContent = "Partida local (LAN)";
     tarjeta.appendChild(titulo);
 
-    const nombre = document.createElement("input");
-    nombre.placeholder = "Tu nombre";
-    nombre.maxLength = 20;
-    tarjeta.appendChild(campo("Nombre", nombre));
+    const cabecera = this.cabeceraPerfil();
+    if (cabecera !== null) tarjeta.appendChild(cabecera);
 
     // Crear partida. En la app de escritorio (Tauri) el host arranca su propio
     // servidor LAN embebido y luego se une a él. En desarrollo web el servidor
@@ -124,15 +132,14 @@ export class PantallaConexion {
         `Se iniciará el servidor en tu equipo y aparecerá un código ip:puerto; ` +
         `compártelo con tus amigos de la misma WiFi para que se unan.`;
       crear.addEventListener("click", () => {
-        const valor = this.exigirNombre(nombre);
-        if (valor !== null) this.acciones.alCrearPartida?.(valor);
+        this.acciones.alCrearPartida?.();
       });
     } else {
       notaCrear.textContent =
         `Requiere el servidor local corriendo (npm run dev:server). ` +
         `Comparte con tus amigos el código ip:puerto que imprime su consola.`;
       crear.addEventListener("click", () => {
-        this.conectarSiHayNombre(nombre, `127.0.0.1:${PUERTO_LOCAL_POR_DEFECTO}`);
+        this.acciones.alConectar("local", `127.0.0.1:${PUERTO_LOCAL_POR_DEFECTO}`);
       });
     }
 
@@ -141,7 +148,7 @@ export class PantallaConexion {
     const unirse = document.createElement("button");
     unirse.textContent = "Unirse";
     unirse.addEventListener("click", () => {
-      this.conectarSiHayNombre(nombre, codigo.value.trim());
+      this.conectarConCodigo(codigo.value.trim());
     });
 
     const filaUnirse = document.createElement("div");
@@ -156,25 +163,21 @@ export class PantallaConexion {
     this.velo.appendChild(tarjeta);
   }
 
-  /** Devuelve el nombre validado o null (y muestra el error) si falta. */
-  private exigirNombre(nombre: HTMLInputElement): string | null {
-    const valor = nombre.value.trim();
-    if (valor.length === 0) {
-      this.mostrarError("escribe tu nombre primero");
-      nombre.focus();
-      return null;
-    }
-    return valor;
-  }
-
-  private conectarSiHayNombre(nombre: HTMLInputElement, codigo: string): void {
-    const valor = this.exigirNombre(nombre);
-    if (valor === null) return;
+  private conectarConCodigo(codigo: string): void {
     if (codigo.length === 0 || !codigo.includes(":")) {
       this.mostrarError("el código de sala tiene la forma ip:puerto");
       return;
     }
-    this.acciones.alConectar("local", codigo, valor);
+    this.acciones.alConectar("local", codigo);
+  }
+
+  /** Cabecera con el perfil activo y enlace a editarlo; null si no hay perfil. */
+  private cabeceraPerfil(): HTMLElement | null {
+    const perfil = this.acciones.perfil?.() ?? null;
+    if (perfil === null) return null;
+    return crearInsigniaPerfil(perfil, "Editar perfil", () =>
+      this.acciones.alEditarPerfil?.(),
+    );
   }
 
   registrarJugadorId(jugadorId: string): void {
@@ -198,10 +201,18 @@ export class PantallaConexion {
     lista.className = "lista-jugadores";
     for (const jugador of jugadores) {
       const item = document.createElement("li");
+      item.className = "jugador-sala";
+      const avatar = crearAvatar(
+        jugador.avatar ?? avatarPorDefecto(jugador.jugadorId),
+        32,
+      );
+      avatar.className = "avatar-mini";
       const partes = [jugador.nombre];
       if (jugador.esAnfitrion) partes.push("(anfitrión)");
       if (jugador.jugadorId === this.miJugadorId) partes.push("(tú)");
-      item.textContent = partes.join(" ");
+      const texto = document.createElement("span");
+      texto.textContent = partes.join(" ");
+      item.append(avatar, texto);
       lista.appendChild(item);
     }
     tarjeta.appendChild(lista);
@@ -264,13 +275,4 @@ export class PantallaConexion {
   get visible(): boolean {
     return !this.velo.classList.contains("oculto");
   }
-}
-
-function campo(etiqueta: string, control: HTMLElement): HTMLElement {
-  const envoltura = document.createElement("label");
-  envoltura.className = "campo";
-  const texto = document.createElement("span");
-  texto.textContent = etiqueta;
-  envoltura.append(texto, control);
-  return envoltura;
 }

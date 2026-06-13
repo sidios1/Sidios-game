@@ -3,10 +3,12 @@
 // Se re-renderiza completo en cada cambio de estado (es pequeño y barato).
 
 import type { VistaPartida } from "@juegos/server/vista";
+import type { JugadorVista } from "@juegos/server/vista";
 import type {
   EstadoInteraccion,
   EventoInteraccion,
 } from "../estado/maquinaInteraccion.js";
+import { avatarPorDefecto, crearAvatar } from "../perfil/avatares.js";
 import { renderPanelBajada } from "./panelBajada.js";
 import { renderPanelResumen } from "./panelResumen.js";
 
@@ -71,10 +73,28 @@ export class Hud {
     const contrato = document.createElement("div");
     contrato.className = "contrato";
     contrato.textContent = `Mano ${vista.manoActual}/9 · ${vista.contrato.nombre}`;
+    this.superior.append(contrato, this.crearBannerTurno(estado, vista));
+  }
+
+  /** Banner destacado del jugador EN TURNO: su avatar grande + nickname. */
+  private crearBannerTurno(
+    estado: EstadoInteraccion,
+    vista: VistaPartida,
+  ): HTMLElement {
+    const banner = document.createElement("div");
+    banner.className = "turno-banner";
+    const enTurno = vista.jugadores.find((j) => j.id === vista.turno.jugadorId);
+    if (vista.fase === "jugandoMano" && enTurno !== undefined) {
+      const avatar = crearAvatar(avatarDe(enTurno), 48);
+      avatar.className = "turno-avatar";
+      banner.appendChild(avatar);
+      if (enTurno.id === vista.tuJugadorId) banner.classList.add("propio");
+    }
     const turno = document.createElement("div");
     turno.className = "turno";
     turno.textContent = textoDeTurno(estado, vista);
-    this.superior.append(contrato, turno);
+    banner.appendChild(turno);
+    return banner;
   }
 
   private renderJugadores(vista: VistaPartida): void {
@@ -85,6 +105,9 @@ export class Hud {
       if (jugador.id === vista.turno.jugadorId && vista.fase === "jugandoMano") {
         fila.classList.add("en-turno");
       }
+      const avatar = crearAvatar(avatarDe(jugador), 28);
+      avatar.className = "avatar-mini";
+
       const detalles: string[] = [
         `${jugador.numeroCartas} cartas`,
         `${jugador.puntosAcumulados} pts`,
@@ -95,7 +118,10 @@ export class Hud {
         detalles.push("listo");
       }
       const quien = jugador.id === vista.tuJugadorId ? `${jugador.nombre} (tú)` : jugador.nombre;
-      fila.textContent = `${quien} — ${detalles.join(" · ")}`;
+      const texto = document.createElement("span");
+      texto.className = "jugador-texto";
+      texto.textContent = `${quien} — ${detalles.join(" · ")}`;
+      fila.append(avatar, texto);
       this.jugadores.appendChild(fila);
     }
   }
@@ -197,6 +223,11 @@ function crearSeccion(raiz: HTMLElement, clase: string): HTMLElement {
 
 function meBaje(vista: VistaPartida): boolean {
   return vista.jugadores.find((j) => j.id === vista.tuJugadorId)?.seBajo ?? false;
+}
+
+/** Avatar del jugador, con fallback determinista si no eligió uno. */
+function avatarDe(jugador: JugadorVista): string {
+  return jugador.avatar ?? avatarPorDefecto(jugador.id);
 }
 
 function textoDeTurno(estado: EstadoInteraccion, vista: VistaPartida): string {

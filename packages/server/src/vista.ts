@@ -15,6 +15,8 @@ import { contratoActual, ganadores, puntosMano } from "@juegos/carioca-core";
 export interface JugadorVista {
   readonly id: string;
   readonly nombre: string;
+  /** Id del avatar del perfil; ausente si el jugador no eligió uno. */
+  readonly avatar?: string;
   /** Conteo: la mano ajena jamás viaja en la vista. */
   readonly numeroCartas: number;
   readonly puntosAcumulados: number;
@@ -61,6 +63,8 @@ export interface MetaSala {
   readonly conectados: ReadonlySet<string>;
   readonly listos: ReadonlySet<string>;
   readonly votosNecesarios: number;
+  /** Avatar elegido por cada jugador (id del pool); presentación, no regla. */
+  readonly avatares?: ReadonlyMap<string, string>;
 }
 
 export function construirVista(
@@ -92,15 +96,20 @@ export function construirVista(
   return {
     tuJugadorId: jugadorId,
     tuMano: propio.mano,
-    jugadores: estado.jugadores.map((j) => ({
-      id: j.id,
-      nombre: j.nombre,
-      numeroCartas: j.mano.length,
-      puntosAcumulados: j.puntosAcumulados,
-      seBajo: j.turnoEnQueSeBajo !== null,
-      conectado: meta.conectados.has(j.id),
-      listoSiguienteMano: meta.listos.has(j.id),
-    })),
+    jugadores: estado.jugadores.map((j) => {
+      const avatar = meta.avatares?.get(j.id);
+      return {
+        id: j.id,
+        nombre: j.nombre,
+        // exactOptionalPropertyTypes: omitimos avatar cuando no hay.
+        ...(avatar !== undefined ? { avatar } : {}),
+        numeroCartas: j.mano.length,
+        puntosAcumulados: j.puntosAcumulados,
+        seBajo: j.turnoEnQueSeBajo !== null,
+        conectado: meta.conectados.has(j.id),
+        listoSiguienteMano: meta.listos.has(j.id),
+      };
+    }),
     manoActual: estado.manoActual,
     contrato,
     numeroMazo: estado.mazo.length,

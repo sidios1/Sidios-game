@@ -11,6 +11,7 @@ import type { EventoInteraccion } from "../../estado/maquinaInteraccion.js";
 import { ESTADO_INICIAL, transicion } from "../../estado/maquinaInteraccion.js";
 import { Sincronizador } from "../../escena/animaciones.js";
 import { Escena } from "../../escena/escena.js";
+import { InsigniasMesa } from "../../escena/insigniasMesa.js";
 import { Interpolador } from "../../escena/interpolacion.js";
 import { Seleccionador } from "../../escena/seleccion.js";
 import { Hud } from "../../hud/hud.js";
@@ -22,6 +23,7 @@ export class JuegoCarioca implements IJuego {
   private sincronizador: Sincronizador | null = null;
   private seleccionador: Seleccionador | null = null;
   private hud: Hud | null = null;
+  private insignias: InsigniasMesa | null = null;
   private botonSalir: HTMLButtonElement | null = null;
 
   iniciar(contexto: ContextoJuego): void {
@@ -30,6 +32,11 @@ export class JuegoCarioca implements IJuego {
     const interpolador = new Interpolador();
     this.sincronizador = new Sincronizador(this.escena.cartas, interpolador);
     this.hud = new Hud(contexto.contenedorHud, (evento) => this.despachar(evento));
+    this.insignias = new InsigniasMesa(
+      contexto.contenedorHud,
+      this.escena.camara,
+      this.escena.renderer.domElement,
+    );
     this.seleccionador = new Seleccionador(this.escena, (evento) =>
       this.despachar(evento),
     );
@@ -52,11 +59,13 @@ export class JuegoCarioca implements IJuego {
     this.escena?.dispose();
     this.seleccionador?.destruir();
     this.hud?.destruir();
+    this.insignias?.destruir();
     this.botonSalir?.remove();
     this.escena = null;
     this.sincronizador = null;
     this.seleccionador = null;
     this.hud = null;
+    this.insignias = null;
     this.botonSalir = null;
     this.contexto = null;
     this.estado = ESTADO_INICIAL;
@@ -83,6 +92,7 @@ export class JuegoCarioca implements IJuego {
     }
     if (this.estado.vista !== null) {
       this.hud?.actualizar(this.estado);
+      this.insignias?.actualizar(this.estado.vista);
     }
   }
 }

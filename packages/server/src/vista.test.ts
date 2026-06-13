@@ -81,6 +81,25 @@ describe("construirVista: proyección por jugador", () => {
     expect(vista.pozoTope?.id).toBe(estado.pozo[estado.pozo.length - 1]?.id);
   });
 
+  it("proyecta el avatar de cada jugador desde la meta de la sala", () => {
+    const estado = partidaMano1();
+    const avatares = new Map([
+      ["ana", "emblema-estrella-ambar"],
+      ["beto", "identicon-3"],
+    ]);
+    const vista = construirVista(estado, "ana", meta({ avatares }));
+    expect(vista.jugadores.find((j) => j.id === "ana")?.avatar).toBe(
+      "emblema-estrella-ambar",
+    );
+    expect(vista.jugadores.find((j) => j.id === "beto")?.avatar).toBe("identicon-3");
+  });
+
+  it("omite el avatar cuando la meta no lo trae", () => {
+    const estado = partidaMano1();
+    const vista = construirVista(estado, "ana", meta());
+    expect(vista.jugadores.find((j) => j.id === "ana")?.avatar).toBeUndefined();
+  });
+
   it("no filtra ninguna carta ajena ni del mazo (invariante recursiva)", () => {
     const estado = partidaMano1();
     for (const jugadorId of ["ana", "beto"]) {

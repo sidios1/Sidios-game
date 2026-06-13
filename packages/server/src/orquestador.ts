@@ -53,6 +53,8 @@ type FaseSala = "lobby" | "enPartida" | "terminada";
 interface Asiento {
   readonly jugadorId: string;
   readonly nombre: string;
+  /** Avatar elegido en el perfil del cliente; ausente si no envió ninguno. */
+  readonly avatar: string | undefined;
   readonly token: string;
   conexionId: IdConexion | null;
 }
@@ -116,7 +118,7 @@ export class Orquestador {
       return;
     }
     if (mensaje.tipo === "unirse") {
-      this.procesarUnirse(conexionId, mensaje.nombre, mensaje.token);
+      this.procesarUnirse(conexionId, mensaje.nombre, mensaje.avatar, mensaje.token);
       return;
     }
     const jugadorId = this.porConexion.get(conexionId);
@@ -163,6 +165,7 @@ export class Orquestador {
   private procesarUnirse(
     conexionId: IdConexion,
     nombre: string,
+    avatar: string | undefined,
     token: string | undefined,
   ): void {
     if (this.porConexion.has(conexionId)) {
@@ -188,6 +191,7 @@ export class Orquestador {
     const asiento: Asiento = {
       jugadorId: `j${this.contadorJugadores}`,
       nombre,
+      avatar,
       token: this.generarToken(),
       conexionId,
     };
@@ -380,6 +384,7 @@ export class Orquestador {
     const jugadores: JugadorEnSala[] = this.asientos.map((a, idx) => ({
       jugadorId: a.jugadorId,
       nombre: a.nombre,
+      ...(a.avatar !== undefined ? { avatar: a.avatar } : {}),
       esAnfitrion: idx === 0,
     }));
     this.difundir({ tipo: "estadoSala", jugadores });
@@ -388,12 +393,17 @@ export class Orquestador {
   /** Cada jugador conectado recibe SU vista; las manos ajenas nunca viajan. */
   private difundirVistas(): void {
     if (this.estado === null) return;
+    const avatares = new Map<string, string>();
+    for (const a of this.asientos) {
+      if (a.avatar !== undefined) avatares.set(a.jugadorId, a.avatar);
+    }
     const meta = {
       conectados: new Set(
         this.asientos.filter((a) => a.conexionId !== null).map((a) => a.jugadorId),
       ),
       listos: this.listos,
       votosNecesarios: this.votosNecesarios(),
+      avatares,
     };
     for (const asiento of this.asientos) {
       if (asiento.conexionId === null) continue;

@@ -11,7 +11,13 @@ import type {
 import type { VistaPartida } from "./vista.js";
 
 export type MensajeCliente =
-  | { readonly tipo: "unirse"; readonly nombre: string; readonly token?: string }
+  | {
+      readonly tipo: "unirse";
+      readonly nombre: string;
+      /** Id del avatar del pool por defecto; presentación, viaja con el jugador. */
+      readonly avatar?: string;
+      readonly token?: string;
+    }
   | { readonly tipo: "iniciarPartida" }
   | { readonly tipo: "robarDelMazo" }
   | { readonly tipo: "robarDelPozo" }
@@ -28,6 +34,8 @@ export type MensajeCliente =
 export interface JugadorEnSala {
   readonly jugadorId: string;
   readonly nombre: string;
+  /** Id del avatar elegido en el perfil; ausente en clientes antiguos. */
+  readonly avatar?: string;
   readonly esAnfitrion: boolean;
 }
 
@@ -110,11 +118,18 @@ export function analizarMensajeCliente(datos: string): MensajeCliente | null {
   switch (crudo["tipo"]) {
     case "unirse": {
       const nombre = crudo["nombre"];
+      const avatar = crudo["avatar"];
       const token = crudo["token"];
       if (typeof nombre !== "string" || nombre.length === 0) return null;
-      if (token === undefined) return { tipo: "unirse", nombre };
-      if (typeof token !== "string") return null;
-      return { tipo: "unirse", nombre, token };
+      if (avatar !== undefined && typeof avatar !== "string") return null;
+      if (token !== undefined && typeof token !== "string") return null;
+      // exactOptionalPropertyTypes: solo incluimos las claves presentes.
+      return {
+        tipo: "unirse",
+        nombre,
+        ...(avatar !== undefined ? { avatar } : {}),
+        ...(token !== undefined ? { token } : {}),
+      };
     }
     case "iniciarPartida":
       return { tipo: "iniciarPartida" };
