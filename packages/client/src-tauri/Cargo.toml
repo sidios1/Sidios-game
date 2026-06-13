@@ -1,7 +1,9 @@
 [package]
 name = "juegos-rapidos"
 version = "0.1.0"
-description = "Juegos rápidos — plataforma de juegos de cartas LAN"
+description = "Sidios Game — plataforma de juegos de cartas LAN"
+authors = ["Sidios"]
+homepage = "https://sidios.cl"
 edition = "2021"
 rust-version = "1.77.2"
 

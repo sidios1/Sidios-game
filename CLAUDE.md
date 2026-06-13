@@ -85,6 +85,9 @@ npm run tauri:build -w @juegos/client         # ejecutable/instalador distribuib
 - **Permiso/seguridad Tauri:** `src-tauri/capabilities/default.json` autoriza ejecutar
   el sidecar `binaries/servidor`; el CSP de `tauri.conf.json` permite `ws://` en la LAN.
   Solo LAN: el servidor escucha en `0.0.0.0` sin exponerse a internet.
+- **Metadatos de empaquetado:** el editor es **Sidios** y el identificador del bundle
+  `cl.sidios.sidiosgame`. Viven en `tauri.conf.json` (`identifier` +
+  `bundle.publisher` / `bundle.copyright` / `bundle.homepage`, homepage `https://sidios.cl`).
 
 ## Convenciones
 - **TypeScript strict** en todos los paquetes (además: `noUncheckedIndexedAccess`,
