@@ -11,6 +11,7 @@
 
 import type { Carta } from "@juegos/carioca-core";
 import type { VistaPartida } from "@juegos/server/vista";
+import { factorEscala, posicionAsiento, radioAsientos } from "./dimensionesMesa.js";
 import type { DatosInteraccion } from "./mallaCarta.js";
 import { GROSOR_CARTA } from "./mallaCarta.js";
 
@@ -82,39 +83,11 @@ export const POSE_POZO: Pose = {
 const MAX_DORSOS_MAZO = 8;
 const MAX_DORSOS_POZO = 4;
 
-interface AsientoAjeno {
-  readonly centroX: number;
-  readonly centroZ: number;
-  /** Dirección (x,z) en la que se despliega la fila de dorsos. */
-  readonly dirX: number;
-  readonly dirZ: number;
-  /** Giro en el plano de la mesa para orientar la fila. */
-  readonly espin: number;
-}
-
-const ARRIBA: AsientoAjeno = { centroX: 0, centroZ: -4.4, dirX: 1, dirZ: 0, espin: 0 };
-const IZQUIERDA: AsientoAjeno = {
-  centroX: -4.6,
-  centroZ: -0.6,
-  dirX: 0,
-  dirZ: 1,
-  espin: Math.PI / 2,
-};
-const DERECHA: AsientoAjeno = {
-  centroX: 4.6,
-  centroZ: -0.6,
-  dirX: 0,
-  dirZ: -1,
-  espin: -Math.PI / 2,
-};
-
-function asientosAjenos(cantidad: number): readonly AsientoAjeno[] {
-  if (cantidad <= 1) return [ARRIBA];
-  if (cantidad === 2) return [IZQUIERDA, DERECHA];
-  return [IZQUIERDA, ARRIBA, DERECHA];
-}
-
-/** Jugadores ajenos en orden de asiento, empezando por el que me sigue. */
+/**
+ * Jugadores AJENOS en orden de asiento, empezando por el que me sigue. El total
+ * de asientos (incl. el mío) es `vista.jugadores.length`; yo ocupo el asiento 0
+ * (al frente) y los ajenos los asientos 1..N-1 en este orden.
+ */
 function ajenosDesdeMi(vista: VistaPartida): readonly string[] {
   const ids = vista.jugadores.map((j) => j.id);
   const miIndice = ids.indexOf(vista.tuJugadorId);
@@ -122,22 +95,28 @@ function ajenosDesdeMi(vista: VistaPartida): readonly string[] {
   return [...ids.slice(miIndice + 1), ...ids.slice(0, miIndice)];
 }
 
-/** Centro de la mano de un jugador (para que las animaciones sepan de dónde sale una carta). */
+/**
+ * Centro del asiento de un jugador (ancla de su insignia y origen/destino de las
+ * cartas que vuelan hacia/desde él). Yo, al frente, junto a la cámara; los ajenos
+ * repartidos en un anillo JUSTO FUERA del borde del fieltro, que crece con N.
+ */
 export function poseManoJugador(vista: VistaPartida, jugadorId: string): Pose {
   if (jugadorId === vista.tuJugadorId) {
     return { x: 0, y: 1.1, z: 4.7, rotX: -0.5, rotY: 0, rotZ: 0 };
   }
+  const total = vista.jugadores.length;
   const ajenos = ajenosDesdeMi(vista);
-  const asientos = asientosAjenos(ajenos.length);
-  const indice = ajenos.indexOf(jugadorId);
-  const asiento = asientos[Math.max(indice, 0)] ?? ARRIBA;
+  const indiceAjeno = ajenos.indexOf(jugadorId);
+  const indiceGlobal = indiceAjeno < 0 ? 1 : indiceAjeno + 1;
+  const asiento = posicionAsiento(indiceGlobal, total, radioAsientos(total));
   return {
-    x: asiento.centroX,
+    x: asiento.x,
     y: GROSOR_CARTA / 2,
-    z: asiento.centroZ,
+    z: asiento.z,
     rotX: BOCA_ABAJO,
     rotY: 0,
-    rotZ: asiento.espin,
+    // Giro radial: la base de la carta mira hacia el centro de la mesa.
+    rotZ: -asiento.angulo,
   };
 }
 
@@ -192,26 +171,23 @@ function ordenarMano(
   );
 }
 
-function poseDorsoAjeno(asiento: AsientoAjeno, indice: number, total: number): Pose {
-  const espaciado = Math.min(0.34, 3.6 / Math.max(total, 1));
-  const offset = (indice - (total - 1) / 2) * espaciado;
-  return {
-    x: asiento.centroX + asiento.dirX * offset,
-    y: GROSOR_CARTA / 2 + 0.001 * indice,
-    z: asiento.centroZ + asiento.dirZ * offset,
-    rotX: BOCA_ABAJO,
-    rotY: 0,
-    rotZ: asiento.espin,
-  };
-}
-
-const COMBOS_POR_FILA = 3;
-
-function poseCartaEnMesa(mesaIdx: number, indice: number, total: number): Pose {
-  const columna = mesaIdx % COMBOS_POR_FILA;
-  const fila = Math.floor(mesaIdx / COMBOS_POR_FILA);
-  const baseX = (columna - 1) * 4.5;
-  const baseZ = -1.3 - fila * 1.75;
+/**
+ * Pose de una carta de una combinación bajada. La cuadrícula crece con N: más
+ * columnas y más separación cuando hay más jugadores, para que las bajadas
+ * quepan en el fieltro agrandado sin amontonarse ni rebosar.
+ */
+function poseCartaEnMesa(
+  mesaIdx: number,
+  indice: number,
+  total: number,
+  numJugadores: number,
+): Pose {
+  const f = factorEscala(numJugadores);
+  const columnas = numJugadores > 4 ? 4 : 3;
+  const columna = mesaIdx % columnas;
+  const fila = Math.floor(mesaIdx / columnas);
+  const baseX = (columna - (columnas - 1) / 2) * 4.5 * f;
+  const baseZ = -1.3 - fila * 1.75 * f;
   const offset = (indice - (total - 1) / 2) * 0.42;
   return {
     x: baseX + offset,
@@ -275,21 +251,8 @@ export function calcularDisposicion(
     }
   }
 
-  // Manos ajenas: solo dorsos, tantos como diga el conteo.
-  const ajenos = ajenosDesdeMi(vista);
-  const asientos = asientosAjenos(ajenos.length);
-  ajenos.forEach((jugadorId, indiceAsiento) => {
-    const asiento = asientos[indiceAsiento] ?? ARRIBA;
-    const cantidad =
-      vista.jugadores.find((j) => j.id === jugadorId)?.numeroCartas ?? 0;
-    for (let i = 0; i < cantidad; i++) {
-      objetivos.set(`dorso:${jugadorId}:${i}`, {
-        pose: poseDorsoAjeno(asiento, i, cantidad),
-        carta: null,
-        interaccion: { tipo: "decoracion" },
-      });
-    }
-  });
+  // Las manos ajenas NO se dibujan en la mesa: cada rival se representa por su
+  // perfil (avatar + nickname) fuera del fieltro (ver InsigniasMesa).
 
   // Mazo: pila de dorsos (con tope visual de MAX_DORSOS_MAZO).
   const dorsosMazo = Math.min(vista.numeroMazo, MAX_DORSOS_MAZO);
@@ -319,11 +282,12 @@ export function calcularDisposicion(
   }
 
   // Mesa: combinaciones bajadas, caras arriba, clickeables para pegar.
+  const numJugadores = vista.jugadores.length;
   vista.mesa.forEach((enMesa, mesaIdx) => {
     const cartas = enMesa.combinacion.cartas;
     cartas.forEach((carta, indice) => {
       objetivos.set(`carta:${carta.id}`, {
-        pose: poseCartaEnMesa(mesaIdx, indice, cartas.length),
+        pose: poseCartaEnMesa(mesaIdx, indice, cartas.length, numJugadores),
         carta,
         interaccion: { tipo: "combinacion", mesaIdx },
       });

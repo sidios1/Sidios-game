@@ -131,6 +131,9 @@ export class JuegoCarioca implements IJuego {
       this.hud?.mostrarAviso(resultado.aviso);
     }
     if (this.estado.vista !== null) {
+      // La mesa crece con el número de jugadores; ajustar ANTES de sincronizar
+      // y reposicionar insignias para que proyecten contra la cámara nueva.
+      this.escena?.ajustarMesa(this.estado.vista.jugadores.length);
       this.sincronizador?.aplicar(
         this.estado.vista,
         cambios,

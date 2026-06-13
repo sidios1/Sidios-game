@@ -2,8 +2,12 @@
 // fijas de mazo y pozo (visibles aunque las pilas estén vacías).
 
 import * as THREE from "three";
+import { camaraPara, radioMesa } from "./dimensionesMesa.js";
 import { POSE_MAZO, POSE_POZO } from "./disposicion.js";
 import { ALTO_CARTA, ANCHO_CARTA, asignarInteraccion } from "./mallaCarta.js";
+
+/** Número de jugadores con que se arma la mesa antes de la primera vista. */
+const JUGADORES_INICIAL = 2;
 
 export class Escena {
   readonly escena: THREE.Scene;
@@ -17,6 +21,11 @@ export class Escena {
   private detenido = false;
   private readonly contenedor: HTMLElement;
   private readonly ajustar: () => void;
+  /** Fieltro y borde: se reescalan cuando cambia el número de jugadores. */
+  private fieltro!: THREE.Mesh;
+  private borde!: THREE.Mesh;
+  /** Último número de jugadores aplicado (para no reconstruir en cada vista). */
+  private jugadoresMesa = JUGADORES_INICIAL;
 
   constructor(contenedor: HTMLElement) {
     this.contenedor = contenedor;
@@ -24,8 +33,9 @@ export class Escena {
     this.escena.background = new THREE.Color("#101418");
 
     this.camara = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-    this.camara.position.set(0, 7.6, 8.6);
-    this.camara.lookAt(0, 0, 0.4);
+    const vista = camaraPara(JUGADORES_INICIAL);
+    this.camara.position.set(vista.x, vista.y, vista.z);
+    this.camara.lookAt(vista.miraX, vista.miraY, vista.miraZ);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -50,19 +60,42 @@ export class Escena {
   }
 
   private armarMesa(): void {
-    const fieltro = new THREE.Mesh(
-      new THREE.CircleGeometry(8.2, 48),
+    const radio = radioMesa(this.jugadoresMesa);
+    this.fieltro = new THREE.Mesh(
+      new THREE.CircleGeometry(radio, 48),
       new THREE.MeshLambertMaterial({ color: "#1d5c3a" }),
     );
-    fieltro.rotation.x = -Math.PI / 2;
-    this.escena.add(fieltro);
+    this.fieltro.rotation.x = -Math.PI / 2;
+    this.escena.add(this.fieltro);
 
-    const borde = new THREE.Mesh(
-      new THREE.TorusGeometry(8.2, 0.28, 12, 48),
+    this.borde = new THREE.Mesh(
+      new THREE.TorusGeometry(radio, 0.28, 12, 48),
       new THREE.MeshLambertMaterial({ color: "#5a3a22" }),
     );
-    borde.rotation.x = -Math.PI / 2;
-    this.escena.add(borde);
+    this.borde.rotation.x = -Math.PI / 2;
+    this.escena.add(this.borde);
+  }
+
+  /**
+   * Reescala el fieltro, el borde y la cámara para que entre la mesa de
+   * `numJugadores`. Idempotente: si el número no cambió, no hace nada (no
+   * reconstruye geometría en cada vista).
+   */
+  ajustarMesa(numJugadores: number): void {
+    const n = Math.max(numJugadores, 1);
+    if (n === this.jugadoresMesa) return;
+    this.jugadoresMesa = n;
+
+    const radio = radioMesa(n);
+    this.fieltro.geometry.dispose();
+    this.fieltro.geometry = new THREE.CircleGeometry(radio, 48);
+    this.borde.geometry.dispose();
+    this.borde.geometry = new THREE.TorusGeometry(radio, 0.28, 12, 48);
+
+    const vista = camaraPara(n);
+    this.camara.position.set(vista.x, vista.y, vista.z);
+    this.camara.lookAt(vista.miraX, vista.miraY, vista.miraZ);
+    this.camara.updateProjectionMatrix();
   }
 
   private armarLuces(): void {
