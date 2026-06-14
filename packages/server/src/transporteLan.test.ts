@@ -4,14 +4,62 @@
 // que es exactamente lo que la costura promete.
 
 import { afterEach, describe, expect, it } from "vitest";
+import { WebSocket } from "ws";
 import { Orquestador } from "./orquestador.js";
 import { TransporteLanCliente, TransporteLanServidor } from "./transporteLan.js";
+import type { ProgramarIntervalo, ProgramarTimeout } from "./latido.js";
+import { PING, PONG } from "./latido.js";
+import type { OyentesServidor } from "./transporte.js";
 import {
   cartasFiltradasEnVista,
   fabricaMazoParaMano,
   GUIONES,
   jugarPartidaGuionizada,
 } from "./pruebas/guion.js";
+
+/** Temporizadores manuales para probar el latido sin esperas reales. */
+class Relojes {
+  private timeouts = new Map<number, () => void>();
+  private contador = 0;
+
+  readonly timeout: ProgramarTimeout = (_ms, fn) => {
+    const id = this.contador++;
+    this.timeouts.set(id, fn);
+    return () => {
+      this.timeouts.delete(id);
+    };
+  };
+
+  // El sondeo del server no se usa en estos tests: intervalo inerte.
+  readonly intervalo: ProgramarIntervalo = () => () => {};
+
+  vencerTimeouts(): void {
+    const aDisparar = [...this.timeouts.values()];
+    this.timeouts.clear();
+    for (const fn of aDisparar) fn();
+  }
+}
+
+function oyentesEspia(): {
+  oyentes: OyentesServidor;
+  conectados: string[];
+  desconectados: string[];
+  recibidos: Array<[string, string]>;
+} {
+  const conectados: string[] = [];
+  const desconectados: string[] = [];
+  const recibidos: Array<[string, string]> = [];
+  return {
+    conectados,
+    desconectados,
+    recibidos,
+    oyentes: {
+      alConectar: (id) => conectados.push(id),
+      alDesconectar: (id) => desconectados.push(id),
+      alRecibir: (id, datos) => recibidos.push([id, datos]),
+    },
+  };
+}
 
 describe("transporte LAN: partida completa por WebSocket", () => {
   let orquestador: Orquestador | null = null;
@@ -69,5 +117,64 @@ describe("transporte LAN: partida completa por WebSocket", () => {
     await expect(
       cliente.conectar("sin-puerto", { alRecibir: () => {}, alDesconectar: () => {} }),
     ).rejects.toThrow("código de sala inválido");
+  });
+});
+
+describe("transporte LAN: latido (heartbeat)", () => {
+  let servidor: TransporteLanServidor | null = null;
+  let crudo: WebSocket | null = null;
+
+  afterEach(async () => {
+    crudo?.close();
+    crudo = null;
+    await servidor?.detener();
+    servidor = null;
+  });
+
+  it("responde PONG a un PING app-level sin entregarlo al orquestador", async () => {
+    const espia = oyentesEspia();
+    servidor = new TransporteLanServidor({ puerto: 0, ipAnunciada: "127.0.0.1" });
+    const codigo = await servidor.iniciar(espia.oyentes);
+
+    const cliente = new WebSocket(`ws://${codigo}`);
+    crudo = cliente;
+    const pong = await new Promise<string>((resolver, rechazar) => {
+      cliente.on("open", () => cliente.send(PING));
+      cliente.on("message", (datos) => resolver(datos.toString()));
+      cliente.on("error", rechazar);
+    });
+
+    expect(pong).toBe(PONG);
+    // El frame de control NO llega a los oyentes (sería "mensajeInvalido").
+    expect(espia.recibidos).toEqual([]);
+  });
+
+  it("termina una conexión zombi cuando vence el vigía de silencio", async () => {
+    const relojes = new Relojes();
+    const espia = oyentesEspia();
+    servidor = new TransporteLanServidor({
+      puerto: 0,
+      ipAnunciada: "127.0.0.1",
+      intervalo: relojes.intervalo,
+      timeout: relojes.timeout,
+    });
+    const codigo = await servidor.iniciar(espia.oyentes);
+
+    const cliente = new WebSocket(`ws://${codigo}`);
+    crudo = cliente;
+    const cerrado = new Promise<void>((resolver) => cliente.on("close", () => resolver()));
+    await new Promise<void>((resolver, rechazar) => {
+      cliente.on("open", () => resolver());
+      cliente.on("error", rechazar);
+    });
+    // Espera a que el server registre la conexión y arme su vigía.
+    await new Promise((r) => setTimeout(r, 0));
+    expect(espia.conectados).toHaveLength(1);
+
+    // El cliente queda ocioso (no manda nada): al vencer el silencio, terminate().
+    relojes.vencerTimeouts();
+    await cerrado;
+    await new Promise((r) => setTimeout(r, 0));
+    expect(espia.desconectados).toEqual(espia.conectados);
   });
 });

@@ -77,16 +77,14 @@ export class Hud {
     contrato.className = "contrato";
     contrato.textContent = `Mano ${vista.manoActual}/9 · ${vista.contrato.nombre}`;
     this.superior.append(contrato, this.crearBannerTurno(estado, vista));
-    // Solo el anfitrión reinicia el canal desde el HUD; los demás recuperan por
-    // la pantalla de desconexión.
-    if (vista.anfitrionId === vista.tuJugadorId) {
-      const reconectar = document.createElement("button");
-      reconectar.className = "reconectar";
-      reconectar.textContent = "Reconectar";
-      reconectar.title = "Reinicia la conexión con el anfitrión";
-      reconectar.addEventListener("click", () => this.reconectar());
-      this.superior.appendChild(reconectar);
-    }
+    // RESPALDO para TODOS los jugadores: la reconexión es automática, pero este
+    // botón fuerza un intento inmediato si hiciera falta (reattacha por token).
+    const reconectar = document.createElement("button");
+    reconectar.className = "reconectar";
+    reconectar.textContent = "Reconectar";
+    reconectar.title = "Fuerza un intento de reconexión con el anfitrión";
+    reconectar.addEventListener("click", () => this.reconectar());
+    this.superior.appendChild(reconectar);
   }
 
   /** Banner destacado del jugador EN TURNO: su avatar grande + nickname. */

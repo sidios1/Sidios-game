@@ -270,6 +270,19 @@ export class PantallaConexion {
     this.velo.appendChild(tarjeta);
   }
 
+  /**
+   * Aviso NO bloqueante de reconexión en curso (la automática trabaja sola). Se
+   * anexa a la tarjeta visible (lobby/sala) sin reemplazarla; en partida el velo
+   * está oculto y el aviso lo muestra el HUD del juego. Reutilizable: no duplica.
+   */
+  mostrarReconectando(): void {
+    if (this.velo.querySelector(".reconectando") !== null) return;
+    const aviso = document.createElement("p");
+    aviso.className = "reconectando";
+    aviso.textContent = "Conexión perdida. Reconectando…";
+    this.velo.querySelector(".tarjeta")?.appendChild(aviso);
+  }
+
   mostrarError(mensaje: string): void {
     const previo = this.velo.querySelector(".error");
     previo?.remove();

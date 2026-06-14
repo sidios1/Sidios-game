@@ -22,6 +22,10 @@
     "./transporte": {
       "types": "./dist/transporte.d.ts",
       "default": "./dist/transporte.js"
+    },
+    "./latido": {
+      "types": "./dist/latido.d.ts",
+      "default": "./dist/latido.js"
     }
   },
   "scripts": {

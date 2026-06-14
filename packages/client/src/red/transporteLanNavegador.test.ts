@@ -7,8 +7,11 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { JugadorEnSala } from "@juegos/server/protocolo";
 import type { VistaPartida } from "@juegos/server/vista";
+import type { ProgramarIntervalo, ProgramarTimeout } from "@juegos/server/latido";
+import { PING, PONG } from "@juegos/server/latido";
 import { Orquestador, TransporteLanServidor } from "@juegos/server";
 import { Conexion } from "./conexion.js";
+import type { SocketNavegador } from "./transporteLanNavegador.js";
 import { TransporteLanNavegador } from "./transporteLanNavegador.js";
 
 function esperar<T>(
@@ -133,5 +136,157 @@ describe("TransporteLanNavegador contra el orquestador real", () => {
       (j) => j.id !== trasDescarte.tuJugadorId,
     );
     expect(otro?.numeroCartas).toBe(12);
+  });
+});
+
+// ── Latido y anti-throttling con dobles deterministas ──────────────────────
+
+/** Socket falso: el adaptador lo recibe vía `crearSocket`; el test lo maneja. */
+class SocketFalso implements SocketNavegador {
+  readyState = 0; // CONNECTING
+  readonly enviados: string[] = [];
+  private readonly oyentes = new Map<string, Array<(e: { data: unknown }) => void>>();
+
+  send(datos: string): void {
+    this.enviados.push(datos);
+  }
+
+  close(): void {
+    if (this.readyState === 3) return;
+    this.readyState = 3; // CLOSED
+    this.emitir("close");
+  }
+
+  addEventListener(tipo: "message", o: (e: { data: unknown }) => void): void;
+  addEventListener(tipo: "open" | "error" | "close", o: () => void): void;
+  addEventListener(tipo: string, o: (e: { data: unknown }) => void): void {
+    const lista = this.oyentes.get(tipo) ?? [];
+    lista.push(o);
+    this.oyentes.set(tipo, lista);
+  }
+
+  // Helpers del test:
+  abrir(): void {
+    this.readyState = 1; // OPEN
+    this.emitir("open");
+  }
+  recibir(data: string): void {
+    this.emitir("message", data);
+  }
+  private emitir(tipo: string, data?: string): void {
+    for (const o of this.oyentes.get(tipo) ?? []) o({ data });
+  }
+}
+
+/** Documento falso para visibilitychange sin DOM real. */
+class DocumentoFalso {
+  hidden = false;
+  private oyentes: Array<() => void> = [];
+  addEventListener(_tipo: "visibilitychange", o: () => void): void {
+    this.oyentes.push(o);
+  }
+  removeEventListener(_tipo: "visibilitychange", o: () => void): void {
+    this.oyentes = this.oyentes.filter((x) => x !== o);
+  }
+  cambiar(hidden: boolean): void {
+    this.hidden = hidden;
+    for (const o of [...this.oyentes]) o();
+  }
+}
+
+/** Temporizadores manuales. */
+class Relojes {
+  private timeouts = new Map<number, () => void>();
+  private intervalos = new Map<number, () => void>();
+  private contador = 0;
+  readonly timeout: ProgramarTimeout = (_ms, fn) => {
+    const id = this.contador++;
+    this.timeouts.set(id, fn);
+    return () => {
+      this.timeouts.delete(id);
+    };
+  };
+  readonly intervalo: ProgramarIntervalo = (_ms, fn) => {
+    const id = this.contador++;
+    this.intervalos.set(id, fn);
+    return () => {
+      this.intervalos.delete(id);
+    };
+  };
+  vencerTimeouts(): void {
+    const aDisparar = [...this.timeouts.values()];
+    this.timeouts.clear();
+    for (const fn of aDisparar) fn();
+  }
+  pulsarIntervalos(): void {
+    for (const fn of [...this.intervalos.values()]) fn();
+  }
+}
+
+interface MontajeLatido {
+  readonly socket: SocketFalso;
+  readonly doc: DocumentoFalso;
+  readonly relojes: Relojes;
+  readonly recibidos: string[];
+  desconectado: boolean;
+}
+
+async function montarConLatido(): Promise<MontajeLatido> {
+  const socket = new SocketFalso();
+  const doc = new DocumentoFalso();
+  const relojes = new Relojes();
+  const recibidos: string[] = [];
+  const montaje: MontajeLatido = { socket, doc, relojes, recibidos, desconectado: false };
+  const adaptador = new TransporteLanNavegador({
+    intervalo: relojes.intervalo,
+    timeout: relojes.timeout,
+    documento: doc,
+    crearSocket: () => socket,
+  });
+  const conectando = adaptador.conectar("127.0.0.1:1234", {
+    alRecibir: (datos) => recibidos.push(datos),
+    alDesconectar: () => {
+      montaje.desconectado = true;
+    },
+  });
+  socket.abrir();
+  await conectando;
+  return montaje;
+}
+
+describe("TransporteLanNavegador: latido", () => {
+  it("manda PING periódico y, sin respuesta, cierra y desconecta", async () => {
+    const montaje = await montarConLatido();
+    montaje.relojes.pulsarIntervalos();
+    expect(montaje.socket.enviados).toContain(PING);
+    montaje.relojes.vencerTimeouts(); // vence el silencio → alMorir → close
+    expect(montaje.socket.readyState).toBe(3);
+    expect(montaje.desconectado).toBe(true);
+  });
+
+  it("no entrega los frames de control (PONG) a los oyentes", async () => {
+    const montaje = await montarConLatido();
+    montaje.socket.recibir(PONG);
+    expect(montaje.recibidos).toEqual([]);
+  });
+
+  it("entrega los mensajes del juego a los oyentes", async () => {
+    const montaje = await montarConLatido();
+    const mensaje = '{"tipo":"vista"}';
+    montaje.socket.recibir(mensaje);
+    expect(montaje.recibidos).toEqual([mensaje]);
+  });
+
+  it("al volver al frente (visible) sondea de inmediato con un PING", async () => {
+    const montaje = await montarConLatido();
+    expect(montaje.socket.enviados).not.toContain(PING); // aún no pulsamos el intervalo
+    montaje.doc.cambiar(false); // visibilitychange → hidden=false
+    expect(montaje.socket.enviados).toContain(PING);
+  });
+
+  it("estando oculto no sondea", async () => {
+    const montaje = await montarConLatido();
+    montaje.doc.cambiar(true); // hidden=true
+    expect(montaje.socket.enviados).not.toContain(PING);
   });
 });

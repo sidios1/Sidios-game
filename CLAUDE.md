@@ -134,6 +134,21 @@ npm run tauri:build -w @juegos/client         # ejecutable/instalador distribuib
   ÚNICO módulo del cliente que conoce WebSocket; `src/red/fabricaTransporte.ts`
   elige el adaptador según el modo ("online" es el enganche de la Fase 7,
   hoy deshabilitado en la pantalla de conexión).
+- **Latido (heartbeat) y reconexión.** El keepalive vive en la CAPA DE
+  TRANSPORTE, no en el orquestador: son frames de control (`@juegos/server/latido`,
+  `{"__lat":"ping"|"pong"}`) que los adaptadores LAN consumen y NUNCA pasan a sus
+  oyentes. El servidor sondea con ping nativo de `ws` + un vigía por conexión que
+  termina las zombis; el cliente manda PING app-level y vigila el silencio (el
+  WebSocket del navegador no expone ping/pong). Si el canal muere, el cliente lo
+  cierra y el coordinador (`hub/coordinador.ts`) reconecta SOLO con backoff y
+  reattach por token (idempotente: una `gen` descarta los canales viejos). El
+  botón "Reconectar" del HUD es respaldo de TODOS los jugadores; el anfitrión
+  además tiene "Reabrir conexión" por jugador (`reabrirConexion`, no expulsa).
+- **Anti-throttling.** El servidor embebido corre como proceso aparte (sidecar),
+  inmune al throttling del webview. Del lado cliente, `transporteLanNavegador.ts`
+  escucha `visibilitychange`: al volver al frente sondea de inmediato para
+  detectar a tiempo un canal caído y forzar el resync (la vista que difunde el
+  orquestador).
 
 ### 4. Dependencias permitidas entre paquetes
 ```
@@ -143,9 +158,10 @@ server ──> carioca-core
 carioca-core ──> (nada)
 ```
 - El cliente importa SIEMPRE los subpaths `@juegos/server/protocolo`,
-  `@juegos/server/vista` y `@juegos/server/transporte` (definidos en el
-  `exports` del server), nunca la raíz `@juegos/server`: la raíz reexporta
-  `transporteLan.ts` y arrastraría `ws`/`node:os` al bundle del navegador.
+  `@juegos/server/vista`, `@juegos/server/transporte` y `@juegos/server/latido`
+  (definidos en el `exports` del server; `latido.ts` es puro, sin `ws`/Node),
+  nunca la raíz `@juegos/server`: la raíz reexporta `transporteLan.ts` y
+  arrastraría `ws`/`node:os` al bundle del navegador.
   (Excepción: los tests del cliente pueden importar la raíz para HOSPEDAR
   una sala real, como hace `transporteLanNavegador.test.ts`.)
 

@@ -34,6 +34,41 @@ class TransporteFalso implements TransporteCliente {
   recibir(datos: string): void {
     this.oyentes?.alRecibir(datos);
   }
+  /** Simula la caída del canal (socket muerto detectado por el latido). */
+  caer(): void {
+    this.oyentes?.alDesconectar();
+  }
+}
+
+/** Programador manual: acumula los reintentos agendados y los dispara a mano. */
+class ProgramadorManual {
+  llamadas = 0;
+  private pendientes: Array<{ readonly fn: () => void }> = [];
+  readonly programar = (_ms: number, fn: () => void): (() => void) => {
+    this.llamadas += 1;
+    const entrada = { fn };
+    this.pendientes.push(entrada);
+    return () => {
+      this.pendientes = this.pendientes.filter((e) => e !== entrada);
+    };
+  };
+  get pendientesActivos(): number {
+    return this.pendientes.length;
+  }
+  dispararTodos(): void {
+    const fns = this.pendientes.map((e) => e.fn);
+    this.pendientes = [];
+    for (const fn of fns) fn();
+  }
+}
+
+/** Deja correr las microtareas/macrotareas en vuelo (conectar es async). */
+function vaciar(): Promise<void> {
+  return new Promise((r) => setTimeout(r, 0));
+}
+
+function bienvenida(token: string): string {
+  return JSON.stringify({ tipo: "bienvenida", jugadorId: "j1", token });
 }
 
 /** Storage mínimo en memoria. */
@@ -107,7 +142,11 @@ function vista(marca: number): string {
   return JSON.stringify({ tipo: "vista", vista: { marca } });
 }
 
-function crearCoordinador(espia: ReturnType<typeof crearEspia>, transporte: TransporteFalso) {
+function crearCoordinador(
+  espia: ReturnType<typeof crearEspia>,
+  transporte: TransporteFalso,
+  programar?: ProgramadorManual,
+) {
   const contenedorEscena = document.createElement("div");
   const contenedorHud = document.createElement("div");
   document.body.append(contenedorEscena, contenedorHud);
@@ -120,6 +159,7 @@ function crearCoordinador(espia: ReturnType<typeof crearEspia>, transporte: Tran
     crearTransporte: () => transporte,
     almacen: almacenFalso(),
     almacenPerfil,
+    ...(programar !== undefined ? { programar: programar.programar } : {}),
   });
   return { coordinador, contenedorHud };
 }
@@ -195,5 +235,69 @@ describe("Coordinador", () => {
     expect(transporte.desconectado).toBe(true);
     const veloVisible = contenedorHud.querySelector(".velo:not(.oculto)");
     expect(veloVisible?.querySelector("button.juego")).not.toBeNull();
+  });
+
+  it("tras una caída reconecta SOLO con el token, sin intervención", async () => {
+    const espia = crearEspia();
+    const transporte = new TransporteFalso();
+    const prog = new ProgramadorManual();
+    const { coordinador } = crearCoordinador(espia, transporte, prog);
+    coordinador.iniciar();
+    coordinador.elegirJuego(espia.definicion);
+    await coordinador.conectar("local", "127.0.0.1:35711");
+
+    transporte.recibir(bienvenida("tok-1")); // guarda la sesión (token)
+    transporte.recibir(vista(1)); // arranca el juego, oculta la conexión
+
+    transporte.caer(); // socket muerto detectado por el latido
+    expect(prog.pendientesActivos).toBe(1); // hay un reintento agendado
+    expect(espia.avisos).toContain("Conexión perdida. Reconectando…");
+
+    prog.dispararTodos();
+    await vaciar();
+
+    // El reintento se une CON el token guardado: reattach al mismo asiento.
+    const unirsesConToken = transporte.enviados
+      .map((d) => JSON.parse(d))
+      .filter((m) => m.tipo === "unirse" && m.token === "tok-1");
+    expect(unirsesConToken.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("reconexión repetida no encola intentos duplicados (idempotente)", async () => {
+    const espia = crearEspia();
+    const transporte = new TransporteFalso();
+    const prog = new ProgramadorManual();
+    const { coordinador } = crearCoordinador(espia, transporte, prog);
+    coordinador.iniciar();
+    coordinador.elegirJuego(espia.definicion);
+    await coordinador.conectar("local", "127.0.0.1:35711");
+    transporte.recibir(bienvenida("tok-1"));
+    transporte.recibir(vista(1));
+
+    transporte.caer();
+    transporte.caer(); // segunda caída del MISMO canal: no debe apilar
+    expect(prog.pendientesActivos).toBe(1);
+    expect(prog.llamadas).toBe(1);
+  });
+
+  it("el botón Reconectar fuerza un intento inmediato (respaldo)", async () => {
+    const espia = crearEspia();
+    const transporte = new TransporteFalso();
+    const prog = new ProgramadorManual();
+    const { coordinador } = crearCoordinador(espia, transporte, prog);
+    coordinador.iniciar();
+    coordinador.elegirJuego(espia.definicion);
+    await coordinador.conectar("local", "127.0.0.1:35711");
+    transporte.recibir(bienvenida("tok-1"));
+    transporte.recibir(vista(1));
+
+    const antes = transporte.enviados.length;
+    await coordinador.reconectar(); // respaldo: intento inmediato, sin esperar backoff
+    await vaciar();
+
+    expect(transporte.enviados.length).toBeGreaterThan(antes);
+    expect(prog.pendientesActivos).toBe(0); // inmediato: no usa el backoff
+    const ultimo = JSON.parse(transporte.enviados[transporte.enviados.length - 1] ?? "{}");
+    expect(ultimo).toMatchObject({ tipo: "unirse", token: "tok-1" });
   });
 });
