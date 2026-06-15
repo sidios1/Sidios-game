@@ -36,14 +36,15 @@ const TIEMPO_LIMITE_MS = 10_000;
 
 /**
  * Arranca el sidecar del servidor y resuelve con el código de sala `ip:puerto`
- * que imprime en su salida. Rechaza si no arranca a tiempo o si el proceso muere
- * antes de anunciar el código.
+ * que imprime en su salida. `juego` es el game-id que la sala embebida correrá
+ * (viaja como env JUEGO; el sidecar lo lee en embebido.ts). Rechaza si no
+ * arranca a tiempo o si el proceso muere antes de anunciar el código.
  */
-export async function iniciarServidorEmbebido(): Promise<string> {
+export async function iniciarServidorEmbebido(juego = "carioca"): Promise<string> {
   await detenerServidorEmbebido();
   const { Command } = await import("@tauri-apps/plugin-shell");
   const comando = Command.sidecar("binaries/servidor", [], {
-    env: { PUERTO: String(PUERTO_EMBEBIDO) },
+    env: { PUERTO: String(PUERTO_EMBEBIDO), JUEGO: juego },
   });
 
   return await new Promise<string>((resolver, rechazar) => {

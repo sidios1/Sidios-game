@@ -10,7 +10,8 @@
 // estructural. Análogo al `IJuego` del cliente, pero del lado autoritativo.
 
 import type { AccionJuego } from "./protocolo.js";
-import type { MetaSala, VistaPartida } from "./vista.js";
+import type { MetaSala } from "./vista.js";
+import type { VistaJuego } from "./vistaJuego.js";
 
 /** Aleatoriedad inyectada: una función que devuelve un número en [0, 1). */
 export type GeneradorAleatorio = () => number;
@@ -62,8 +63,9 @@ export interface MotorJuego<E, A> {
   /** Avanza a la siguiente ronda/mano tras la votación. */
   continuar(estado: E, rng: GeneradorAleatorio): Resultado<E>;
   /**
-   * Proyección por jugador (información oculta). En esta sesión devuelve la
-   * VistaPartida de Carioca; la vista genérica llega cuando se integre el 2º motor.
+   * Proyección por jugador (información oculta). Devuelve una `VistaJuego`: la
+   * unión de las formas de vista de cada juego (ver vistaJuego.ts). Cada motor
+   * devuelve la suya (Carioca → VistaPartida, Mentiroso → VistaMentiroso).
    */
-  construirVista(estado: E, jugadorId: string, meta: MetaSala): VistaPartida;
+  construirVista(estado: E, jugadorId: string, meta: MetaSala): VistaJuego;
 }

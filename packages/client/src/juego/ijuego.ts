@@ -6,7 +6,7 @@
 // sincronizarEstado y emite intenciones por contexto.enviar; jamás decide reglas.
 
 import type { MensajeCliente } from "@juegos/server/protocolo";
-import type { VistaPartida } from "@juegos/server/vista";
+import type { VistaJuego } from "@juegos/server/vistaJuego";
 
 /** Recursos y canales que el hub entrega al juego al arrancarlo. */
 export interface ContextoJuego {
@@ -32,8 +32,12 @@ export type SenalJuego = { readonly tipo: "aviso"; readonly mensaje: string };
 export interface IJuego {
   /** Monta escena y HUD sobre los contenedores y arranca su bucle. */
   iniciar(contexto: ContextoJuego): void;
-  /** Aplica un estado autoritativo recién llegado del servidor. */
-  sincronizarEstado(vista: VistaPartida): void;
+  /**
+   * Aplica un estado autoritativo recién llegado del servidor. El tipo del canal
+   * es `VistaJuego` (la unión de todos los juegos); cada juego recibe la forma de
+   * SU sala (por método bivariante, declara su propia vista sin discriminar).
+   */
+  sincronizarEstado(vista: VistaJuego): void;
   /** Procesa una señal del servidor que no es estado (p. ej. un aviso). */
   procesarAccion(senal: SenalJuego): void;
   /** Desmonta escena/HUD y libera todos sus recursos. */

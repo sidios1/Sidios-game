@@ -154,14 +154,19 @@ npm run tauri:build -w @juegos/client         # ejecutable/instalador distribuib
 ```
 client ──> carioca-core (solo tipos/validaciones de presentación)
 client ──> server (solo protocolo, vista e interfaz TransporteCliente)
-server ──> carioca-core
+server ──> carioca-core, mentiroso-core
 carioca-core ──> (nada)
+mentiroso-core ──> (nada)
 ```
 - El cliente importa SIEMPRE los subpaths `@juegos/server/protocolo`,
-  `@juegos/server/vista`, `@juegos/server/transporte` y `@juegos/server/latido`
-  (definidos en el `exports` del server; `latido.ts` es puro, sin `ws`/Node),
-  nunca la raíz `@juegos/server`: la raíz reexporta `transporteLan.ts` y
-  arrastraría `ws`/`node:os` al bundle del navegador.
+  `@juegos/server/vista`, `@juegos/server/vistaJuego`, `@juegos/server/transporte`
+  y `@juegos/server/latido` (definidos en el `exports` del server; todos
+  type-only o puros, sin `ws`/Node), nunca la raíz `@juegos/server`: la raíz
+  reexporta `transporteLan.ts` y arrastraría `ws`/`node:os` al bundle del
+  navegador. `vistaJuego.ts` es el punto de composición de las vistas: exporta
+  la unión `VistaJuego` (la vista de cualquier juego) y reexporta las formas de
+  Mentiroso y los tipos de carta de su core (el cliente no depende de
+  mentiroso-core directamente).
   (Excepción: los tests del cliente pueden importar la raíz para HOSPEDAR
   una sala real, como hace `transporteLanNavegador.test.ts`.)
 

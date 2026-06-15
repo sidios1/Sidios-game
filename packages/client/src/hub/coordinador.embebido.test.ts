@@ -105,10 +105,13 @@ describe("Coordinador con servidor embebido (escritorio)", () => {
 
     await vi.waitFor(() => expect(transporte.codigo).toBe("192.168.1.50:35711"));
     expect(iniciarServidorEmbebido).toHaveBeenCalledTimes(1);
+    // El host arranca el sidecar con SU juego seleccionado (game-id).
+    expect(iniciarServidorEmbebido).toHaveBeenCalledWith("falso");
     expect(transporte.enviados.map((d) => JSON.parse(d))).toContainEqual({
       tipo: "unirse",
       nombre: "Ana",
       avatar: AVATAR,
+      juego: "falso",
     });
 
     // Al volver al hub, el host apaga su servidor embebido.

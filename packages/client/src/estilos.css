@@ -33,7 +33,8 @@ body {
 #hud button,
 #hud input,
 #hud .velo,
-#hud .panel {
+#hud .panel,
+#hud .mentiroso {
   pointer-events: auto;
 }
 
@@ -605,4 +606,221 @@ button.perfil-avatar.seleccionado {
 
 .insignia-mesa.desconectado {
   opacity: 0.5;
+}
+
+/* ── Mentiroso (UI mínima de DOM, sin Three.js) ─────────────────────────── */
+
+.mentiroso {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, 94vw);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 3.2rem 1rem 1.2rem;
+  overflow-y: auto;
+}
+
+.mentiroso-cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  background: rgba(13, 18, 24, 0.9);
+  border: 1px solid #2a3442;
+}
+
+.mentiroso-cab h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.mentiroso-palo {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.mentiroso-pila {
+  color: #9aa5b1;
+  font-size: 0.9rem;
+}
+
+.mentiroso-simbolo,
+.mentiroso-carta {
+  color: #e8e4da;
+}
+
+.mentiroso-simbolo.roja,
+.mentiroso-carta.roja {
+  color: #e07676;
+}
+
+.mentiroso-jugadores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.mentiroso-jugador {
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  background: rgba(13, 18, 24, 0.85);
+  border: 1px solid #2a3442;
+  font-size: 0.95rem;
+}
+
+.mentiroso-jugador.en-turno {
+  border-color: #2f8a57;
+  color: #9fd0ae;
+  box-shadow: 0 0 0 1px rgba(47, 138, 87, 0.5);
+}
+
+.mentiroso-jugador.desconectado {
+  opacity: 0.5;
+}
+
+.mentiroso-estado {
+  color: #9aa5b1;
+  font-size: 0.92rem;
+  min-height: 1.2em;
+  text-align: center;
+}
+
+.mentiroso-resolucion {
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #2a3442;
+  background: rgba(13, 18, 24, 0.9);
+  font-size: 0.92rem;
+  text-align: center;
+}
+
+.mentiroso-resolucion.mentia {
+  border-color: #8a4040;
+  background: rgba(70, 36, 36, 0.85);
+}
+
+.mentiroso-resolucion.verdad {
+  border-color: #2f8a57;
+  background: rgba(28, 64, 44, 0.85);
+}
+
+.mentiroso-reveladas,
+.mentiroso-cartas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: center;
+  margin-top: 0.4rem;
+}
+
+.mentiroso-carta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.9rem;
+  height: 2.4rem;
+  padding: 0 0.3rem;
+  border-radius: 6px;
+  background: #f2efe6;
+  color: #1a1a1a;
+  font-size: 1.3rem;
+  border: 1px solid #c9c3b4;
+}
+
+.mentiroso-carta.roja {
+  color: #c0392b;
+}
+
+.mentiroso-mano {
+  padding: 0.6rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(13, 18, 24, 0.9);
+  border: 1px solid #2a3442;
+}
+
+.mentiroso-mano-titulo {
+  font-size: 0.9rem;
+  color: #9aa5b1;
+  margin-bottom: 0.2rem;
+}
+
+.mentiroso-controles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem;
+  border-radius: 12px;
+  background: rgba(13, 18, 24, 0.9);
+  border: 1px solid #2a3442;
+}
+
+.mentiroso-jugar {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.mentiroso-cant {
+  min-width: 2.4rem;
+}
+
+.mentiroso-cant.sel {
+  background: #246b43;
+  border-color: #2f8a57;
+}
+
+.mentiroso-accion.jugar {
+  background: #246b43;
+  border-color: #2f8a57;
+}
+
+.mentiroso-accion.acusar {
+  background: #6b2424;
+  border-color: #8a4040;
+}
+
+.mentiroso-espera {
+  color: #9aa5b1;
+  font-size: 0.92rem;
+}
+
+.mentiroso-fin {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 12px;
+  background: rgba(28, 64, 44, 0.9);
+  border: 1px solid #2f8a57;
+}
+
+.mentiroso-fin-titulo {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.mentiroso-toast {
+  position: absolute;
+  top: 7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: rgba(70, 36, 36, 0.95);
+  border: 1px solid #8a4040;
+  max-width: min(560px, 90vw);
+  text-align: center;
 }

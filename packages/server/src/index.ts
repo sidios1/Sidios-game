@@ -5,6 +5,7 @@
 export * from "./transporte.js";
 export * from "./protocolo.js";
 export * from "./vista.js";
+export * from "./vistaJuego.js";
 export * from "./motor.js";
 export * from "./orquestador.js";
 export * from "./registroMotores.js";

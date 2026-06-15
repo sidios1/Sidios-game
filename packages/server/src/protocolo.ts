@@ -7,7 +7,7 @@
 // MOTOR del juego (packages/server/src/juegos/<juego>/), no este archivo. Así el
 // protocolo no conoce las reglas de ningún juego.
 
-import type { VistaPartida } from "./vista.js";
+import type { VistaJuego } from "./vistaJuego.js";
 
 /**
  * Sobre genérico de una acción de juego. El protocolo no sabe qué acciones
@@ -74,7 +74,7 @@ export type CodigoErrorServidor = CodigoErrorSala | (string & {});
 export type MensajeServidor =
   | { readonly tipo: "bienvenida"; readonly jugadorId: string; readonly token: string }
   | { readonly tipo: "estadoSala"; readonly jugadores: readonly JugadorEnSala[] }
-  | { readonly tipo: "vista"; readonly vista: VistaPartida }
+  | { readonly tipo: "vista"; readonly vista: VistaJuego }
   | {
       readonly tipo: "error";
       readonly codigo: CodigoErrorServidor;

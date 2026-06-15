@@ -15,10 +15,13 @@ if (!Number.isInteger(puerto) || puerto < 0 || puerto > 65535) {
   process.exit(1);
 }
 
+// Juego de la sala de desarrollo; Carioca por defecto. El env JUEGO permite
+// probar otro motor sin tocar código (p. ej. JUEGO=mentiroso npm run dev:server).
+const juego = process.env["JUEGO"] ?? "carioca";
 const transporte = new TransporteLanServidor({ puerto });
-const orquestador = crearSala("carioca", { transporte });
+const orquestador = crearSala(juego, { transporte });
 if (orquestador === undefined) {
-  console.error("juego desconocido: carioca");
+  console.error(`juego desconocido: ${juego}`);
   process.exit(1);
 }
 

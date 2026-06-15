@@ -19,6 +19,10 @@
       "types": "./dist/vista.d.ts",
       "default": "./dist/vista.js"
     },
+    "./vistaJuego": {
+      "types": "./dist/vistaJuego.d.ts",
+      "default": "./dist/vistaJuego.js"
+    },
     "./transporte": {
       "types": "./dist/transporte.d.ts",
       "default": "./dist/transporte.js"
@@ -38,6 +42,7 @@
   },
   "dependencies": {
     "@juegos/carioca-core": "*",
+    "@juegos/mentiroso-core": "*",
     "ws": "^8.18.0"
   },
   "devDependencies": {

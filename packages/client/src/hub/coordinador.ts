@@ -222,7 +222,8 @@ export class Coordinador {
   private async crearPartidaEmbebida(): Promise<void> {
     let codigo: string;
     try {
-      codigo = await iniciarServidorEmbebido();
+      // El host arranca el sidecar con SU juego seleccionado (env JUEGO).
+      codigo = await iniciarServidorEmbebido(this.juegoSeleccionado?.id ?? "carioca");
     } catch (error) {
       this.conexionUI.mostrarError(
         error instanceof Error ? error.message : "no se pudo iniciar el servidor",
@@ -324,11 +325,14 @@ export class Coordinador {
       return;
     }
     this.conexion = nueva;
+    // El game-id viaja en `unirse` (selección local del hub). La sala ya corre
+    // ese juego (el host lo pasó al sidecar al crearla).
+    const juego = this.juegoSeleccionado?.id;
     const sesion = usarToken ? leerSesion(this.almacen, codigo) : null;
     if (sesion === null) {
-      nueva.unirse(perfil.nickname, perfil.avatarId);
+      nueva.unirse(perfil.nickname, perfil.avatarId, undefined, juego);
     } else {
-      nueva.unirse(sesion.nombre, sesion.avatar ?? perfil.avatarId, sesion.token);
+      nueva.unirse(sesion.nombre, sesion.avatar ?? perfil.avatarId, sesion.token, juego);
     }
   }
 

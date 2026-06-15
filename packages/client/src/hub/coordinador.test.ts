@@ -184,6 +184,8 @@ describe("Coordinador", () => {
       tipo: "unirse",
       nombre: "Ana",
       avatar: AVATAR,
+      // El game-id seleccionado en el hub viaja en unirse (selección local).
+      juego: "falso",
     });
     expect(espia.iniciados).toBe(0);
   });

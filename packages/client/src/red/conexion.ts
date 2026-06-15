@@ -12,12 +12,12 @@ import {
   serializarCliente,
 } from "@juegos/server/protocolo";
 import type { TransporteCliente } from "@juegos/server/transporte";
-import type { VistaPartida } from "@juegos/server/vista";
+import type { VistaJuego } from "@juegos/server/vistaJuego";
 
 export interface OyentesConexion {
   readonly alBienvenida: (jugadorId: string, token: string) => void;
   readonly alEstadoSala: (jugadores: readonly JugadorEnSala[]) => void;
-  readonly alVista: (vista: VistaPartida) => void;
+  readonly alVista: (vista: VistaJuego) => void;
   readonly alError: (codigo: CodigoErrorServidor, mensaje: string) => void;
   readonly alSalaCerrada: (motivo: string) => void;
   readonly alDesconectar: () => void;
@@ -36,14 +36,19 @@ export class Conexion {
     });
   }
 
-  /** Une al jugador a la sala; con token reconecta a su asiento. */
-  unirse(nombre: string, avatar?: string, token?: string): void {
+  /**
+   * Une al jugador a la sala; con token reconecta a su asiento. `juego` es el
+   * game-id que el cliente espera (viaja en el flujo de unirse); con selección
+   * local del hub, la sala ya corre ese juego.
+   */
+  unirse(nombre: string, avatar?: string, token?: string, juego?: string): void {
     // exactOptionalPropertyTypes: solo viajan las claves presentes.
     this.enviarMensaje({
       tipo: "unirse",
       nombre,
       ...(avatar !== undefined ? { avatar } : {}),
       ...(token !== undefined ? { token } : {}),
+      ...(juego !== undefined ? { juego } : {}),
     });
   }
 
