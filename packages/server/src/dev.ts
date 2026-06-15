@@ -3,7 +3,7 @@
 // En la Fase 5 esto lo reemplaza el servidor embebido en la app del host.
 // No se exporta desde index.ts: es un ejecutable, no parte de la librería.
 
-import { Orquestador } from "./orquestador.js";
+import { crearSala } from "./registroMotores.js";
 import { TransporteLanServidor } from "./transporteLan.js";
 
 const PUERTO_POR_DEFECTO = 35711;
@@ -16,7 +16,11 @@ if (!Number.isInteger(puerto) || puerto < 0 || puerto > 65535) {
 }
 
 const transporte = new TransporteLanServidor({ puerto });
-const orquestador = new Orquestador({ transporte });
+const orquestador = crearSala("carioca", { transporte });
+if (orquestador === undefined) {
+  console.error("juego desconocido: carioca");
+  process.exit(1);
+}
 
 try {
   const codigo = await orquestador.iniciar();

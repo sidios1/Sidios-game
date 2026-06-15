@@ -9,7 +9,8 @@ import type { JugadorEnSala } from "@juegos/server/protocolo";
 import type { VistaPartida } from "@juegos/server/vista";
 import type { ProgramarIntervalo, ProgramarTimeout } from "@juegos/server/latido";
 import { PING, PONG } from "@juegos/server/latido";
-import { Orquestador, TransporteLanServidor } from "@juegos/server";
+import { crearSala, TransporteLanServidor } from "@juegos/server";
+import type { SalaJuego } from "@juegos/server";
 import { Conexion } from "./conexion.js";
 import type { SocketNavegador } from "./transporteLanNavegador.js";
 import { TransporteLanNavegador } from "./transporteLanNavegador.js";
@@ -73,7 +74,7 @@ async function conectarCliente(codigo: string, nombre: string): Promise<ClienteD
 }
 
 describe("TransporteLanNavegador contra el orquestador real", () => {
-  let orquestador: Orquestador | null = null;
+  let orquestador: SalaJuego | null = null;
   const clientes: ClienteDePrueba[] = [];
 
   afterEach(async () => {
@@ -86,9 +87,11 @@ describe("TransporteLanNavegador contra el orquestador real", () => {
   });
 
   it("dos clientes juegan un ciclo de turno por la red", async () => {
-    orquestador = new Orquestador({
+    const salaCarioca = crearSala("carioca", {
       transporte: new TransporteLanServidor({ ipAnunciada: "127.0.0.1" }),
     });
+    if (salaCarioca === undefined) throw new Error("juego 'carioca' no registrado");
+    orquestador = salaCarioca;
     const codigo = await orquestador.iniciar();
 
     const ana = await conectarCliente(codigo, "Ana");

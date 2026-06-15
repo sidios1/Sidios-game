@@ -7,7 +7,9 @@ import type { Carta } from "@juegos/carioca-core";
 import { crearGeneradorSemilla, esComodin } from "@juegos/carioca-core";
 import { idsSegunEspecs } from "../../carioca-core/src/apoyoPruebas.js";
 import { Orquestador } from "./orquestador.js";
-import type { OpcionesOrquestador } from "./orquestador.js";
+import type { Programador } from "./orquestador.js";
+import type { GeneradorAleatorio } from "./motor.js";
+import { crearMotorCarioca } from "./juegos/carioca/motorCarioca.js";
 import type { MensajeCliente, MensajeServidor } from "./protocolo.js";
 import { analizarMensajeServidor, serializarCliente } from "./protocolo.js";
 import type { TransporteCliente } from "./transporte.js";
@@ -127,12 +129,27 @@ interface Sala {
   readonly clientes: readonly ClientePrueba[];
 }
 
+interface OpcionesAbrir {
+  readonly rng?: GeneradorAleatorio;
+  readonly maxJugadores?: number;
+  readonly mazoParaMano?: (numeroMano: number) => readonly Carta[];
+  readonly programar?: Programador;
+}
+
 async function abrirSala(
   nombres: readonly string[],
-  opciones?: Partial<OpcionesOrquestador>,
+  opciones?: OpcionesAbrir,
 ): Promise<Sala> {
   const transporte = new TransporteMemoria();
-  const orquestador = new Orquestador({ transporte, ...opciones });
+  const orquestador = new Orquestador({
+    transporte,
+    motor: crearMotorCarioca(
+      opciones?.mazoParaMano !== undefined ? { mazoParaMano: opciones.mazoParaMano } : {},
+    ),
+    ...(opciones?.rng !== undefined ? { rng: opciones.rng } : {}),
+    ...(opciones?.maxJugadores !== undefined ? { maxJugadores: opciones.maxJugadores } : {}),
+    ...(opciones?.programar !== undefined ? { programar: opciones.programar } : {}),
+  });
   const codigo = await orquestador.iniciar();
   const clientes: ClientePrueba[] = [];
   for (const nombre of nombres) {
@@ -197,7 +214,7 @@ describe("orquestador: partida completa sin red (transporte en memoria)", () => 
     const transporte = new TransporteMemoria();
     const orquestador = new Orquestador({
       transporte,
-      mazoParaMano: fabricaMazoParaMano(GUIONES),
+      motor: crearMotorCarioca({ mazoParaMano: fabricaMazoParaMano(GUIONES) }),
     });
     const codigo = await orquestador.iniciar();
 

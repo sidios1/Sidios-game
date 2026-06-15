@@ -1,38 +1,20 @@
 // Orquestador de partida: la autoridad. Recibe intenciones por el transporte,
-// las valida con carioca-core (aquí no vive ninguna regla del juego), y emite
-// a cada jugador SU vista. Solo conoce las interfaces de transporte.ts: no
-// sabe si habla por LAN, online o memoria.
+// las delega al MOTOR del juego de la sala (aquí no vive ninguna regla), y emite
+// a cada jugador SU vista. Es GENÉRICO: mantiene jugadores, asientos y el ciclo
+// de conexión/reconexión (no es específico de ningún juego) y le pide al motor
+// la validación, la transición de turnos/rondas y la vista. Solo conoce las
+// interfaces de transporte.ts: no sabe si habla por LAN, online o memoria.
 
+import type { GeneradorAleatorio, JugadorMotor, MotorJuego } from "./motor.js";
 import type {
-  Carta,
-  DatosJugador,
-  EstadoPartida,
-  GeneradorAleatorio,
-  Resultado,
-} from "@juegos/carioca-core";
-import {
-  bajarse,
-  crearGeneradorSemilla,
-  crearPartida,
-  crearPartidaConMazo,
-  descartar,
-  iniciarSiguienteMano,
-  iniciarSiguienteManoConMazo,
-  pasarTurno,
-  pegar,
-  robarDelMazo,
-  robarDelPozo,
-} from "@juegos/carioca-core";
-import type {
+  AccionJuego,
   CodigoErrorServidor,
   JugadorEnSala,
-  MensajeCliente,
   MensajeServidor,
 } from "./protocolo.js";
 import { analizarMensajeCliente, serializarServidor } from "./protocolo.js";
 import type { IdConexion, TransporteServidor } from "./transporte.js";
 import type { EstadoConexion } from "./vista.js";
-import { construirVista } from "./vista.js";
 
 /** Programa un callback diferido y devuelve una función para cancelarlo. */
 export type Programador = (ms: number, fn: () => void) => () => void;
@@ -42,18 +24,18 @@ const programadorReal: Programador = (ms, fn) => {
   return () => clearTimeout(id);
 };
 
-export interface OpcionesOrquestador {
+export interface OpcionesOrquestador<E, A> {
   readonly transporte: TransporteServidor;
-  /** Barajado real; por defecto, semilla derivada del reloj. */
+  /** Motor del juego de la sala: valida, transiciona y proyecta la vista. */
+  readonly motor: MotorJuego<E, A>;
+  /** Barajado real; por defecto, Math.random (los tests inyectan determinismo). */
   readonly rng?: GeneradorAleatorio;
-  /** Inyección determinista para tests: el mazo ya ordenado de cada mano. */
-  readonly mazoParaMano?: (numeroMano: number) => readonly Carta[];
   /** Tokens de reconexión; el default basta para una LAN entre amigos. */
   readonly generarToken?: () => string;
   /**
    * Cupo del lobby. Por defecto SIN tope (jugadores ilimitados): los mazos
-   * escalan en el core, que solo exige el mínimo de 2 al iniciar. Se puede
-   * fijar un cupo explícito para limitar una sala.
+   * escalan en el motor, que solo exige el mínimo de cada juego al iniciar. Se
+   * puede fijar un cupo explícito para limitar una sala.
    */
   readonly maxJugadores?: number;
   /** Programa los temporizadores de gracia; inyectable para tests deterministas. */
@@ -94,10 +76,10 @@ function tokenAleatorio(): string {
   );
 }
 
-export class Orquestador {
+export class Orquestador<E = unknown, A = unknown> {
   private readonly transporte: TransporteServidor;
+  private readonly motor: MotorJuego<E, A>;
   private readonly rng: GeneradorAleatorio;
-  private readonly mazoParaMano: ((numeroMano: number) => readonly Carta[]) | null;
   private readonly generarToken: () => string;
   private readonly maxJugadores: number;
   private readonly programar: Programador;
@@ -106,14 +88,14 @@ export class Orquestador {
   private readonly asientos: Asiento[] = [];
   private readonly porConexion = new Map<IdConexion, string>();
   private readonly pendientes = new Set<IdConexion>();
-  private estado: EstadoPartida | null = null;
+  private estado: E | null = null;
   private readonly listos = new Set<string>();
   private contadorJugadores = 0;
 
-  constructor(opciones: OpcionesOrquestador) {
+  constructor(opciones: OpcionesOrquestador<E, A>) {
     this.transporte = opciones.transporte;
-    this.rng = opciones.rng ?? crearGeneradorSemilla(Date.now());
-    this.mazoParaMano = opciones.mazoParaMano ?? null;
+    this.motor = opciones.motor;
+    this.rng = opciones.rng ?? Math.random;
     this.generarToken = opciones.generarToken ?? tokenAleatorio;
     this.maxJugadores = opciones.maxJugadores ?? Number.POSITIVE_INFINITY;
     this.programar = opciones.programar ?? programadorReal;
@@ -150,6 +132,23 @@ export class Orquestador {
       this.procesarUnirse(conexionId, mensaje.nombre, mensaje.avatar, mensaje.token);
       return;
     }
+    if (mensaje.tipo === "accionJuego") {
+      // La FORMA de la acción se valida ANTES del chequeo de "ya te uniste", para
+      // que una acción desconocida/malformada dé "mensajeInvalido" igual que antes
+      // (cuando el protocolo conocía las acciones de Carioca y devolvía null).
+      const accion = this.motor.parsearAccion(mensaje.accion);
+      if (accion === null) {
+        this.enviarError(conexionId, "mensajeInvalido", "mensaje malformado o desconocido");
+        return;
+      }
+      const jugadorId = this.porConexion.get(conexionId);
+      if (jugadorId === undefined) {
+        this.enviarError(conexionId, "debesUnirtePrimero", "primero envía unirse");
+        return;
+      }
+      this.procesarAccionJuego(conexionId, jugadorId, accion);
+      return;
+    }
     const jugadorId = this.porConexion.get(conexionId);
     if (jugadorId === undefined) {
       this.enviarError(conexionId, "debesUnirtePrimero", "primero envía unirse");
@@ -165,8 +164,6 @@ export class Orquestador {
       case "reabrirConexion":
         this.procesarReabrir(conexionId, jugadorId, mensaje.jugadorId);
         return;
-      default:
-        this.procesarIntencion(conexionId, jugadorId, mensaje);
     }
   }
 
@@ -342,14 +339,11 @@ export class Orquestador {
       this.enviarError(conexionId, "noEresAnfitrion", "solo el anfitrión puede iniciar");
       return;
     }
-    const datos: DatosJugador[] = this.asientos.map((a) => ({
+    const jugadores: JugadorMotor[] = this.asientos.map((a) => ({
       id: a.jugadorId,
       nombre: a.nombre,
     }));
-    const resultado =
-      this.mazoParaMano === null
-        ? crearPartida(datos, this.rng)
-        : crearPartidaConMazo(datos, this.mazoParaMano(1));
+    const resultado = this.motor.crear(jugadores, this.rng);
     if (!resultado.ok) {
       this.enviarError(conexionId, resultado.error.codigo, resultado.error.mensaje);
       return;
@@ -359,61 +353,38 @@ export class Orquestador {
     this.difundirVistas();
   }
 
-  private procesarIntencion(
+  /**
+   * Aplica una acción de juego (ya validada en su FORMA por el motor). Las reglas
+   * (de quién es el turno, si la jugada es legal) las revalida el motor: el
+   * orquestador solo traduce el resultado a estado nuevo o error.
+   */
+  private procesarAccionJuego(
     conexionId: IdConexion,
     jugadorId: string,
-    mensaje: MensajeCliente,
+    accion: A,
   ): void {
     if (this.faseSala !== "enPartida" || this.estado === null) {
       this.enviarError(conexionId, "accionInvalida", "no hay una partida en curso");
       return;
     }
-    const resultado = this.aplicarIntencion(this.estado, jugadorId, mensaje);
-    if (resultado === null) {
-      this.enviarError(conexionId, "accionInvalida", "esa acción no existe");
-      return;
-    }
+    const resultado = this.motor.aplicarAccion(this.estado, jugadorId, accion);
     if (!resultado.ok) {
       this.enviarError(conexionId, resultado.error.codigo, resultado.error.mensaje);
       return;
     }
     this.estado = resultado.valor;
-    if (resultado.valor.fase === "partidaTerminada") {
+    if (this.motor.terminada(resultado.valor)) {
       this.faseSala = "terminada";
     }
     // Tras la jugada el turno puede caer en un ausente con gracia expirada.
     this.reaccionar();
   }
 
-  /** Traduce la intención a la función del core. Cero reglas propias. */
-  private aplicarIntencion(
-    estado: EstadoPartida,
-    jugadorId: string,
-    mensaje: MensajeCliente,
-  ): Resultado<EstadoPartida> | null {
-    switch (mensaje.tipo) {
-      case "robarDelMazo":
-        return robarDelMazo(estado, jugadorId);
-      case "robarDelPozo":
-        return robarDelPozo(estado, jugadorId);
-      case "bajarse":
-        return bajarse(estado, jugadorId, mensaje.propuesta);
-      case "pegar":
-        return mensaje.extremo === undefined
-          ? pegar(estado, jugadorId, mensaje.cartaId, mensaje.mesaIdx)
-          : pegar(estado, jugadorId, mensaje.cartaId, mensaje.mesaIdx, mensaje.extremo);
-      case "descartar":
-        return descartar(estado, jugadorId, mensaje.cartaId);
-      default:
-        return null;
-    }
-  }
-
   private procesarListo(conexionId: IdConexion, jugadorId: string): void {
     if (
       this.faseSala !== "enPartida" ||
       this.estado === null ||
-      this.estado.fase !== "manoTerminada"
+      !this.motor.esperandoContinuar(this.estado)
     ) {
       this.enviarError(conexionId, "accionInvalida", "no hay mano terminada que confirmar");
       return;
@@ -422,7 +393,7 @@ export class Orquestador {
     this.reaccionar();
   }
 
-  // ── Avance de mano por votos ──────────────────────────────────────────────
+  // ── Avance de ronda por votos ─────────────────────────────────────────────
 
   private contarConectados(): number {
     return this.asientos.filter((a) => a.conexionId !== null).length;
@@ -433,30 +404,24 @@ export class Orquestador {
   }
 
   /**
-   * Reparte la siguiente mano cuando votó al menos el 75% de los jugadores
+   * Avanza a la siguiente ronda cuando votó al menos el 75% de los jugadores
    * conectados. Se reevalúa tras cada voto, desconexión y reconexión: una
    * desconexión baja el denominador y puede disparar el avance.
    */
-  private avanzarManoSiCorresponde(): void {
+  private avanzarRondaSiCorresponde(): void {
     if (
       this.faseSala !== "enPartida" ||
       this.estado === null ||
-      this.estado.fase !== "manoTerminada"
+      !this.motor.esperandoContinuar(this.estado)
     ) {
       return;
     }
     if (this.contarConectados() === 0) return;
     if (this.listos.size < this.votosNecesarios()) return;
-    const resultado =
-      this.mazoParaMano === null
-        ? iniciarSiguienteMano(this.estado, this.rng)
-        : iniciarSiguienteManoConMazo(
-            this.estado,
-            this.mazoParaMano(this.estado.manoActual + 1),
-          );
+    const resultado = this.motor.continuar(this.estado, this.rng);
     if (!resultado.ok) {
-      // Invariante rota (mano siguiente inexistente con fase manoTerminada):
-      // no hay emisor a quien culpar; se deja la sala como está.
+      // Invariante rota (no hay ronda siguiente pese a esperar continuar): no hay
+      // emisor a quien culpar; se deja la sala como está.
       return;
     }
     this.estado = resultado.valor;
@@ -467,11 +432,11 @@ export class Orquestador {
 
   /**
    * Post-procesado común tras cualquier cambio de estado en partida: avanza la
-   * mano si toca, salta los turnos de los ausentes/suspendidos y difunde.
+   * ronda si toca, salta los turnos de los ausentes/suspendidos y difunde.
    */
   private reaccionar(): void {
-    this.avanzarManoSiCorresponde(); // solo actúa en manoTerminada
-    this.saltarTurnosAusentes(); // solo actúa en jugandoMano
+    this.avanzarRondaSiCorresponde(); // solo actúa si el motor espera continuar
+    this.saltarTurnosAusentes(); // solo actúa con un turno activo
     this.difundirVistas();
   }
 
@@ -486,8 +451,10 @@ export class Orquestador {
     if (this.faseSala !== "enPartida") return;
     for (let i = 0; i < this.asientos.length; i++) {
       const estado = this.estado;
-      if (estado === null || estado.fase !== "jugandoMano") return;
-      const enTurno = this.asientos.find((a) => a.jugadorId === estado.turno.jugadorId);
+      if (estado === null) return;
+      const jugadorIdEnTurno = this.motor.jugadorEnTurno(estado);
+      if (jugadorIdEnTurno === null) return;
+      const enTurno = this.asientos.find((a) => a.jugadorId === jugadorIdEnTurno);
       if (enTurno === undefined) return;
       const debeJugar =
         enTurno.estadoConexion === "conectado" ||
@@ -499,7 +466,7 @@ export class Orquestador {
           enTurno.estadoConexion = "suspendido";
         }
       }
-      const resultado = pasarTurno(estado, enTurno.jugadorId);
+      const resultado = this.motor.saltarTurno(estado, enTurno.jugadorId);
       if (!resultado.ok) return;
       this.estado = resultado.valor;
     }
@@ -539,7 +506,8 @@ export class Orquestador {
 
   /** Cada jugador conectado recibe SU vista; las manos ajenas nunca viajan. */
   private difundirVistas(): void {
-    if (this.estado === null) return;
+    const estado = this.estado;
+    if (estado === null) return;
     const avatares = new Map<string, string>();
     const estados = new Map<string, EstadoConexion>();
     for (const a of this.asientos) {
@@ -557,7 +525,7 @@ export class Orquestador {
       if (asiento.conexionId === null) continue;
       this.enviarA(asiento.conexionId, {
         tipo: "vista",
-        vista: construirVista(this.estado, asiento.jugadorId, meta),
+        vista: this.motor.construirVista(estado, asiento.jugadorId, meta),
       });
     }
   }

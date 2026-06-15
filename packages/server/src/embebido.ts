@@ -8,7 +8,8 @@
 //    cliente (red/servidorEmbebido.ts) parsea para mostrar el código de la sala.
 //  - Cierra limpio ante SIGINT y SIGTERM (Tauri mata el hijo con SIGTERM/kill).
 
-import { Orquestador } from "./orquestador.js";
+import { crearSala } from "./registroMotores.js";
+import type { SalaJuego } from "./registroMotores.js";
 import { TransporteLanServidor } from "./transporteLan.js";
 
 const PUERTO_POR_DEFECTO = 35711;
@@ -20,21 +21,28 @@ if (!Number.isInteger(puerto) || puerto < 0 || puerto > 65535) {
   process.exit(1);
 }
 
+// El juego de la sala embebida; por ahora Carioca (el cliente aún no envía
+// game-id). El env JUEGO permite cambiarlo sin tocar código.
+const juego = process.env["JUEGO"] ?? "carioca";
 const transporte = new TransporteLanServidor({ puerto });
-const orquestador = new Orquestador({ transporte });
-
-let cerrando = false;
-function cerrar(): void {
-  if (cerrando) return;
-  cerrando = true;
-  void orquestador.detener().then(() => process.exit(0));
+const orquestador = crearSala(juego, { transporte });
+if (orquestador === undefined) {
+  console.error(`juego desconocido: ${juego}`);
+  process.exit(1);
 }
 
 // Sin top-level await: esbuild empaqueta a CJS (formato del sidecar SEA) y CJS
-// no admite top-level await. El arranque vive en una función asíncrona.
-async function arrancar(): Promise<void> {
+// no admite top-level await. El arranque vive en una función asíncrona; la sala
+// viaja como argumento (ya no es undefined tras la guarda de arriba).
+async function arrancar(sala: SalaJuego): Promise<void> {
+  let cerrando = false;
+  const cerrar = (): void => {
+    if (cerrando) return;
+    cerrando = true;
+    void sala.detener().then(() => process.exit(0));
+  };
   try {
-    const codigo = await orquestador.iniciar();
+    const codigo = await sala.iniciar();
     // Marcador legible por máquina: el lanzador del cliente espera esta línea.
     console.log(`CODIGO=${codigo}`);
     console.log(`Sala LAN abierta. Código para unirse: ${codigo}`);
@@ -46,4 +54,4 @@ async function arrancar(): Promise<void> {
   process.on("SIGTERM", cerrar);
 }
 
-void arrancar();
+void arrancar(orquestador);

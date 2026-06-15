@@ -1,38 +1,54 @@
 // Protocolo de mensajes entre cliente y orquestador, en JSON.
 // Las intenciones NO llevan jugadorId: el orquestador lo deriva de la
 // conexión, así un cliente no puede actuar en nombre de otro.
+//
+// Las acciones de JUEGO viajan en un sobre genérico (AccionJuego): el protocolo
+// solo garantiza `tipo: string`; la FORMA concreta de cada acción la valida el
+// MOTOR del juego (packages/server/src/juegos/<juego>/), no este archivo. Así el
+// protocolo no conoce las reglas de ningún juego.
 
-import type {
-  CodigoError,
-  ExtremoEscala,
-  PropuestaCombinacion,
-  TipoCombinacion,
-} from "@juegos/carioca-core";
 import type { VistaPartida } from "./vista.js";
 
-export type MensajeCliente =
+/**
+ * Sobre genérico de una acción de juego. El protocolo no sabe qué acciones
+ * existen: solo exige un `tipo` string; el motor del juego valida el resto.
+ */
+export interface AccionJuego {
+  readonly tipo: string;
+  readonly [campo: string]: unknown;
+}
+
+/** Mensajes de sala (no específicos de ningún juego). */
+export type MensajeLobby =
   | {
       readonly tipo: "unirse";
       readonly nombre: string;
       /** Id del avatar del pool por defecto; presentación, viaja con el jugador. */
       readonly avatar?: string;
       readonly token?: string;
+      /** Juego que el cliente espera jugar en la sala (enganche del registro). */
+      readonly juego?: string;
     }
   | { readonly tipo: "iniciarPartida" }
-  | { readonly tipo: "robarDelMazo" }
-  | { readonly tipo: "robarDelPozo" }
-  | { readonly tipo: "bajarse"; readonly propuesta: readonly PropuestaCombinacion[] }
-  | {
-      readonly tipo: "pegar";
-      readonly cartaId: string;
-      readonly mesaIdx: number;
-      readonly extremo?: ExtremoEscala;
-    }
-  | { readonly tipo: "descartar"; readonly cartaId: string }
   | { readonly tipo: "listoSiguienteMano" }
   /** Solo el anfitrión: reabre el canal de un jugador para que pueda reentrar
    *  (conserva su asiento, mano y estado; NO es una expulsión). */
   | { readonly tipo: "reabrirConexion"; readonly jugadorId: string };
+
+/**
+ * Lo que el cliente ENVÍA (y `serializarCliente` serializa): mensajes de lobby
+ * o cualquier acción de juego plana. Las acciones concretas de cada juego son
+ * asignables a `AccionJuego`, así el cliente las manda sin envoltorio.
+ */
+export type MensajeCliente = MensajeLobby | AccionJuego;
+
+/**
+ * Lo que `analizarMensajeCliente` DEVUELVE y el orquestador consume: unión
+ * discriminada limpia, con las acciones de juego ya envueltas en "accionJuego".
+ */
+export type MensajeClienteParseado =
+  | MensajeLobby
+  | { readonly tipo: "accionJuego"; readonly accion: AccionJuego };
 
 export interface JugadorEnSala {
   readonly jugadorId: string;
@@ -42,7 +58,7 @@ export interface JugadorEnSala {
   readonly esAnfitrion: boolean;
 }
 
-/** Errores propios de la sala; los de reglas (CodigoError) vienen del core. */
+/** Errores propios de la sala; los de regla (string) los produce el motor. */
 export type CodigoErrorSala =
   | "mensajeInvalido"
   | "salaLlena"
@@ -52,7 +68,8 @@ export type CodigoErrorSala =
   | "debesUnirtePrimero"
   | "accionInvalida";
 
-export type CodigoErrorServidor = CodigoErrorSala | CodigoError;
+/** Códigos de la sala más los de regla del juego (que viajan como string). */
+export type CodigoErrorServidor = CodigoErrorSala | (string & {});
 
 export type MensajeServidor =
   | { readonly tipo: "bienvenida"; readonly jugadorId: string; readonly token: string }
@@ -77,40 +94,17 @@ function esObjeto(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
 }
 
-function esTipoCombinacion(valor: unknown): valor is TipoCombinacion {
-  return (
-    valor === "trio" ||
-    valor === "escala" ||
-    valor === "escalaSucia" ||
-    valor === "escalaReal"
-  );
-}
-
-function esExtremoEscala(valor: unknown): valor is ExtremoEscala {
-  return valor === "inicio" || valor === "fin";
-}
-
-function esListaDeStrings(valor: unknown): valor is readonly string[] {
-  return Array.isArray(valor) && valor.every((item) => typeof item === "string");
-}
-
-function analizarPropuesta(valor: unknown): readonly PropuestaCombinacion[] | null {
-  if (!Array.isArray(valor)) return null;
-  const propuesta: PropuestaCombinacion[] = [];
-  for (const parte of valor) {
-    if (!esObjeto(parte)) return null;
-    const { tipo, cartaIds } = parte;
-    if (!esTipoCombinacion(tipo) || !esListaDeStrings(cartaIds)) return null;
-    propuesta.push({ tipo, cartaIds });
-  }
-  return propuesta;
+/** Construye el sobre de acción a partir del objeto crudo (tipo ya validado). */
+function aAccionJuego(crudo: Record<string, unknown>, tipo: string): AccionJuego {
+  return { ...crudo, tipo };
 }
 
 /**
- * Valida solo la FORMA del mensaje (las reglas las revalida el core).
- * Devuelve null ante JSON inválido, tipo desconocido o campos incorrectos.
+ * Valida solo la FORMA de un mensaje de lobby (las acciones de juego las valida
+ * el motor). Devuelve null ante JSON inválido, no-objeto o `tipo` no string;
+ * cualquier otro `tipo` se envuelve como acción de juego opaca.
  */
-export function analizarMensajeCliente(datos: string): MensajeCliente | null {
+export function analizarMensajeCliente(datos: string): MensajeClienteParseado | null {
   let crudo: unknown;
   try {
     crudo = JSON.parse(datos);
@@ -118,50 +112,29 @@ export function analizarMensajeCliente(datos: string): MensajeCliente | null {
     return null;
   }
   if (!esObjeto(crudo)) return null;
-  switch (crudo["tipo"]) {
+  const tipo = crudo["tipo"];
+  if (typeof tipo !== "string") return null;
+  switch (tipo) {
     case "unirse": {
       const nombre = crudo["nombre"];
       const avatar = crudo["avatar"];
       const token = crudo["token"];
+      const juego = crudo["juego"];
       if (typeof nombre !== "string" || nombre.length === 0) return null;
       if (avatar !== undefined && typeof avatar !== "string") return null;
       if (token !== undefined && typeof token !== "string") return null;
+      if (juego !== undefined && typeof juego !== "string") return null;
       // exactOptionalPropertyTypes: solo incluimos las claves presentes.
       return {
         tipo: "unirse",
         nombre,
         ...(avatar !== undefined ? { avatar } : {}),
         ...(token !== undefined ? { token } : {}),
+        ...(juego !== undefined ? { juego } : {}),
       };
     }
     case "iniciarPartida":
       return { tipo: "iniciarPartida" };
-    case "robarDelMazo":
-      return { tipo: "robarDelMazo" };
-    case "robarDelPozo":
-      return { tipo: "robarDelPozo" };
-    case "bajarse": {
-      const propuesta = analizarPropuesta(crudo["propuesta"]);
-      if (propuesta === null) return null;
-      return { tipo: "bajarse", propuesta };
-    }
-    case "pegar": {
-      const cartaId = crudo["cartaId"];
-      const mesaIdx = crudo["mesaIdx"];
-      const extremo = crudo["extremo"];
-      if (typeof cartaId !== "string") return null;
-      if (typeof mesaIdx !== "number" || !Number.isInteger(mesaIdx) || mesaIdx < 0) {
-        return null;
-      }
-      if (extremo === undefined) return { tipo: "pegar", cartaId, mesaIdx };
-      if (!esExtremoEscala(extremo)) return null;
-      return { tipo: "pegar", cartaId, mesaIdx, extremo };
-    }
-    case "descartar": {
-      const cartaId = crudo["cartaId"];
-      if (typeof cartaId !== "string") return null;
-      return { tipo: "descartar", cartaId };
-    }
     case "listoSiguienteMano":
       return { tipo: "listoSiguienteMano" };
     case "reabrirConexion": {
@@ -170,7 +143,9 @@ export function analizarMensajeCliente(datos: string): MensajeCliente | null {
       return { tipo: "reabrirConexion", jugadorId };
     }
     default:
-      return null;
+      // Cualquier otro `tipo` es una acción de juego: el protocolo solo garantiza
+      // `tipo: string`; la forma concreta la valida el motor del juego.
+      return { tipo: "accionJuego", accion: aAccionJuego(crudo, tipo) };
   }
 }
 

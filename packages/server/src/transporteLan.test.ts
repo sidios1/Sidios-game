@@ -6,6 +6,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { WebSocket } from "ws";
 import { Orquestador } from "./orquestador.js";
+import { crearMotorCarioca } from "./juegos/carioca/motorCarioca.js";
 import { TransporteLanCliente, TransporteLanServidor } from "./transporteLan.js";
 import type { ProgramarIntervalo, ProgramarTimeout } from "./latido.js";
 import { PING, PONG } from "./latido.js";
@@ -80,7 +81,7 @@ describe("transporte LAN: partida completa por WebSocket", () => {
       });
       orquestador = new Orquestador({
         transporte,
-        mazoParaMano: fabricaMazoParaMano(GUIONES),
+        motor: crearMotorCarioca({ mazoParaMano: fabricaMazoParaMano(GUIONES) }),
       });
       const codigo = await orquestador.iniciar();
       expect(codigo).toMatch(/^127\.0\.0\.1:\d+$/);
