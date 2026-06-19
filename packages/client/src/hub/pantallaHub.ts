@@ -44,7 +44,7 @@ export class PantallaHub {
     }
 
     const titulo = document.createElement("h1");
-    titulo.textContent = "Juegos rápidos";
+    titulo.textContent = "Sidios Game";
     const subtitulo = document.createElement("p");
     subtitulo.className = "subtitulo";
     subtitulo.textContent = "Elige un juego";
