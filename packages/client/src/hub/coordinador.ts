@@ -18,6 +18,11 @@ import {
   hayServidorEmbebido,
   iniciarServidorEmbebido,
 } from "../red/servidorEmbebido.js";
+import {
+  clienteLocalHostOnline,
+  detenerHostOnline,
+  iniciarHostOnline,
+} from "../red/hostOnline.js";
 import { PantallaConexion } from "../hud/pantallaConexion.js";
 import type { Perfil } from "../perfil/perfil.js";
 import { almacenPerfilPorDefecto, guardarPerfil, leerPerfil } from "../perfil/perfil.js";
@@ -72,6 +77,12 @@ export class Coordinador {
   private modoActual: ModoConexion | null = null;
   private codigoActual: string | null = null;
   /**
+   * Si somos el HOST online, fábrica del cliente loopback contra nuestro propio
+   * orquestador (en-proceso). Se usa en cada (re)conexión en vez del adaptador
+   * WebRTC: el host no se conecta a sí mismo por la red. null = no somos host.
+   */
+  private fabricaTransporteHost: (() => TransporteCliente) | null = null;
+  /**
    * Generación del intento de conexión vigente. Cada nuevo intento la sube, así
    * los callbacks de un canal viejo (alDesconectar, alVista…) se descartan: la
    * reconexión es IDEMPOTENTE (varios intentos no duplican asientos ni estado).
@@ -107,6 +118,9 @@ export class Coordinador {
         },
         alCrearPartida: () => {
           void this.crearPartidaEmbebida();
+        },
+        alCrearPartidaOnline: () => {
+          void this.crearPartidaOnline();
         },
         alIniciarPartida: () => {
           this.conexion?.enviarMensaje({ tipo: "iniciarPartida" });
@@ -174,8 +188,10 @@ export class Coordinador {
     this.juego = null;
     void this.conexion?.desconectar();
     this.conexion = null;
-    // Si éramos el host con servidor embebido, lo apagamos al cerrar la sala.
+    // Si éramos el host (LAN embebido u online), apagamos su servidor al cerrar.
     void detenerServidorEmbebido();
+    void detenerHostOnline();
+    this.fabricaTransporteHost = null;
     this.juegoSeleccionado = null;
     this.modoActual = null;
     this.codigoActual = null;
@@ -233,6 +249,26 @@ export class Coordinador {
     await this.conectar("local", codigo);
   }
 
+  /**
+   * "Crear partida" en modo ONLINE: arranca el orquestador dentro del webview
+   * (cliente-host) y se une a él por el cliente loopback. Devuelve un código
+   * corto que los amigos usan para unirse desde cualquier red.
+   */
+  private async crearPartidaOnline(): Promise<void> {
+    let codigo: string;
+    try {
+      codigo = await iniciarHostOnline(this.juegoSeleccionado?.id ?? "carioca");
+    } catch (error) {
+      this.conexionUI.mostrarError(
+        error instanceof Error ? error.message : "no se pudo crear la sala online",
+      );
+      return;
+    }
+    // El host (re)conecta siempre por loopback a su orquestador en-proceso.
+    this.fabricaTransporteHost = () => clienteLocalHostOnline();
+    await this.conectar("online", codigo);
+  }
+
   async conectar(
     modo: ModoConexion,
     codigo: string,
@@ -254,7 +290,11 @@ export class Coordinador {
     const miGen = (this.gen += 1);
     let transporte: TransporteCliente;
     try {
-      transporte = this.crearTransporte(modo);
+      // El host online usa su loopback en-proceso; el resto, el adaptador del modo.
+      transporte =
+        modo === "online" && this.fabricaTransporteHost !== null
+          ? this.fabricaTransporteHost()
+          : this.crearTransporte(modo);
     } catch (error) {
       this.fallarConexion(error, esReintento, modo, codigo, miGen);
       return;

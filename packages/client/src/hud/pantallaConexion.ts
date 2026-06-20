@@ -1,9 +1,10 @@
-// Pantalla de conexión y lobby. Selector de modo con "Online" ARRIBA
-// (deshabilitado, "próximamente": su adaptador llega en la Fase 7) y
-// "Local" ABAJO (funcional por LAN): crear partida o unirse por ip:puerto.
+// Pantalla de conexión y lobby. Selector de modo con "Online" ARRIBA (jugar a
+// distancia por WebRTC: crear sala o unirse por código corto) y "Local" ABAJO
+// (LAN: crear partida o unirse por ip:puerto).
 
 import type { JugadorEnSala } from "@juegos/server/protocolo";
 import type { ModoConexion } from "../red/fabricaTransporte.js";
+import { esCodigoSala } from "../red/online/codigoSala.js";
 import { crearAvatar, avatarPorDefecto } from "../perfil/avatares.js";
 import { crearInsigniaPerfil } from "../perfil/insigniaPerfil.js";
 import type { Perfil } from "../perfil/perfil.js";
@@ -19,6 +20,11 @@ export interface AccionesConexion {
    * arranca su propio servidor LAN. Solo se invoca si servidorEmbebidoDisponible.
    */
   readonly alCrearPartida?: () => void;
+  /**
+   * Crear partida ONLINE (Fase 7): el host arranca su orquestador en el webview
+   * (cliente-host) y obtiene un código corto para compartir.
+   */
+  readonly alCrearPartidaOnline?: () => void;
   /** Volver al menú del hub desde la portada de modo (opcional). */
   readonly alVolver?: () => void;
   /** Perfil activo (nickname + avatar) que se usará al unirse. */
@@ -78,15 +84,11 @@ export class PantallaConexion {
     const cabecera = this.cabeceraPerfil();
     if (cabecera !== null) tarjeta.appendChild(cabecera);
 
-    // ARRIBA: Online, visible pero deshabilitado (adaptador de la Fase 7).
+    // ARRIBA: Online (WebRTC), jugar a distancia entre redes distintas.
     const online = document.createElement("button");
     online.className = "modo";
-    online.disabled = true;
     online.textContent = "Online";
-    const etiqueta = document.createElement("span");
-    etiqueta.className = "etiqueta";
-    etiqueta.textContent = "próximamente";
-    online.appendChild(etiqueta);
+    online.addEventListener("click", () => this.mostrarFormularioOnline());
     tarjeta.appendChild(online);
 
     // ABAJO: Local (LAN), funcional.
@@ -169,6 +171,61 @@ export class PantallaConexion {
       return;
     }
     this.acciones.alConectar("local", codigo);
+  }
+
+  private mostrarFormularioOnline(): void {
+    this.velo.replaceChildren();
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "tarjeta";
+
+    const titulo = document.createElement("h1");
+    titulo.textContent = "Partida online";
+    tarjeta.appendChild(titulo);
+
+    const cabecera = this.cabeceraPerfil();
+    if (cabecera !== null) tarjeta.appendChild(cabecera);
+
+    // Crear sala: el host arranca su orquestador en el webview (cliente-host) y
+    // obtiene un código corto; los amigos se unen por internet, sin VPN ni túnel.
+    const crear = document.createElement("button");
+    crear.className = "principal";
+    crear.textContent = "Crear partida";
+    const notaCrear = document.createElement("p");
+    notaCrear.className = "nota";
+    notaCrear.textContent =
+      "Se creará una sala online y aparecerá un código corto; compártelo con " +
+      "tus amigos (de cualquier red) para que se unan.";
+    crear.addEventListener("click", () => {
+      this.acciones.alCrearPartidaOnline?.();
+    });
+
+    const codigo = document.createElement("input");
+    codigo.placeholder = "código de sala";
+    codigo.autocapitalize = "characters";
+    const unirse = document.createElement("button");
+    unirse.textContent = "Unirse";
+    unirse.addEventListener("click", () => {
+      this.conectarConCodigoOnline(codigo.value.trim().toUpperCase());
+    });
+
+    const filaUnirse = document.createElement("div");
+    filaUnirse.className = "fila-botones";
+    filaUnirse.append(codigo, unirse);
+
+    const volver = document.createElement("button");
+    volver.textContent = "Volver";
+    volver.addEventListener("click", () => this.mostrarPortada());
+
+    tarjeta.append(crear, notaCrear, filaUnirse, volver);
+    this.velo.appendChild(tarjeta);
+  }
+
+  private conectarConCodigoOnline(codigo: string): void {
+    if (!esCodigoSala(codigo)) {
+      this.mostrarError("el código de sala son 6 caracteres (p. ej. K7P2Q9)");
+      return;
+    }
+    this.acciones.alConectar("online", codigo);
   }
 
   /** Cabecera con el perfil activo y enlace a editarlo; null si no hay perfil. */

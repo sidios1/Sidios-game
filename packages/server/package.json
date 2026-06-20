@@ -30,6 +30,18 @@
     "./latido": {
       "types": "./dist/latido.d.ts",
       "default": "./dist/latido.js"
+    },
+    "./motor": {
+      "types": "./dist/motor.d.ts",
+      "default": "./dist/motor.js"
+    },
+    "./orquestador": {
+      "types": "./dist/orquestador.d.ts",
+      "default": "./dist/orquestador.js"
+    },
+    "./registroMotores": {
+      "types": "./dist/registroMotores.d.ts",
+      "default": "./dist/registroMotores.js"
     }
   },
   "scripts": {

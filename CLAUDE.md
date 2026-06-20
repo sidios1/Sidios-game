@@ -169,6 +169,34 @@ mentiroso-core ──> (nada)
   mentiroso-core directamente).
   (Excepción: los tests del cliente pueden importar la raíz para HOSPEDAR
   una sala real, como hace `transporteLanNavegador.test.ts`.)
+- **Modo online (Fase 7): el host corre el orquestador en el webview
+  (cliente-host).** A diferencia de LAN (servidor en un sidecar Node), online no
+  tiene proceso aparte: el host instancia el `Orquestador` DENTRO del webview
+  sobre `TransporteOnlineServidor` (WebRTC). Para eso el cliente importa los
+  subpaths *browser-safe* `@juegos/server/orquestador`, `@juegos/server/registroMotores`
+  y `@juegos/server/motor`: son puros (no arrastran `ws`/Node, igual que
+  protocolo/vista/transporte). La raíz `@juegos/server` SIGUE prohibida. El
+  host-jugador se conecta a su propio orquestador por un cliente LOOPBACK
+  en-proceso (`crearClienteLocal`), no por WebRTC.
+
+### 3.bis Transporte online (WebRTC + señalización pluggable)
+- `TransporteOnline*` vive SOLO en el cliente (`src/red/online/`) e implementa las
+  MISMAS interfaces de `transporte.ts`; el orquestador no cambia. `transporteOnlineCliente.ts`
+  (jugador) es el espejo de `transporteLanNavegador.ts` y reusa `Latido` + el
+  `visibilitychange` anti-throttling; `transporteOnlineServidor.ts` (host) atiende
+  peers remotos (WebRTC) + el loopback del host, y consume los frames de latido
+  como `transporteLan.ts`.
+- **Señalización pluggable:** la interfaz `ClienteSenalizacion` (`senalizacion.ts`)
+  abstrae al broker; `senalizacionPeerJs.ts` es la impl por defecto (PeerJS, broker
+  en la nube) y el ÚNICO módulo que conoce `peerjs` (lo carga con `import()`
+  dinámico). Para self-hostear el broker basta otra impl, sin tocar el resto.
+- **Config ICE/credenciales:** `iceConfig.ts` lee STUN/TURN y el broker desde
+  `import.meta.env` (Vite). Las credenciales de TURN viven en
+  `packages/client/.env.local` (gitignored); `.env.example` documenta las claves.
+  NUNCA se hardcodean ni se versionan. STUN público va como default (no secreto).
+- **Código de sala online:** corto y legible (`codigoSala.ts`), usado como id del
+  host en el broker; el lanzador del host vive en `red/hostOnline.ts`
+  (`iniciarHostOnline`/`detenerHostOnline`, análogo a `servidorEmbebido.ts`).
 
 ### 5. En el cliente, la vista del servidor es la verdad
 - `aplicacion.ts` recibe cada `VistaPartida`, calcula un diff

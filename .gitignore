@@ -4,6 +4,10 @@ dist/
 .DS_Store
 dist-web/
 
+# Variables de entorno locales (credenciales TURN/broker del modo online)
+.env.local
+.env.*.local
+
 # Tauri (Fase 5)
 packages/server/build-sidecar/
 packages/client/src-tauri/binaries/

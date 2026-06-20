@@ -3,6 +3,7 @@
 
 import type { TransporteCliente } from "@juegos/server/transporte";
 import { TransporteLanNavegador } from "./transporteLanNavegador.js";
+import { TransporteOnlineCliente } from "./online/transporteOnlineCliente.js";
 
 export type ModoConexion = "local" | "online";
 
@@ -11,8 +12,8 @@ export function crearTransporte(modo: ModoConexion): TransporteCliente {
     case "local":
       return new TransporteLanNavegador();
     case "online":
-      // Punto de enganche de la Fase 7: aquí se instanciará el adaptador
-      // online (misma interfaz). El botón está deshabilitado hasta entonces.
-      throw new Error("el modo online llega próximamente (Fase 7)");
+      // Jugador online: se une al host por código vía WebRTC (señalización
+      // PeerJS). El host usa su cliente loopback, no este adaptador.
+      return new TransporteOnlineCliente();
   }
 }
