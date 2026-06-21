@@ -34,7 +34,8 @@ body {
 #hud input,
 #hud .velo,
 #hud .panel,
-#hud .mentiroso {
+#hud .mentiroso,
+#hud .log-panel {
   pointer-events: auto;
 }
 
@@ -823,4 +824,124 @@ button.perfil-avatar.seleccionado {
   border: 1px solid #8a4040;
   max-width: min(560px, 90vw);
   text-align: center;
+}
+
+/* ── Visor de log técnico embebido ──────────────────────────────────────────
+   Botón discreto en la esquina superior izquierda (bajo el ← Hub) que abre un
+   panel acoplado al borde izquierdo. No invade la lista de jugadores (derecha)
+   ni la mano (centro-abajo). */
+.log-boton {
+  position: fixed;
+  top: 3.2rem;
+  left: 0.8rem;
+  z-index: 50;
+  padding: 0.3rem 0.5rem;
+  font-size: 1rem;
+  line-height: 1;
+  background: rgba(13, 18, 24, 0.85);
+}
+
+.log-indicador {
+  display: none;
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #e07676;
+  border: 1px solid #101418;
+}
+
+.log-indicador.activo {
+  display: block;
+}
+
+.log-panel {
+  position: fixed;
+  left: 0;
+  top: 7rem;
+  bottom: 1rem;
+  z-index: 49;
+  display: flex;
+  flex-direction: column;
+  width: min(380px, 92vw);
+  background: rgba(16, 20, 24, 0.96);
+  border: 1px solid #4a5568;
+  border-left: none;
+  border-radius: 0 10px 10px 0;
+  overflow: hidden;
+}
+
+.log-panel.oculto {
+  display: none;
+}
+
+.log-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid #2d3b4e;
+  background: #1f2937;
+}
+
+.log-titulo {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.log-cabecera button {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.8rem;
+}
+
+.log-cabecera .log-cerrar {
+  padding: 0.25rem 0.5rem;
+}
+
+.log-lista {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.4rem 0.6rem;
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.log-fila {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.05rem 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.log-hora {
+  color: #6b7785;
+  flex-shrink: 0;
+}
+
+.log-nivel {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.log-mensaje {
+  flex: 1;
+}
+
+.log-fila.nivel-info .log-nivel {
+  color: #9aa5b1;
+}
+
+.log-fila.nivel-warn .log-nivel,
+.log-fila.nivel-warn .log-mensaje {
+  color: #e0b676;
+}
+
+.log-fila.nivel-error .log-nivel,
+.log-fila.nivel-error .log-mensaje {
+  color: #e07676;
 }
