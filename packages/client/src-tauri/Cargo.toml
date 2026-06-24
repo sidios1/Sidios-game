@@ -1,6 +1,6 @@
 [package]
 name = "juegos-rapidos"
-version = "0.6.0"
+version = "0.7.0"
 description = "Sidios Game — plataforma de juegos de cartas LAN"
 authors = ["Sidios"]
 homepage = "https://sidios.cl"
