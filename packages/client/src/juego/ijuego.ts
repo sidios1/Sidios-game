@@ -7,6 +7,7 @@
 
 import type { MensajeCliente } from "@juegos/server/protocolo";
 import type { VistaJuego } from "@juegos/server/vistaJuego";
+import type { FichaCatalogo } from "./ficha.js";
 
 /** Recursos y canales que el hub entrega al juego al arrancarlo. */
 export interface ContextoJuego {
@@ -44,15 +45,13 @@ export interface IJuego {
   finalizar(): void;
 }
 
-/** Metadatos + fábrica que cada juego aporta al catálogo del hub. */
-export interface DefinicionJuego {
-  readonly id: string;
-  readonly nombre: string;
-  readonly descripcion: string;
-  /** Mínimo de jugadores (lo muestra la sala de espera). */
-  readonly minJugadores: number;
-  /** Máximo de jugadores; omitido = sin tope (lo muestra la sala de espera). */
-  readonly maxJugadores?: number;
+/**
+ * Lo que cada juego aporta al catálogo del hub: su ficha de presentación
+ * (`FichaCatalogo`: nombre, jugadores, estado, portada…) más la fábrica que
+ * instancia el juego. El hub solo necesita la ficha para pintar la tarjeta; el
+ * coordinador usa además `crear()` al lanzar la partida.
+ */
+export interface DefinicionJuego extends FichaCatalogo {
   /** Crea una instancia nueva del juego, sin montar nada todavía. */
   crear(): IJuego;
 }

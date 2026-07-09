@@ -6,6 +6,8 @@ Guía del proyecto para Claude Code. Léela completa antes de tocar código.
 - `PLAN.md` — fases del proyecto. Cada sesión implementa UNA fase.
 - `REGLAS_CARIOCA.md` — **única fuente de verdad** del reglamento de Carioca.
   Su sección 9 define los contratos como datos (`MANOS`, `VALOR_PUNTOS`, `ESCALA`).
+- `HUB.md` — contrato `FichaCatalogo` (ficha de catálogo del launcher) y cómo
+  registra su tarjeta un módulo nuevo sin tocar `src/hub/`.
 
 ## Stack
 | Capa | Tecnología | Paquete |

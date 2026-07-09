@@ -35,6 +35,7 @@ body {
 #hud .velo,
 #hud .panel,
 #hud .mentiroso,
+#hud .uno-selector,
 #hud .log-panel {
   pointer-events: auto;
 }
@@ -184,31 +185,106 @@ button.secundario:hover:not(:disabled) {
   background: #1d2530;
 }
 
-/* ── Menú del hub (selección de juego) ──────────────────────────────────── */
+/* ── Menú del hub: launcher tipo biblioteca ─────────────────────────────── */
 
-.lista-juegos {
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-}
-
-button.juego {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 1rem 1.2rem;
-  border-radius: 12px;
+/* La tarjeta del hub es más ancha que el resto de pantallas (que comparten
+   .velo/.tarjeta) para que la grilla de juegos respire. */
+.tarjeta-hub {
+  width: min(900px, 94vw);
   text-align: left;
 }
 
-.juego-nombre {
-  font-size: 1.2rem;
+.wordmark {
+  letter-spacing: 0.04em;
+}
+
+.grilla-juegos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-top: 0.4rem;
+}
+
+.carta-juego {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #1d2530;
+  border: 1px solid #2a3442;
+}
+
+/* Portada vertical 3:4 (relación de las cartas). */
+.carta-portada {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: #0d1218;
+}
+
+.carta-portada .portada,
+.carta-portada .portada svg,
+.carta-portada img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.badge-desarrollo {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0d1218;
+  background: #d8b44a;
+}
+
+.carta-juego.en-desarrollo .carta-portada {
+  filter: grayscale(0.55) brightness(0.8);
+}
+
+.carta-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.7rem 0.8rem 0.8rem;
+  flex: 1;
+}
+
+.carta-nombre {
+  margin: 0;
+  font-size: 1.1rem;
   font-weight: 600;
 }
 
-.juego-descripcion {
-  font-size: 0.85rem;
+.carta-jugadores {
+  margin: 0;
+  font-size: 0.78rem;
   color: #9aa5b1;
+}
+
+.carta-descriptor {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #7f8b98;
+  flex: 1;
+}
+
+.carta-accion {
+  margin-top: 0.4rem;
+  padding: 0.55rem;
+  border-radius: 9px;
+  font-weight: 600;
+}
+
+.carta-accion:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Volver al hub desde la partida: botón discreto en una esquina. */
@@ -292,6 +368,36 @@ button.salir-hub {
   50% {
     box-shadow: 0 0 16px rgba(47, 138, 87, 0.85);
   }
+}
+
+/* Modo +Turbo: cuenta atrás del turno en curso (visible para todos). */
+.reloj-turbo {
+  min-width: 2.4rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: #d7f0df;
+  background: rgba(36, 107, 67, 0.35);
+  border: 1px solid #2f8a57;
+}
+
+.reloj-turbo.urgente {
+  color: #ffe1e1;
+  background: rgba(150, 38, 38, 0.4);
+  border-color: #c0392b;
+  animation: latido-turno 0.8s ease-in-out infinite;
+}
+
+/* Toggle +Turbo en el lobby del anfitrión. */
+.opcion-turbo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.4rem 0;
+  font-size: 0.9rem;
+  cursor: pointer;
 }
 
 .hud-jugadores {
@@ -944,4 +1050,217 @@ button.perfil-avatar.seleccionado {
 .log-fila.nivel-error .log-nivel,
 .log-fila.nivel-error .log-mensaje {
   color: #e07676;
+}
+
+/* ── UNO (overlay HTML sobre el canvas 3D) ──────────────────────────────────
+   Indicadores propios del juego (color activo, dirección, +N), insignias de los
+   rivales, botones de acción y selector de color. El reflejo del color activo en
+   la mesa lo hace la escena (tinte del fieltro), no el HUD. */
+.uno {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.uno-indicadores {
+  position: absolute;
+  top: 3.2rem;
+  left: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+
+.uno-color-activo {
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 14px rgba(0, 0, 0, 0.4);
+}
+
+.uno-direccion {
+  padding: 0.25rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  background: rgba(13, 18, 24, 0.82);
+  border: 1px solid #2a3442;
+}
+
+.uno-acumulado {
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #fff;
+  background: #c0392b;
+  border: 2px solid #ffd27f;
+  box-shadow: 0 0 14px rgba(192, 57, 43, 0.7);
+}
+
+.uno-insignias {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.uno-insignia {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 10px;
+  background: rgba(13, 18, 24, 0.8);
+  border: 1px solid #2a3442;
+}
+
+.uno-insignia-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.uno-insignia-nombre {
+  font-size: 0.8rem;
+  max-width: 7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uno-insignia-cartas {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #cdd6e2;
+}
+
+.uno-insignia-cartas.uno-grito {
+  color: #ffce54;
+  text-shadow: 0 0 8px rgba(255, 206, 84, 0.8);
+}
+
+.uno-insignia.en-turno {
+  border-color: #ffce54;
+  box-shadow: 0 0 12px rgba(255, 206, 84, 0.75);
+}
+
+.uno-insignia.en-turno .uno-insignia-avatar {
+  border: 2px solid #ffce54;
+}
+
+.uno-acciones {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 94vw;
+}
+
+.uno-accion {
+  padding: 0.5rem 1.1rem;
+  border-radius: 10px;
+  font-weight: 700;
+  background: #1d6fd6;
+  border: 1px solid #2a3442;
+}
+
+.uno-accion.pasar {
+  background: #4a525e;
+}
+
+.uno-espera,
+.uno-subaviso {
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: rgba(13, 18, 24, 0.82);
+  border: 1px solid #2a3442;
+}
+
+.uno-fin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.4rem;
+  border-radius: 12px;
+  background: rgba(13, 18, 24, 0.92);
+  border: 1px solid #2a3442;
+}
+
+.uno-fin-titulo {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.uno-selector {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 12, 18, 0.55);
+}
+
+.uno-selector-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.2rem 1.4rem;
+  border-radius: 14px;
+  background: rgba(13, 18, 24, 0.96);
+  border: 1px solid #2a3442;
+}
+
+.uno-selector-titulo {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.uno-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.7rem;
+}
+
+.uno-color-boton {
+  width: 84px;
+  height: 84px;
+  border-radius: 12px;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+.uno-color-boton:hover {
+  transform: scale(1.05);
+}
+
+.uno-selector-cancelar {
+  background: #4a525e;
+}
+
+.uno-toast {
+  position: absolute;
+  top: 7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: rgba(36, 48, 70, 0.95);
+  border: 1px solid #3a567e;
+  max-width: min(560px, 90vw);
+  text-align: center;
 }

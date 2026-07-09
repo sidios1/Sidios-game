@@ -29,8 +29,12 @@ export type MensajeLobby =
       /** Juego que el cliente espera jugar en la sala (enganche del registro). */
       readonly juego?: string;
     }
-  | { readonly tipo: "iniciarPartida" }
+  /** `turbo` activa el modo +Turbo (reloj por turno); lo decide el anfitrión. */
+  | { readonly tipo: "iniciarPartida"; readonly turbo?: boolean }
   | { readonly tipo: "listoSiguienteMano" }
+  /** Aviso de que el jugador abrió el modal de bajarse: en +Turbo suma segundos
+   *  a su turno (una sola vez por turno; el orquestador lo decide). */
+  | { readonly tipo: "extenderTurboBajada" }
   /** Solo el anfitrión: reabre el canal de un jugador para que pueda reentrar
    *  (conserva su asiento, mano y estado; NO es una expulsión). */
   | { readonly tipo: "reabrirConexion"; readonly jugadorId: string };
@@ -133,10 +137,16 @@ export function analizarMensajeCliente(datos: string): MensajeClienteParseado | 
         ...(juego !== undefined ? { juego } : {}),
       };
     }
-    case "iniciarPartida":
-      return { tipo: "iniciarPartida" };
+    case "iniciarPartida": {
+      const turbo = crudo["turbo"];
+      if (turbo !== undefined && typeof turbo !== "boolean") return null;
+      // exactOptionalPropertyTypes: solo incluimos turbo si vino presente.
+      return { tipo: "iniciarPartida", ...(turbo !== undefined ? { turbo } : {}) };
+    }
     case "listoSiguienteMano":
       return { tipo: "listoSiguienteMano" };
+    case "extenderTurboBajada":
+      return { tipo: "extenderTurboBajada" };
     case "reabrirConexion": {
       const jugadorId = crudo["jugadorId"];
       if (typeof jugadorId !== "string" || jugadorId.length === 0) return null;

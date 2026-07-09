@@ -1,21 +1,13 @@
-// Sincronizador escena⇄vista. La vista del servidor es la verdad: cada vez
-// que llega una, calcula las poses objetivo y lleva cada malla hacia ellas
-// con tweens. Las claves de instancia persisten entre zonas (una carta que
-// pasa de la mano al pozo conserva su malla), así que el movimiento sale del
-// propio diff de poses; los CambioVista solo aportan DESDE DÓNDE aparece lo
-// nuevo (mazo, pozo o la mano de un jugador) y el stagger del reparto.
-// Si llega otra vista a mitad de una animación, cada malla simplemente se
-// redirige a su objetivo nuevo: el final siempre refleja la última vista.
+// Sincronizador de Carioca: adapta la VistaPartida al motor genérico de poses.
+// La vista del servidor es la verdad: calcula las poses objetivo
+// (`calcularDisposicion`) y el motor (`SincronizadorPoses`) lleva cada malla hacia
+// ellas con tweens. Los `CambioVista` solo aportan DESDE DÓNDE aparece lo nuevo
+// (mazo, pozo o la mano de un jugador) y el stagger del reparto.
 
 import type * as THREE from "three";
 import type { VistaPartida } from "@juegos/server/vista";
 import type { CambioVista } from "../estado/difVista.js";
-import type {
-  MapaObjetivos,
-  Objetivo,
-  Pose,
-  PresentacionMano,
-} from "./disposicion.js";
+import type { MapaObjetivos, Objetivo, PresentacionMano } from "./disposicion.js";
 import {
   calcularDisposicion,
   POSE_MAZO,
@@ -23,56 +15,25 @@ import {
   poseManoJugador,
   PRESENTACION_VACIA,
 } from "./disposicion.js";
-import type { ManejadorTween } from "./interpolacion.js";
-import { easeOut, Interpolador } from "./interpolacion.js";
-import {
-  asignarInteraccion,
-  crearMallaCarta,
-  crearMallaDorso,
-} from "./mallaCarta.js";
+import type { Interpolador } from "./interpolacion.js";
+import { crearMallaCarta, crearMallaDorso } from "./mallaCarta.js";
+import type { Aparicion } from "./sincronizadorPoses.js";
+import { elevar, SincronizadorPoses } from "./sincronizadorPoses.js";
 
-const DURACION = 0.45;
 const RETRASO_REPARTO = 0.05;
 
-interface Aparicion {
-  readonly pose: Pose;
-  readonly retraso: number;
-}
-
-/** Las cartas que aparecen "vuelan" desde un poco más arriba de su origen. */
-function elevar(pose: Pose): Pose {
-  return { ...pose, y: pose.y + 1.1 };
-}
-
-function colocar(malla: THREE.Mesh, pose: Pose): void {
-  malla.position.set(pose.x, pose.y, pose.z);
-  malla.rotation.set(pose.rotX, pose.rotY, pose.rotZ);
-}
-
-function casiIgual(malla: THREE.Mesh, pose: Pose): boolean {
-  const e = 1e-4;
-  return (
-    Math.abs(malla.position.x - pose.x) < e &&
-    Math.abs(malla.position.y - pose.y) < e &&
-    Math.abs(malla.position.z - pose.z) < e &&
-    Math.abs(malla.rotation.x - pose.rotX) < e &&
-    Math.abs(malla.rotation.y - pose.rotY) < e &&
-    Math.abs(malla.rotation.z - pose.rotZ) < e
-  );
-}
-
 export class Sincronizador {
-  private readonly mallas = new Map<string, THREE.Mesh>();
-  private readonly tweens = new Map<string, ManejadorTween>();
+  private readonly motor: SincronizadorPoses<Objetivo>;
 
-  constructor(
-    private readonly raiz: THREE.Group,
-    private readonly interpolador: Interpolador,
-  ) {}
+  constructor(raiz: THREE.Group, interpolador: Interpolador) {
+    this.motor = new SincronizadorPoses<Objetivo>(raiz, interpolador, (objetivo) =>
+      objetivo.carta !== null ? crearMallaCarta(objetivo.carta) : crearMallaDorso(),
+    );
+  }
 
   /** La malla de una carta concreta (para que el arrastre la mueva en vivo). */
   mallaDeCarta(cartaId: string): THREE.Mesh | undefined {
-    return this.mallas.get(`carta:${cartaId}`);
+    return this.motor.mallaDeCarta(cartaId);
   }
 
   aplicar(
@@ -81,103 +42,13 @@ export class Sincronizador {
     seleccion: ReadonlySet<string>,
     presentacion: PresentacionMano = PRESENTACION_VACIA,
   ): void {
-    const objetivos: MapaObjetivos = calcularDisposicion(
-      vista,
-      seleccion,
-      presentacion,
-    );
+    const objetivos: MapaObjetivos = calcularDisposicion(vista, seleccion, presentacion);
     const reparto = cambios.some((c) => c.tipo === "repartoInicial");
-    if (reparto) this.reiniciar();
-
-    for (const [clave, malla] of [...this.mallas]) {
-      if (!objetivos.has(clave)) this.eliminar(clave, malla);
-    }
-
-    let ordenReparto = 0;
-    for (const [clave, objetivo] of objetivos) {
-      const existente = this.mallas.get(clave);
-      if (existente !== undefined) {
-        asignarInteraccion(existente, objetivo.interaccion);
-        // Carta arrastrada: su transform lo fija el arrastre, no el tween.
-        if (objetivo.congelado === true) {
-          this.tweens.get(clave)?.cancelar();
-          this.tweens.delete(clave);
-          continue;
-        }
-        this.tweenHacia(clave, existente, objetivo.pose, 0);
-        continue;
-      }
-      const malla =
-        objetivo.carta !== null
-          ? crearMallaCarta(objetivo.carta)
-          : crearMallaDorso();
-      asignarInteraccion(malla, objetivo.interaccion);
-      const aparicion = reparto
-        ? aparicionDeReparto(clave, objetivo, () => ordenReparto++)
-        : aparicionSegunCambios(clave, objetivo, cambios, vista);
-      colocar(malla, aparicion.pose);
-      this.raiz.add(malla);
-      this.mallas.set(clave, malla);
-      if (objetivo.congelado === true) continue;
-      this.tweenHacia(clave, malla, objetivo.pose, aparicion.retraso);
-    }
-  }
-
-  /** Redirige (o crea) el tween de una malla hacia su pose objetivo. */
-  private tweenHacia(
-    clave: string,
-    malla: THREE.Mesh,
-    pose: Pose,
-    retraso: number,
-  ): void {
-    this.tweens.get(clave)?.cancelar();
-    this.tweens.delete(clave);
-    if (casiIgual(malla, pose)) {
-      colocar(malla, pose);
-      return;
-    }
-    const desde: Pose = {
-      x: malla.position.x,
-      y: malla.position.y,
-      z: malla.position.z,
-      rotX: malla.rotation.x,
-      rotY: malla.rotation.y,
-      rotZ: malla.rotation.z,
-    };
-    const manejador = this.interpolador.agregar({
-      duracion: DURACION,
-      retraso,
-      easing: easeOut,
-      alAvanzar: (t) => {
-        malla.position.set(
-          desde.x + (pose.x - desde.x) * t,
-          desde.y + (pose.y - desde.y) * t,
-          desde.z + (pose.z - desde.z) * t,
-        );
-        malla.rotation.set(
-          desde.rotX + (pose.rotX - desde.rotX) * t,
-          desde.rotY + (pose.rotY - desde.rotY) * t,
-          desde.rotZ + (pose.rotZ - desde.rotZ) * t,
-        );
-      },
-      alTerminar: () => {
-        this.tweens.delete(clave);
-      },
-    });
-    this.tweens.set(clave, manejador);
-  }
-
-  private eliminar(clave: string, malla: THREE.Mesh): void {
-    this.tweens.get(clave)?.cancelar();
-    this.tweens.delete(clave);
-    this.raiz.remove(malla);
-    this.mallas.delete(clave);
-  }
-
-  private reiniciar(): void {
-    for (const [clave, malla] of [...this.mallas]) {
-      this.eliminar(clave, malla);
-    }
+    this.motor.aplicar(objetivos, reparto, (clave, objetivo, siguienteOrden) =>
+      reparto
+        ? aparicionDeReparto(clave, objetivo, siguienteOrden)
+        : aparicionSegunCambios(clave, objetivo, cambios, vista),
+    );
   }
 }
 

@@ -9,9 +9,10 @@
 
 import type { VistaPartida } from "./vista.js";
 import type { VistaMentiroso } from "./juegos/mentiroso/vistaMentiroso.js";
+import type { VistaUno } from "@juegos/uno-core";
 
 /** La vista que viaja por el canal genérico: la de cualquiera de los juegos. */
-export type VistaJuego = VistaPartida | VistaMentiroso;
+export type VistaJuego = VistaPartida | VistaMentiroso | VistaUno;
 
 // Re-exporta las formas de Mentiroso (y los tipos de carta del core) para que el
 // cliente las use SIN depender directamente de @juegos/mentiroso-core.
@@ -21,3 +22,9 @@ export type {
   VistaMentiroso,
 } from "./juegos/mentiroso/vistaMentiroso.js";
 export type { Carta, Palo } from "@juegos/mentiroso-core";
+
+// Re-exporta las formas de UNO (y sus tipos de carta) para que el cliente las use
+// SIN depender directamente de @juegos/uno-core. Se aliasan los tipos de carta para
+// no colisionar con el `Carta` de Mentiroso re-exportado arriba.
+export type { JugadorVistaUno, VistaUno } from "@juegos/uno-core";
+export type { Carta as CartaUno, Color as ColorUno } from "@juegos/uno-core";

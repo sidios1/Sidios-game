@@ -70,6 +70,9 @@ const GRACIA_MS = 10_000;
 /** Turnos saltados que llevan a la suspensión (se salta siempre tras esto). */
 const MAX_TURNOS_SALTADOS = 2;
 
+/** Modo +Turbo: segundos que suma abrir el modal de bajarse (una vez por turno). */
+const TURBO_EXTENSION_BAJADA_MS = 5_000;
+
 function tokenAleatorio(): string {
   return (
     Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
@@ -92,6 +95,17 @@ export class Orquestador<E = unknown, A = unknown> {
   private readonly listos = new Set<string>();
   private contadorJugadores = 0;
 
+  // Modo +Turbo (reloj por turno). El servidor es la autoridad del reloj.
+  private turbo = false;
+  /** Instante (epoch ms) en que vence el turno actual, o null si no corre. */
+  private venceEnTurbo: number | null = null;
+  /** Clave del turno-jugador para el que está armado el reloj (ver motor.turnoTurbo). */
+  private claveTurnoTurbo: string | null = null;
+  /** Clave del turno ya extendido por abrir bajada (para otorgar el +5s una vez). */
+  private claveExtendidaTurbo: string | null = null;
+  /** Cancela el temporizador de turno pendiente (null si no hay). */
+  private cancelarTurbo: (() => void) | null = null;
+
   constructor(opciones: OpcionesOrquestador<E, A>) {
     this.transporte = opciones.transporte;
     this.motor = opciones.motor;
@@ -112,6 +126,7 @@ export class Orquestador<E = unknown, A = unknown> {
 
   async detener(): Promise<void> {
     for (const asiento of this.asientos) this.cancelarGracia(asiento);
+    this.cancelarTurnoTurbo();
     this.difundir({ tipo: "salaCerrada", motivo: "la sala fue cerrada" });
     await this.transporte.detener();
   }
@@ -156,10 +171,13 @@ export class Orquestador<E = unknown, A = unknown> {
     }
     switch (mensaje.tipo) {
       case "iniciarPartida":
-        this.procesarIniciarPartida(conexionId, jugadorId);
+        this.procesarIniciarPartida(conexionId, jugadorId, mensaje.turbo ?? false);
         return;
       case "listoSiguienteMano":
         this.procesarListo(conexionId, jugadorId);
+        return;
+      case "extenderTurboBajada":
+        this.procesarExtenderTurbo(jugadorId);
         return;
       case "reabrirConexion":
         this.procesarReabrir(conexionId, jugadorId, mensaje.jugadorId);
@@ -329,7 +347,11 @@ export class Orquestador<E = unknown, A = unknown> {
     this.reaccionar();
   }
 
-  private procesarIniciarPartida(conexionId: IdConexion, jugadorId: string): void {
+  private procesarIniciarPartida(
+    conexionId: IdConexion,
+    jugadorId: string,
+    turbo: boolean,
+  ): void {
     if (this.faseSala !== "lobby") {
       this.enviarError(conexionId, "accionInvalida", "la partida ya comenzó");
       return;
@@ -348,8 +370,11 @@ export class Orquestador<E = unknown, A = unknown> {
       this.enviarError(conexionId, resultado.error.codigo, resultado.error.mensaje);
       return;
     }
+    // El modo +Turbo solo se activa si el motor lo soporta (define turnoTurbo).
+    this.turbo = turbo && this.motor.turnoTurbo !== undefined;
     this.estado = resultado.valor;
     this.faseSala = "enPartida";
+    this.reprogramarTurnoTurbo();
     this.difundirVistas();
   }
 
@@ -437,6 +462,7 @@ export class Orquestador<E = unknown, A = unknown> {
   private reaccionar(): void {
     this.avanzarRondaSiCorresponde(); // solo actúa si el motor espera continuar
     this.saltarTurnosAusentes(); // solo actúa con un turno activo
+    this.reprogramarTurnoTurbo(); // (re)arma el reloj si el turno cambió
     this.difundirVistas();
   }
 
@@ -470,6 +496,73 @@ export class Orquestador<E = unknown, A = unknown> {
       if (!resultado.ok) return;
       this.estado = resultado.valor;
     }
+  }
+
+  // ── Modo +Turbo (reloj por turno) ─────────────────────────────────────────
+
+  /**
+   * (Re)arma el reloj del turno en curso. Solo re-agenda cuando el turno-jugador
+   * cambia (según la `clave` del motor): las acciones dentro del mismo turno
+   * (robar, bajarse, pegar) NO reinician la cuenta. Sin turno activo, o si el
+   * modo no está en turbo, deja el reloj apagado.
+   */
+  private reprogramarTurnoTurbo(): void {
+    if (!this.turbo || this.motor.turnoTurbo === undefined) return;
+    const estado = this.estado;
+    const desc = estado === null ? null : this.motor.turnoTurbo(estado);
+    if (desc === null) {
+      this.cancelarTurnoTurbo();
+      this.claveTurnoTurbo = null;
+      return;
+    }
+    if (desc.clave === this.claveTurnoTurbo) return; // mismo turno: sigue corriendo
+    this.cancelarTurnoTurbo();
+    this.claveTurnoTurbo = desc.clave;
+    this.venceEnTurbo = Date.now() + desc.duracionMs;
+    this.cancelarTurbo = this.programar(desc.duracionMs, () => this.alVencerTurno());
+  }
+
+  private cancelarTurnoTurbo(): void {
+    this.cancelarTurbo?.();
+    this.cancelarTurbo = null;
+    this.venceEnTurbo = null;
+  }
+
+  /** Al vencer el turno: el motor aplica su política (descartar aleatorio o saltar). */
+  private alVencerTurno(): void {
+    this.cancelarTurbo = null;
+    this.venceEnTurbo = null;
+    const estado = this.estado;
+    if (this.faseSala !== "enPartida" || estado === null) return;
+    if (this.motor.expirarTurno === undefined) return;
+    const jugadorId = this.motor.jugadorEnTurno(estado);
+    if (jugadorId === null) return;
+    const resultado = this.motor.expirarTurno(estado, jugadorId, this.rng);
+    if (resultado.ok) {
+      this.estado = resultado.valor;
+      if (this.motor.terminada(resultado.valor)) this.faseSala = "terminada";
+    }
+    // reaccionar re-arma el reloj del turno siguiente y difunde.
+    this.reaccionar();
+  }
+
+  /**
+   * El jugador en turno abrió el modal de bajarse: en +Turbo suma segundos a su
+   * turno, UNA sola vez por turno. Silencioso si no aplica (no es error).
+   */
+  private procesarExtenderTurbo(jugadorId: string): void {
+    if (!this.turbo || this.venceEnTurbo === null || this.claveTurnoTurbo === null) return;
+    const estado = this.estado;
+    if (estado === null || this.motor.jugadorEnTurno(estado) !== jugadorId) return;
+    if (this.claveExtendidaTurbo === this.claveTurnoTurbo) return; // ya extendido
+    this.claveExtendidaTurbo = this.claveTurnoTurbo;
+    this.venceEnTurbo += TURBO_EXTENSION_BAJADA_MS;
+    this.cancelarTurbo?.();
+    this.cancelarTurbo = this.programar(
+      Math.max(0, this.venceEnTurbo - Date.now()),
+      () => this.alVencerTurno(),
+    );
+    this.difundirVistas(); // todos ven el nuevo restante
   }
 
   // ── Envío de mensajes ─────────────────────────────────────────────────────
@@ -520,6 +613,9 @@ export class Orquestador<E = unknown, A = unknown> {
       listos: this.listos,
       votosNecesarios: this.votosNecesarios(),
       avatares,
+      turbo: this.turbo,
+      turboMsRestantes:
+        this.venceEnTurbo === null ? null : Math.max(0, this.venceEnTurbo - Date.now()),
     };
     for (const asiento of this.asientos) {
       if (asiento.conexionId === null) continue;

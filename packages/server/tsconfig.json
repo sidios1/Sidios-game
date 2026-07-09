@@ -7,5 +7,9 @@
   },
   "include": ["src"],
   "exclude": ["src/**/*.test.ts", "src/pruebas"],
-  "references": [{ "path": "../carioca-core" }, { "path": "../mentiroso-core" }]
+  "references": [
+    { "path": "../carioca-core" },
+    { "path": "../mentiroso-core" },
+    { "path": "../uno-core" }
+  ]
 }

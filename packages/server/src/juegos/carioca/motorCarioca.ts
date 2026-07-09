@@ -18,6 +18,7 @@ import {
   crearPartida,
   crearPartidaConMazo,
   descartar,
+  esComodin,
   iniciarSiguienteMano,
   iniciarSiguienteManoConMazo,
   pasarTurno,
@@ -52,6 +53,12 @@ export interface OpcionesMotorCarioca {
   /** Inyección determinista para tests: el mazo ya ordenado de cada mano. */
   readonly mazoParaMano?: (numeroMano: number) => readonly Carta[];
 }
+
+// ── Modo +Turbo (reloj por turno) ────────────────────────────────────────────
+/** El primer turno de cada mano da más aire (reacomodo de cartas). */
+const TURBO_PRIMER_TURNO_MS = 60_000;
+/** Turnos siguientes de la mano. */
+const TURBO_TURNO_MS = 15_000;
 
 // ── Validación de forma (movida desde protocolo.ts) ──────────────────────────
 
@@ -160,6 +167,36 @@ export function crearMotorCarioca(
 
     saltarTurno(estado: EstadoPartida, jugadorId: string): Resultado<EstadoPartida> {
       return pasarTurno(estado, jugadorId);
+    },
+
+    turnoTurbo(
+      estado: EstadoPartida,
+    ): { clave: string; jugadorId: string; duracionMs: number } | null {
+      if (estado.fase !== "jugandoMano") return null;
+      // turno.numero se reinicia a 1 cada mano (partida.ts): numero===1 es el
+      // primer turno de la mano. (manoActual, numero) identifica el turno-jugador.
+      return {
+        clave: `${estado.manoActual}:${estado.turno.numero}`,
+        jugadorId: estado.turno.jugadorId,
+        duracionMs: estado.turno.numero === 1 ? TURBO_PRIMER_TURNO_MS : TURBO_TURNO_MS,
+      };
+    },
+
+    expirarTurno(
+      estado: EstadoPartida,
+      jugadorId: string,
+      rng: GeneradorAleatorio,
+    ): Resultado<EstadoPartida> {
+      // No robó (fase "robar") → se salta el turno.
+      if (estado.turno.fase === "robar") return pasarTurno(estado, jugadorId);
+      // Ya robó (fase "descartar") → se bota una carta aleatoria. Nunca un
+      // comodín (descartarlo es ilegal, COMODIN_AL_POZO); si solo quedan
+      // comodines, no hay descarte posible: se salta el turno.
+      const jugador = estado.jugadores.find((j) => j.id === jugadorId);
+      const descartables = jugador?.mano.filter((c) => !esComodin(c)) ?? [];
+      const elegida = descartables[Math.floor(rng() * descartables.length)];
+      if (elegida === undefined) return pasarTurno(estado, jugadorId);
+      return descartar(estado, jugadorId, elegida.id);
     },
 
     terminada(estado: EstadoPartida): boolean {

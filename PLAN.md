@@ -259,39 +259,54 @@ Commit: "feat(client): app de escritorio con servidor LAN embebido".
 
 ---
 
-# FASE 6 — Validar modularidad: segundo juego  `[CLAUDE CODE]`
+# FASE 6 — Validar modularidad: segundo juego "Mentiroso"  `[CLAUDE CODE]`
 
-**Objetivo:** demostrar que la arquitectura aguanta un juego nuevo sin tocar lo existente.
+**Objetivo:** demostrar que la arquitectura aguanta un juego nuevo y MUY distinto a Carioca
+(faroleo, sin combinaciones ni robar/descartar) sin tocar lo existente.
 
 **PROMPT:**
 ```text
 <rol>
-Eres un ingeniero que valida arquitecturas implementando casos reales contra una abstracción
-existente, sin modificarla.
+Eres un ingeniero que valida arquitecturas implementando un juego nuevo contra una abstracción
+existente (IJuego + orquestador), sin modificarla. Escribes lógica pura testeable.
 </rol>
 
 <contexto>
-Lee CLAUDE.md y PLAN.md. Ya existen la interfaz IJuego, el hub y la red LAN.
+Lee CLAUDE.md, PLAN.md y REGLAS_MENTIROSO.md. Ya existen la interfaz IJuego, el hub, el
+orquestador y la red LAN, construidos con Carioca como primer juego.
+El segundo juego es "Mentiroso": juego de faroleo con una baraja inglesa donde SOLO importan los
+palos (no los valores). Las reglas están en REGLAS_MENTIROSO.md (incluida su sección 9 de datos).
 </contexto>
 
 <instrucciones>
 Antes de implementar, propón un plan y espera mi aprobación.
-Agrega un segundo juego simple (por ejemplo, dados de mentira tipo Liar's Bar) implementando
-la interfaz IJuego. Debe aparecer en el hub junto a Carioca y funcionar sobre la misma red LAN.
+1. Lógica pura del juego (p. ej. packages/mentiroso-core), independiente de render y red, según
+   REGLAS_MENTIROSO.md: repartir toda la baraja, jugar 1-3 cartas boca abajo declarando el palo
+   de la ronda, acusar ("¡Mentiroso!"), resolver la acusación revelando la última jugada, recoger
+   la pila, iniciar nueva ronda con un palo distinto, y detectar al ganador. Con tests.
+2. Implementa Mentiroso contra la MISMA abstracción que usa Carioca (la interfaz IJuego y el punto
+   de extensión del orquestador), de modo que el orquestador valide sus acciones igual que con Carioca.
+3. Información oculta: la pila y las manos ajenas nunca se revelan en el estado por jugador, salvo
+   las cartas que se destapan al resolver una acusación.
+4. UI mínima del cliente para Mentiroso (jugar 1-3 cartas, declarar, acusar), y que aparezca en el
+   hub junto a Carioca, funcionando sobre la red LAN existente.
 </instrucciones>
 
 <restricciones>
-- NO modifiques el hub, la capa de red ni carioca-core.
-- Si crees que necesitas cambiarlos, DETENTE y avísame: significa que la abstracción IJuego
-  está incompleta. Ese es el verdadero objetivo de esta fase.
+- NO modifiques el hub, la capa de red, el orquestador ni carioca-core.
+- Si para que Mentiroso funcione necesitas cambiar el hub, la red o el orquestador, DETENTE y
+  avísame: significa que la abstracción está incompleta. Ese es el verdadero objetivo de esta fase.
+- La lógica de reglas vive en mentiroso-core; no la dupliques en el cliente ni en el servidor.
 </restricciones>
 
 <criterio_de_hecho>
-El segundo juego se juega desde el hub, en LAN, sin haber tocado hub, red ni core.
+Tests de mentiroso-core (reparto, jugar, acusar y resolución en ambos resultados, palo distinto por
+ronda, detección de ganador) en verde. En LAN: se elige Mentiroso desde el hub y se juega una
+partida completa sin haber tocado hub, red, orquestador ni carioca-core.
 </criterio_de_hecho>
 
 <cierre>
-Commit: "feat(games): segundo juego validando IJuego".
+Commit: "feat(games): Mentiroso como segundo juego validando la abstracción".
 </cierre>
 ```
 

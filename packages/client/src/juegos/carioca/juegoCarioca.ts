@@ -51,6 +51,8 @@ export class JuegoCarioca implements IJuego {
   private arrastre: ArrastreVisual | null = null;
   /** Storage de preferencias locales (null si el entorno no lo permite). */
   private almacen: Storage | null = null;
+  /** +Turbo: clave del turno cuyo modal de bajada ya pidió el extra (una vez/turno). */
+  private turnoBajadaAvisado: string | null = null;
 
   iniciar(contexto: ContextoJuego): void {
     this.contexto = contexto;
@@ -123,10 +125,15 @@ export class JuegoCarioca implements IJuego {
     evento: EventoInteraccion,
     cambios: ReturnType<typeof difVista> = [],
   ): void {
+    const modoAntes = this.estado.modo;
     const resultado = transicion(this.estado, evento);
     this.estado = resultado.estado;
     if (evento.tipo === "alternarOcultarStaged" && this.almacen !== null) {
       guardarOcultarStaged(this.almacen, this.estado.ocultarStaged);
+    }
+    // +Turbo: al ABRIR el modal de bajada, pide el tiempo extra una vez por turno.
+    if (modoAntes !== "construyendoBajada" && this.estado.modo === "construyendoBajada") {
+      this.avisarBajadaTurbo();
     }
     for (const comando of resultado.comandos) {
       this.contexto?.enviar(comando);
@@ -149,6 +156,20 @@ export class JuegoCarioca implements IJuego {
       this.hud?.actualizar(this.estado);
       this.insignias?.actualizar(this.estado.vista);
     }
+  }
+
+  /**
+   * +Turbo: avisa al servidor que se abrió el modal de bajada para sumar el
+   * tiempo extra. Solo una vez por turno (el servidor de todos modos lo otorga
+   * una sola vez) y solo si la sala está en modo turbo.
+   */
+  private avisarBajadaTurbo(): void {
+    const vista = this.estado.vista;
+    if (vista === null || !vista.turbo) return;
+    const clave = `${vista.manoActual}:${vista.turno.numero}`;
+    if (this.turnoBajadaAvisado === clave) return;
+    this.turnoBajadaAvisado = clave;
+    this.contexto?.enviar({ tipo: "extenderTurboBajada" });
   }
 
   /** Re-aplica el layout sin evento de máquina (previews de arrastre/reorden). */

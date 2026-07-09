@@ -13,6 +13,7 @@ import type { Programador } from "./orquestador.js";
 import type { TransporteServidor } from "./transporte.js";
 import { crearMotorCarioca } from "./juegos/carioca/motorCarioca.js";
 import { crearMotorMentiroso } from "./juegos/mentiroso/motorMentiroso.js";
+import { crearMotorUno } from "./juegos/uno/motorUno.js";
 
 /** Lo que el exterior necesita de una sala ya armada con su juego. */
 export interface SalaJuego {
@@ -34,6 +35,7 @@ type FabricaSala = (opciones: OpcionesSala) => SalaJuego;
 const REGISTRO: Readonly<Record<string, FabricaSala>> = {
   carioca: (opciones) => new Orquestador({ ...opciones, motor: crearMotorCarioca() }),
   mentiroso: (opciones) => new Orquestador({ ...opciones, motor: crearMotorMentiroso() }),
+  uno: (opciones) => new Orquestador({ ...opciones, motor: crearMotorUno() }),
 };
 
 /** Crea la sala del juego pedido, o undefined si el game-id no está registrado. */

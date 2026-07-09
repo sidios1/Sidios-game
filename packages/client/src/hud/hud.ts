@@ -23,6 +23,15 @@ export class Hud {
   private readonly secciones: readonly HTMLElement[];
   private temporizadorAviso: number | null = null;
 
+  // Modo +Turbo: cuenta atrás del turno. El elemento se recrea en cada render;
+  // un intervalo local lo refresca desde el último dato del servidor (ms
+  // restantes relativos + instante de recepción), sin confiar en sincronía de
+  // relojes ni en que este setInterval sea preciso (el servidor es la autoridad).
+  private relojTurbo: HTMLElement | null = null;
+  private msRestantesTurbo: number | null = null;
+  private recibidoEnTurbo = 0;
+  private readonly intervaloReloj: number;
+
   constructor(
     raiz: HTMLElement,
     private readonly despachar: (evento: EventoInteraccion) => void,
@@ -40,6 +49,7 @@ export class Hud {
     this.panel = crearSeccion(raiz, "hud-panel");
     this.aviso = crearSeccion(raiz, "hud-aviso");
     this.secciones = [this.top, this.estado, this.acciones, this.panel, this.aviso];
+    this.intervaloReloj = window.setInterval(() => this.actualizarReloj(), 250);
   }
 
   /** Cancela el aviso pendiente y quita todas las secciones del DOM. */
@@ -48,6 +58,7 @@ export class Hud {
       window.clearTimeout(this.temporizadorAviso);
       this.temporizadorAviso = null;
     }
+    window.clearInterval(this.intervaloReloj);
     for (const seccion of this.secciones) seccion.remove();
   }
 
@@ -65,10 +76,22 @@ export class Hud {
   actualizar(estado: EstadoInteraccion): void {
     const vista = estado.vista;
     if (vista === null) return;
+    // Re-sincroniza la cuenta atrás con el último dato del servidor.
+    this.msRestantesTurbo = vista.turbo ? vista.turboMsRestantes : null;
+    this.recibidoEnTurbo = Date.now();
     this.renderSuperior(estado, vista);
     this.renderJugadores(vista);
     this.renderAcciones(estado, vista);
     this.renderPanel(estado, vista);
+  }
+
+  /** Refresca el número de la cuenta atrás del turno (si hay reloj visible). */
+  private actualizarReloj(): void {
+    const reloj = this.relojTurbo;
+    if (reloj === null || this.msRestantesTurbo === null) return;
+    const restante = Math.max(0, this.msRestantesTurbo - (Date.now() - this.recibidoEnTurbo));
+    reloj.textContent = `${Math.ceil(restante / 1000)}s`;
+    reloj.classList.toggle("urgente", restante <= 5000);
   }
 
   private renderSuperior(estado: EstadoInteraccion, vista: VistaPartida): void {
@@ -105,6 +128,19 @@ export class Hud {
     turno.className = "turno";
     turno.textContent = textoDeTurno(estado, vista);
     banner.appendChild(turno);
+    // Modo +Turbo: cuenta atrás del turno en curso, visible para todos.
+    this.relojTurbo = null;
+    if (
+      vista.turbo &&
+      vista.turboMsRestantes !== null &&
+      vista.fase === "jugandoMano"
+    ) {
+      const reloj = document.createElement("div");
+      reloj.className = "reloj-turbo";
+      banner.appendChild(reloj);
+      this.relojTurbo = reloj;
+      this.actualizarReloj();
+    }
     return banner;
   }
 

@@ -32,7 +32,10 @@ interface PeerInstancia {
 
 type FabricaPeer = new (id?: string, opciones?: Record<string, unknown>) => PeerInstancia;
 
-const SERIALIZACION = "none"; // mandamos strings JSON tal cual; sin re-encodear.
+// "raw" = el serializador que pasa los datos tal cual (en PeerJS el enum
+// SerializationType.None vale la cadena "raw"; "none" NO existe como clave).
+// Mandamos strings JSON sin re-encodear.
+const SERIALIZACION = "raw";
 const LIMITE_CONEXION_MS = 15_000;
 const MAX_INTENTOS_CODIGO = 10;
 
@@ -89,7 +92,13 @@ export class SenalizacionPeerJs implements ClienteSenalizacion {
 
   async conectarAHost(codigo: string): Promise<CanalDatos> {
     const Peer = await cargarPeer();
-    const peer = await this.abrirPeer(Peer); // id autoasignado por el broker.
+    let peer: PeerInstancia;
+    try {
+      peer = await this.abrirPeer(Peer); // id autoasignado por el broker.
+    } catch (error) {
+      // Fallo al abrir nuestro propio peer (broker inalcanzable, bloqueo CSP…).
+      throw aError(error, "no se pudo contactar al broker de señalización");
+    }
     this.peer = peer;
     return await new Promise<CanalDatos>((resolver, rechazar) => {
       let listo = false;
@@ -158,11 +167,24 @@ function esIdEnUso(error: unknown): boolean {
   );
 }
 
-/** Normaliza un error desconocido del SDK a un Error con mensaje legible. */
-function aError(error: unknown, contexto: string): Error {
-  if (error instanceof Error) return error;
+/** Lee el `type` que PeerJS adjunta a sus errores (p. ej. "network"), si lo hay. */
+function tipoDeError(error: unknown): string | undefined {
   if (typeof error === "object" && error !== null && "type" in error) {
-    return new Error(`${contexto} (${String((error as { type?: unknown }).type)})`);
+    const tipo = (error as { type?: unknown }).type;
+    if (typeof tipo === "string" && tipo.length > 0) return tipo;
   }
-  return new Error(contexto);
+  return undefined;
+}
+
+/**
+ * Normaliza un error desconocido del SDK a un Error con mensaje legible. Los
+ * errores de PeerJS suelen traer un `type` útil ("network", "peer-unavailable",
+ * "server-error") pero a veces con `message` vacío; lo anteponemos para que el
+ * visor de log nunca muestre un texto en blanco.
+ */
+function aError(error: unknown, contexto: string): Error {
+  const tipo = tipoDeError(error);
+  const mensaje = error instanceof Error && error.message.length > 0 ? error.message : undefined;
+  const detalle = [mensaje, tipo].filter((parte) => parte !== undefined).join(" · ");
+  return new Error(detalle.length > 0 ? `${contexto}: ${detalle}` : contexto);
 }

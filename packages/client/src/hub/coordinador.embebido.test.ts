@@ -50,9 +50,10 @@ function definicionFalsa(): DefinicionJuego {
   return {
     id: "falso",
     nombre: "Falso",
-    descripcion: "juego de prueba",
-    minJugadores: 2,
-    maxJugadores: 4,
+    descriptorCorto: "juego de prueba",
+    jugadores: { min: 2, max: 4 },
+    estado: "jugable",
+    portada: { tipo: "componente", componente: () => document.createElement("div") },
     crear: () => juego,
   };
 }

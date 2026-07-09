@@ -12,30 +12,63 @@ function juegoFalso(): IJuego {
   };
 }
 
-function definicion(id: string, nombre: string): DefinicionJuego {
+interface OpcionesFicha {
+  readonly estado?: DefinicionJuego["estado"];
+  readonly max?: number | null;
+}
+
+function definicion(
+  id: string,
+  nombre: string,
+  opciones: OpcionesFicha = {},
+): DefinicionJuego {
   return {
     id,
     nombre,
-    descripcion: `descripción de ${nombre}`,
-    minJugadores: 2,
-    maxJugadores: 4,
+    descriptorCorto: `descripción de ${nombre}`,
+    jugadores: { min: 2, max: opciones.max === undefined ? 4 : opciones.max },
+    estado: opciones.estado ?? "jugable",
+    portada: {
+      tipo: "componente",
+      componente: () => document.createElement("div"),
+    },
     crear: juegoFalso,
   };
 }
 
 describe("PantallaHub", () => {
-  it("renderiza un botón por cada juego del catálogo", () => {
+  it("renderiza una tarjeta por cada juego del catálogo", () => {
     const raiz = document.createElement("div");
     const catalogo = [definicion("a", "Uno"), definicion("b", "Dos")];
     const hub = new PantallaHub(raiz, catalogo, { alElegir: () => {} });
     hub.mostrar();
-    const botones = raiz.querySelectorAll("button.juego");
-    expect(botones.length).toBe(2);
-    expect(botones[0]?.textContent).toContain("Uno");
-    expect(botones[1]?.textContent).toContain("Dos");
+    const cartas = raiz.querySelectorAll("article.carta-juego");
+    expect(cartas.length).toBe(2);
+    expect(cartas[0]?.textContent).toContain("Uno");
+    expect(cartas[1]?.textContent).toContain("Dos");
   });
 
-  it("al pulsar un juego avisa con su definición", () => {
+  it("muestra 'Jugadores ilimitados' cuando no hay tope", () => {
+    const raiz = document.createElement("div");
+    const hub = new PantallaHub(raiz, [definicion("a", "Uno", { max: null })], {
+      alElegir: () => {},
+    });
+    hub.mostrar();
+    expect(raiz.querySelector(".carta-jugadores")?.textContent).toBe(
+      "Jugadores ilimitados",
+    );
+  });
+
+  it("muestra el rango '{min}–{max} jugadores' cuando hay tope", () => {
+    const raiz = document.createElement("div");
+    const hub = new PantallaHub(raiz, [definicion("a", "Uno", { max: 10 })], {
+      alElegir: () => {},
+    });
+    hub.mostrar();
+    expect(raiz.querySelector(".carta-jugadores")?.textContent).toBe("2–10 jugadores");
+  });
+
+  it("al pulsar 'Jugar' de un juego jugable avisa con su definición", () => {
     const raiz = document.createElement("div");
     const elegida = definicion("b", "Dos");
     let recibido: DefinicionJuego | null = null;
@@ -45,8 +78,29 @@ describe("PantallaHub", () => {
       },
     });
     hub.mostrar();
-    raiz.querySelector<HTMLButtonElement>('button[data-juego="b"]')?.click();
+    raiz
+      .querySelector<HTMLButtonElement>('[data-juego="b"] .carta-accion')
+      ?.click();
     expect(recibido).toBe(elegida);
+  });
+
+  it("un juego en desarrollo muestra badge y su acción no es lanzable", () => {
+    const raiz = document.createElement("div");
+    let elegido = false;
+    const hub = new PantallaHub(
+      raiz,
+      [definicion("m", "Mentiroso", { estado: "en_desarrollo" })],
+      { alElegir: () => (elegido = true) },
+    );
+    hub.mostrar();
+    const carta = raiz.querySelector('[data-juego="m"]');
+    expect(carta?.querySelector(".badge-desarrollo")?.textContent).toBe(
+      "En desarrollo",
+    );
+    const accion = carta?.querySelector<HTMLButtonElement>(".carta-accion");
+    expect(accion?.disabled).toBe(true);
+    accion?.click();
+    expect(elegido).toBe(false);
   });
 
   it("ocultar marca la pantalla como no visible", () => {

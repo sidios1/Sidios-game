@@ -3,6 +3,7 @@
   "references": [
     { "path": "packages/carioca-core" },
     { "path": "packages/mentiroso-core" },
+    { "path": "packages/uno-core" },
     { "path": "packages/server" },
     { "path": "packages/client" }
   ]

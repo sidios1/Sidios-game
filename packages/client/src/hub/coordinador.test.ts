@@ -115,9 +115,10 @@ function crearEspia(): {
   const definicion: DefinicionJuego = {
     id: "falso",
     nombre: "Falso",
-    descripcion: "juego de prueba",
-    minJugadores: 2,
-    maxJugadores: 4,
+    descriptorCorto: "juego de prueba",
+    jugadores: { min: 2, max: 4 },
+    estado: "jugable",
+    portada: { tipo: "componente", componente: () => document.createElement("div") },
     crear: () => juego,
   };
   return {
@@ -169,7 +170,7 @@ describe("Coordinador", () => {
     const espia = crearEspia();
     const { coordinador, contenedorHud } = crearCoordinador(espia, new TransporteFalso());
     coordinador.iniciar();
-    expect(contenedorHud.querySelector("button.juego")).not.toBeNull();
+    expect(contenedorHud.querySelector("article.carta-juego")).not.toBeNull();
   });
 
   it("al elegir juego y conectar, envía unirse y NO instancia el juego todavía", async () => {
@@ -236,7 +237,7 @@ describe("Coordinador", () => {
     expect(espia.finalizados).toBe(1);
     expect(transporte.desconectado).toBe(true);
     const veloVisible = contenedorHud.querySelector(".velo:not(.oculto)");
-    expect(veloVisible?.querySelector("button.juego")).not.toBeNull();
+    expect(veloVisible?.querySelector("article.carta-juego")).not.toBeNull();
   });
 
   it("tras una caída reconecta SOLO con el token, sin intervención", async () => {

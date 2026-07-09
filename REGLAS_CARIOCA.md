@@ -112,6 +112,27 @@ Cuando un jugador se baja del todo, los demás suman las cartas que les quedaron
 
 ---
 
+## 8.bis Modo +Turbo (opcional)
+
+Variante de ritmo que pone un reloj a cada turno. Lo activa el anfitrión al
+crear la sala (una misma partida puede jugarse normal o turbo). No cambia
+ninguna regla de combinaciones ni de puntaje; solo limita el tiempo del turno.
+
+- **Duración del turno:** 60 s en el primer turno de cada mano (da aire al
+  reacomodo tras el reparto); 15 s en los turnos siguientes.
+- **Extra por bajarse:** abrir el modal de bajarse suma 5 s al turno en curso,
+  **una sola vez por turno** (reabrirlo no vuelve a sumar).
+- **Al vencer el tiempo:**
+  - Si el jugador **ya robó** (fase *descartar*): se descarta una carta
+    aleatoria de su mano. Nunca un comodín (descartarlo es ilegal); si solo le
+    quedan comodines, se salta el turno.
+  - Si **no robó** (fase *robar*): se salta su turno sin penalización de cartas.
+- El temporizador del turno en curso es el mismo para todos y se muestra a
+  todos los jugadores. El servidor es la autoridad del reloj (el cliente solo
+  muestra la cuenta atrás).
+
+---
+
 ## 9. Contratos como datos (para `carioca-core`)
 
 ```ts

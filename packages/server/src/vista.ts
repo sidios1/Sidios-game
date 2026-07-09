@@ -60,6 +60,10 @@ export interface VistaPartida {
   readonly mesa: readonly CombinacionEnMesa[];
   readonly turno: Turno;
   readonly fase: FasePartida;
+  /** Modo +Turbo activo en la sala (reloj por turno). */
+  readonly turbo: boolean;
+  /** Milisegundos que le quedan al turno en curso, o null (sin reloj/turno). */
+  readonly turboMsRestantes: number | null;
   /** Presente en manoTerminada y partidaTerminada. */
   readonly resumenMano: ResumenMano | null;
   /** Presente en partidaTerminada. */
@@ -75,6 +79,10 @@ export interface MetaSala {
   readonly votosNecesarios: number;
   /** Avatar elegido por cada jugador (id del pool); presentación, no regla. */
   readonly avatares?: ReadonlyMap<string, string>;
+  /** Modo +Turbo activo en la sala (reloj por turno). */
+  readonly turbo?: boolean;
+  /** Milisegundos restantes del turno en curso, o null (sin reloj/turno). */
+  readonly turboMsRestantes?: number | null;
 }
 
 export function construirVista(
@@ -131,6 +139,8 @@ export function construirVista(
     mesa: estado.mesa,
     turno: estado.turno,
     fase: estado.fase,
+    turbo: meta.turbo ?? false,
+    turboMsRestantes: meta.turboMsRestantes ?? null,
     resumenMano,
     ganadoresIds:
       estado.fase === "partidaTerminada"

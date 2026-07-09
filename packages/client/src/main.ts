@@ -25,3 +25,11 @@ const coordinador = new Coordinador({
   catalogo: CATALOGO,
 });
 coordinador.iniciar();
+
+// === INSTRUMENTACIÓN TEMPORAL — MEDICIÓN RELOJ ANDROID — REMOVER ANTES DE CERRAR ===
+// Import dinámico gated: solo se carga en un build de medición
+// (VITE_MEDICION_RELOJ=1). Con la flag ausente Vite lo tree-shakea y el módulo no
+// entra al bundle de producción. Ver packages/client/src/red/medicionReloj.ts.
+if ((import.meta.env as Record<string, string | undefined>).VITE_MEDICION_RELOJ === "1") {
+  void import("./red/medicionReloj.js").then((m) => m.iniciarMedicionReloj());
+}

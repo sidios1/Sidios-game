@@ -55,6 +55,7 @@
   "dependencies": {
     "@juegos/carioca-core": "*",
     "@juegos/mentiroso-core": "*",
+    "@juegos/uno-core": "*",
     "ws": "^8.18.0"
   },
   "devDependencies": {

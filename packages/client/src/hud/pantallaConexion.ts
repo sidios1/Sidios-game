@@ -14,7 +14,8 @@ export const PUERTO_LOCAL_POR_DEFECTO = 35711;
 
 export interface AccionesConexion {
   readonly alConectar: (modo: ModoConexion, codigo: string) => void;
-  readonly alIniciarPartida: () => void;
+  /** `turbo` = el anfitrión activó el modo +Turbo (reloj por turno). */
+  readonly alIniciarPartida: (turbo: boolean) => void;
   /**
    * Crear partida con el servidor EMBEBIDO (Fase 5, app de escritorio): el host
    * arranca su propio servidor LAN. Solo se invoca si servidorEmbebidoDisponible.
@@ -39,6 +40,8 @@ export interface JuegoElegido {
   readonly minJugadores: number;
   /** Máximo de jugadores; omitido = sin tope. */
   readonly maxJugadores?: number;
+  /** El juego soporta el modo +Turbo (ofrece el toggle al anfitrión). */
+  readonly soportaTurbo?: boolean;
 }
 
 const JUEGO_POR_DEFECTO: JuegoElegido = {
@@ -277,11 +280,26 @@ export class PantallaConexion {
     const soyAnfitrion =
       jugadores.find((j) => j.jugadorId === this.miJugadorId)?.esAnfitrion ?? false;
     if (soyAnfitrion) {
+      // Modo +Turbo: solo el anfitrión lo decide, y solo si el juego lo soporta.
+      let turboActivado = false;
+      if (this.juego.soportaTurbo === true) {
+        const opcion = document.createElement("label");
+        opcion.className = "opcion-turbo";
+        const check = document.createElement("input");
+        check.type = "checkbox";
+        check.addEventListener("change", () => {
+          turboActivado = check.checked;
+        });
+        const etiqueta = document.createElement("span");
+        etiqueta.textContent = "+Turbo (reloj por turno: 60s el primero, 15s el resto)";
+        opcion.append(check, etiqueta);
+        tarjeta.appendChild(opcion);
+      }
       const iniciar = document.createElement("button");
       iniciar.className = "principal";
       iniciar.textContent = "Iniciar partida";
       iniciar.disabled = jugadores.length < this.juego.minJugadores;
-      iniciar.addEventListener("click", () => this.acciones.alIniciarPartida());
+      iniciar.addEventListener("click", () => this.acciones.alIniciarPartida(turboActivado));
       tarjeta.appendChild(iniciar);
       if (jugadores.length < this.juego.minJugadores) {
         const nota = document.createElement("p");

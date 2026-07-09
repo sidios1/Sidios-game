@@ -6,11 +6,11 @@ describe("catálogo de juegos", () => {
     const carioca = CATALOGO.find((d) => d.id === "carioca");
     expect(carioca).toBeDefined();
     expect(carioca?.nombre).toBe("Carioca");
-    // maxJugadores opcional: undefined = sin tope; si está, debe ser ≥ min.
-    if (carioca?.maxJugadores !== undefined) {
-      expect(carioca.minJugadores).toBeLessThanOrEqual(carioca.maxJugadores);
+    // max:null = sin tope; si hay tope, debe ser ≥ min.
+    if (carioca && carioca.jugadores.max !== null) {
+      expect(carioca.jugadores.min).toBeLessThanOrEqual(carioca.jugadores.max);
     }
-    expect(carioca?.minJugadores).toBeGreaterThanOrEqual(2);
+    expect(carioca?.jugadores.min).toBeGreaterThanOrEqual(2);
   });
 
   it("cada definición crea un IJuego con el ciclo de vida completo", () => {

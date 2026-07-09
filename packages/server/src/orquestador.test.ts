@@ -37,8 +37,11 @@ function asentar(): Promise<void> {
 class RelojManual {
   private pendientes = new Map<number, () => void>();
   private contador = 0;
+  /** Duraciones (ms) de cada temporizador armado; útil para el reloj +Turbo. */
+  readonly msProgramados: number[] = [];
 
-  readonly programar = (_ms: number, fn: () => void): (() => void) => {
+  readonly programar = (ms: number, fn: () => void): (() => void) => {
+    this.msProgramados.push(ms);
     const id = this.contador++;
     this.pendientes.set(id, fn);
     return () => {
@@ -663,6 +666,109 @@ describe("orquestador: el anfitrión reabre la conexión (sin expulsar)", () => 
     noAnfitrion.enviar({ tipo: "reabrirConexion", jugadorId: "j1" });
     await asentar();
     expect(noAnfitrion.ultimoError().codigo).toBe("noEresAnfitrion");
+    await sala.orquestador.detener();
+  });
+});
+
+describe("orquestador: modo +Turbo (reloj por turno)", () => {
+  /** Sala de 2 con mano 1 guionizada, reloj manual y turbo activado por el anfitrión. */
+  async function salaTurbo(): Promise<{ sala: Sala; reloj: RelojManual }> {
+    const reloj = new RelojManual();
+    const sala = await abrirSala(["A", "B"], {
+      mazoParaMano: fabricaMazoParaMano(GUIONES),
+      programar: reloj.programar,
+    });
+    sala.clientes[0]?.enviar({ tipo: "iniciarPartida", turbo: true });
+    await asentar();
+    return { sala, reloj };
+  }
+
+  it("difunde turbo activo y ~60s en el primer turno de la mano", async () => {
+    const { sala, reloj } = await salaTurbo();
+    const b = sala.clientes[1]; // abre el asiento 1 en la mano 1
+    if (b === undefined) throw new Error("sin cliente");
+    const vista = b.ultimaVista();
+    expect(vista.turbo).toBe(true);
+    expect(vista.turboMsRestantes).not.toBeNull();
+    expect(vista.turboMsRestantes ?? 0).toBeGreaterThan(59_000);
+    expect(vista.turboMsRestantes ?? 0).toBeLessThanOrEqual(60_000);
+    expect(reloj.msProgramados[0]).toBe(60_000);
+    await sala.orquestador.detener();
+  });
+
+  it("los turnos siguientes al primero de la mano duran 15s", async () => {
+    const { sala, reloj } = await salaTurbo();
+    const b = sala.clientes[1];
+    if (b === undefined) throw new Error("sin cliente");
+    // B completa su turno (rob + descarte): el turno pasa a A (numero 2 → 15s).
+    await jugarTurnoSimple(b);
+    expect(reloj.msProgramados).toEqual([60_000, 15_000]);
+    await sala.orquestador.detener();
+  });
+
+  it("si el tiempo vence SIN robar, se salta el turno", async () => {
+    const { sala, reloj } = await salaTurbo();
+    const [a, b] = sala.clientes;
+    if (a === undefined || b === undefined) throw new Error("sin clientes");
+    expect(b.ultimaVista().turno.jugadorId).toBe(b.jugadorId); // B en turno, fase robar
+    reloj.avanzar(); // vence el turno de B sin haber robado
+    await asentar();
+    expect(a.ultimaVista().turno.jugadorId).toBe(a.jugadorId); // saltó a A
+    // B no perdió cartas (no descartó): sigue en 12.
+    expect(a.ultimaVista().jugadores.find((j) => j.id === b.jugadorId)?.numeroCartas).toBe(12);
+    await sala.orquestador.detener();
+  });
+
+  it("si el tiempo vence DESPUÉS de robar, se bota una carta (no comodín) y pasa el turno", async () => {
+    const { sala, reloj } = await salaTurbo();
+    const [a, b] = sala.clientes;
+    if (a === undefined || b === undefined) throw new Error("sin clientes");
+    b.enviar({ tipo: "robarDelMazo" });
+    await asentar();
+    expect(b.ultimaVista().tuMano).toHaveLength(13); // robó
+    reloj.avanzar(); // vence en fase descartar → descarte aleatorio
+    await asentar();
+    expect(a.ultimaVista().turno.jugadorId).toBe(a.jugadorId); // pasó el turno
+    // Robó (+1) y botó una carta (−1): vuelve a 12.
+    expect(a.ultimaVista().jugadores.find((j) => j.id === b.jugadorId)?.numeroCartas).toBe(12);
+    // La carta botada nunca es un comodín (descartarlo es ilegal).
+    const pozoTope = a.ultimaVista().pozoTope;
+    expect(pozoTope !== null && esComodin(pozoTope)).toBe(false);
+    await sala.orquestador.detener();
+  });
+
+  it("abrir la bajada suma 5s al turno UNA sola vez", async () => {
+    const { sala, reloj } = await salaTurbo();
+    const b = sala.clientes[1];
+    if (b === undefined) throw new Error("sin cliente");
+    b.enviar({ tipo: "robarDelMazo" });
+    await asentar();
+    b.enviar({ tipo: "extenderTurboBajada" });
+    await asentar();
+    const restanteTrasUno = b.ultimaVista().turboMsRestantes ?? 0;
+    expect(restanteTrasUno).toBeGreaterThan(64_000);
+    expect(restanteTrasUno).toBeLessThanOrEqual(65_000);
+    // Un segundo aviso en el mismo turno no vuelve a sumar.
+    b.enviar({ tipo: "extenderTurboBajada" });
+    await asentar();
+    expect(b.ultimaVista().turboMsRestantes ?? 0).toBeLessThanOrEqual(65_000);
+    // Se re-armó el temporizador con el nuevo vencimiento (60000 y luego ~65000).
+    expect(reloj.msProgramados[0]).toBe(60_000);
+    expect(reloj.msProgramados[reloj.msProgramados.length - 1]).toBeGreaterThan(64_000);
+    await sala.orquestador.detener();
+  });
+
+  it("sin turbo (partida normal) no se arma ningún reloj de turno", async () => {
+    const reloj = new RelojManual();
+    const sala = await abrirSala(["A", "B"], {
+      mazoParaMano: fabricaMazoParaMano(GUIONES),
+      programar: reloj.programar,
+    });
+    await iniciarPartida(sala); // sin turbo
+    expect(reloj.msProgramados).toEqual([]);
+    const vista = sala.clientes[0]?.ultimaVista();
+    expect(vista?.turbo).toBe(false);
+    expect(vista?.turboMsRestantes).toBeNull();
     await sala.orquestador.detener();
   });
 });

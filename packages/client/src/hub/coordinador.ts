@@ -122,8 +122,11 @@ export class Coordinador {
         alCrearPartidaOnline: () => {
           void this.crearPartidaOnline();
         },
-        alIniciarPartida: () => {
-          this.conexion?.enviarMensaje({ tipo: "iniciarPartida" });
+        alIniciarPartida: (turbo) => {
+          this.conexion?.enviarMensaje({
+            tipo: "iniciarPartida",
+            ...(turbo ? { turbo: true } : {}),
+          });
         },
         alVolver: () => this.volverAlHub(),
         perfil: () => this.perfil,
@@ -168,15 +171,20 @@ export class Coordinador {
 
   /** El usuario eligió un juego: pasa a la conexión/sala LAN. */
   elegirJuego(definicion: DefinicionJuego): void {
+    // Candado defensivo: el hub ya no ofrece acción para los juegos en
+    // desarrollo, pero por si acaso, nunca abrimos conexión para uno no jugable.
+    if (definicion.estado !== "jugable") return;
     this.juegoSeleccionado = definicion;
     this.hub.ocultar();
     this.conexionUI.configurarJuego({
       nombre: definicion.nombre,
-      minJugadores: definicion.minJugadores,
+      minJugadores: definicion.jugadores.min,
       // Omitido cuando el juego no tiene tope (exactOptionalPropertyTypes).
-      ...(definicion.maxJugadores !== undefined
-        ? { maxJugadores: definicion.maxJugadores }
+      ...(definicion.jugadores.max !== null
+        ? { maxJugadores: definicion.jugadores.max }
         : {}),
+      // El modo +Turbo hoy solo existe para Carioca.
+      soportaTurbo: definicion.id === "carioca",
     });
     this.conexionUI.mostrarPortada();
   }

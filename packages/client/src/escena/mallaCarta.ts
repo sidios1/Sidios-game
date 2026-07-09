@@ -31,35 +31,53 @@ function materialDorso(): THREE.MeshLambertMaterial {
 }
 
 /**
- * Carta real: cara adelante (+z), dorso atrás. El material de la cara es
- * propio de la malla (el hover le toca el emissive sin afectar a otras).
+ * Malla genérica de carta a partir de TEXTURAS (agnóstica al juego): cara
+ * adelante (+z), dorso atrás. El material de la cara es propio de la malla (el
+ * hover le toca el emissive sin afectar a otras); el del dorso lo aporta quien
+ * llama (compartido y cacheado por juego). La usan tanto Carioca como UNO.
  */
-export function crearMallaCarta(carta: Carta): THREE.Mesh {
-  const cara = new THREE.MeshLambertMaterial({ map: texturaCara(carta) });
+export function crearMallaCaraTextura(
+  caraTextura: THREE.Texture,
+  dorsoMaterial: THREE.Material,
+): THREE.Mesh {
+  const cara = new THREE.MeshLambertMaterial({ map: caraTextura });
   const malla = new THREE.Mesh(geometriaCarta, [
     materialLado,
     materialLado,
     materialLado,
     materialLado,
     cara,
-    materialDorso(),
+    dorsoMaterial,
   ]);
   asignarInteraccion(malla, { tipo: "decoracion" });
   return malla;
 }
 
-/** Carta oculta (mano ajena, mazo, pila del pozo): dorso por ambos lados. */
-export function crearMallaDorso(): THREE.Mesh {
+/** Malla oculta genérica: el mismo material de dorso por ambas caras. */
+export function crearMallaDorsoTextura(dorsoMaterial: THREE.Material): THREE.Mesh {
   const malla = new THREE.Mesh(geometriaCarta, [
     materialLado,
     materialLado,
     materialLado,
     materialLado,
-    materialDorso(),
-    materialDorso(),
+    dorsoMaterial,
+    dorsoMaterial,
   ]);
   asignarInteraccion(malla, { tipo: "decoracion" });
   return malla;
+}
+
+/**
+ * Carta real de Carioca: cara adelante (+z), dorso atrás. El material de la cara
+ * es propio de la malla (el hover le toca el emissive sin afectar a otras).
+ */
+export function crearMallaCarta(carta: Carta): THREE.Mesh {
+  return crearMallaCaraTextura(texturaCara(carta), materialDorso());
+}
+
+/** Carta oculta de Carioca (mano ajena, mazo, pila del pozo): dorso por ambos lados. */
+export function crearMallaDorso(): THREE.Mesh {
+  return crearMallaDorsoTextura(materialDorso());
 }
 
 // Registro tipado fuera de userData: sin casts y se limpia solo (WeakMap).

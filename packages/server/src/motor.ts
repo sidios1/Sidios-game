@@ -56,6 +56,19 @@ export interface MotorJuego<E, A> {
   jugadorEnTurno(estado: E): string | null;
   /** Salta/pasa el turno del jugador indicado (un ausente o suspendido). */
   saltarTurno(estado: E, jugadorId: string): Resultado<E>;
+  /**
+   * Modo +Turbo (opcional; solo los juegos que lo soportan lo implementan).
+   * Descriptor del turno en curso para el reloj: `clave` identifica de forma
+   * estable el turno-jugador (para saber cuándo re-armar), `jugadorId` es quién
+   * juega y `duracionMs` cuánto dura ese turno. `null` si no hay turno activo.
+   */
+  turnoTurbo?(estado: E): { clave: string; jugadorId: string; duracionMs: number } | null;
+  /**
+   * Modo +Turbo (opcional). Política al vencer el turno de un jugador: la decide
+   * el juego (p. ej. descartar una carta si ya robó, o saltar si no). El `rng`
+   * inyecta cualquier elección aleatoria (carta a botar).
+   */
+  expirarTurno?(estado: E, jugadorId: string, rng: GeneradorAleatorio): Resultado<E>;
   /** ¿La partida terminó del todo? */
   terminada(estado: E): boolean;
   /** ¿El juego está pausado esperando que los jugadores voten continuar? */
