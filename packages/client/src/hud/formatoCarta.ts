@@ -29,9 +29,10 @@ const ETIQUETAS: Readonly<Record<ValorCarta, string>> = {
   13: "K",
 };
 
-/** Etiqueta compacta de una carta: "A♠", "10♣"; comodín → "★". */
+/** Etiqueta compacta de una carta: "A♠", "10♣"; comodín → "★"; de pinta → "★♠". */
 export function etiquetaCorta(carta: Carta): string {
   if (carta.tipo === "comodin") return "★";
+  if (carta.tipo === "comodinPinta") return `★${SIMBOLOS[carta.pinta]}`;
   return `${ETIQUETAS[carta.valor]}${SIMBOLOS[carta.pinta]}`;
 }
 

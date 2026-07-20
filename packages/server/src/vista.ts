@@ -46,6 +46,8 @@ export interface ResumenMano {
 }
 
 export interface VistaPartida {
+  /** Discriminante de la unión `VistaJuego` (marcador; = game-id de Carioca). */
+  readonly juego: "carioca";
   readonly tuJugadorId: string;
   readonly tuMano: readonly Carta[];
   /** Asiento anfitrión (puede reabrir conexiones); en partida es estable. */
@@ -112,6 +114,7 @@ export function construirVista(
           votosNecesarios: meta.votosNecesarios,
         };
   return {
+    juego: "carioca",
     tuJugadorId: jugadorId,
     tuMano: propio.mano,
     anfitrionId: meta.anfitrionId,

@@ -10,6 +10,12 @@ import type {
 } from "@juegos/carioca-core";
 import { contratoDeMano, crearCartaNormal } from "@juegos/carioca-core";
 import type { JugadorVista, VistaPartida } from "@juegos/server/vista";
+import type {
+  HabilidadId,
+  HabilidadVista,
+  VistaRumble,
+  VistaRumbleJugador,
+} from "@juegos/server/vistaJuego";
 
 export function carta(pinta: Pinta, valor: ValorCarta, copia = "a"): CartaNormal {
   return crearCartaNormal(pinta, valor, copia);
@@ -42,6 +48,7 @@ export function jugadorVista(
 
 export function crearVista(parcial: Partial<VistaPartida> = {}): VistaPartida {
   const base: VistaPartida = {
+    juego: "carioca",
     tuJugadorId: "j1",
     tuMano: [],
     anfitrionId: "j1",
@@ -54,10 +61,48 @@ export function crearVista(parcial: Partial<VistaPartida> = {}): VistaPartida {
     mesa: [],
     turno: { jugadorId: "j1", fase: "robar", numero: 1 },
     fase: "jugandoMano",
+    turbo: false,
+    turboMsRestantes: null,
     resumenMano: null,
     ganadoresIds: null,
   };
   return { ...base, ...parcial };
+}
+
+/**
+ * Vista de Rumble: la de Carioca + el slice `rumble`. Los campos de revelación son
+ * OPCIONALES en la vista real (el servidor los omite por spread condicional), así
+ * que aquí solo se ponen los no-opcionales y el resto llega por `rumble`.
+ */
+export function crearVistaRumble(
+  parcial: Partial<Omit<VistaRumble, "juego" | "rumble">> = {},
+  rumble: Partial<VistaRumbleJugador> = {},
+): VistaRumble {
+  const { juego: _juego, ...base } = crearVista(parcial as Partial<VistaPartida>);
+  return {
+    ...base,
+    juego: "carioca-rumble",
+    rumble: {
+      misHabilidades: [],
+      doblePublico: [],
+      eventos: [],
+      ...rumble,
+    },
+  };
+}
+
+/** Habilidad en la vista, con valores por defecto de habilidad viva. */
+export function habilidadVista(
+  id: HabilidadId,
+  parcial: Partial<HabilidadVista> = {},
+): HabilidadVista {
+  return {
+    id,
+    nombre: id,
+    cargasRestantes: 1,
+    ventanaVigente: true,
+    ...parcial,
+  };
 }
 
 /** Mano propia de ejemplo: dos tríos limpios + cartas sueltas. */

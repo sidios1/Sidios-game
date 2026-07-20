@@ -25,6 +25,7 @@ function vistaBase(turbo: boolean, turboMsRestantes: number | null): VistaPartid
   const contrato = contratoDeMano(1);
   if (contrato === undefined) throw new Error("sin contrato de la mano 1");
   return {
+    juego: "carioca",
     tuJugadorId: "j1",
     tuMano: [],
     anfitrionId: "j1",

@@ -8,6 +8,7 @@
 // arrancar, abre el editor cuando falta o se pide, y lo inyecta en cada unión a
 // una sala. El nickname/avatar del perfil son los que viajan a la partida.
 
+import type { JugadorEnSala } from "@juegos/server/protocolo";
 import type { TransporteCliente } from "@juegos/server/transporte";
 import { Conexion } from "../red/conexion.js";
 import type { ModoConexion } from "../red/fabricaTransporte.js";
@@ -27,6 +28,7 @@ import { PantallaConexion } from "../hud/pantallaConexion.js";
 import type { Perfil } from "../perfil/perfil.js";
 import { almacenPerfilPorDefecto, guardarPerfil, leerPerfil } from "../perfil/perfil.js";
 import { PantallaPerfil } from "../perfil/pantallaPerfil.js";
+import type { PanelConfigLobby } from "../juego/configLobby.js";
 import type { ContextoJuego, DefinicionJuego, IJuego } from "../juego/ijuego.js";
 import { PantallaHub } from "./pantallaHub.js";
 
@@ -73,6 +75,12 @@ export class Coordinador {
   private juegoSeleccionado: DefinicionJuego | null = null;
   private conexion: Conexion | null = null;
   private juego: IJuego | null = null;
+  /** Panel de config del juego elegido (null si el juego no tiene opciones). */
+  private panelConfig: PanelConfigLobby | null = null;
+  /** Última lista de jugadores de la sala (para re-pintar al llegar configSala). */
+  private jugadoresSala: readonly JugadorEnSala[] = [];
+  /** Mi jugadorId (llega en bienvenida); decide si edito o solo veo la config. */
+  private miId: string | null = null;
   /** Modo y código de la sala actual; el botón "Reconectar" los reutiliza. */
   private modoActual: ModoConexion | null = null;
   private codigoActual: string | null = null;
@@ -126,6 +134,9 @@ export class Coordinador {
           this.conexion?.enviarMensaje({
             tipo: "iniciarPartida",
             ...(turbo ? { turbo: true } : {}),
+            // La config (congelada al iniciar) viaja con el mensaje; el host es el
+            // único editor, así que su copia es la autoritativa.
+            ...(this.panelConfig !== null ? { config: this.panelConfig.valorActual() } : {}),
           });
         },
         alVolver: () => this.volverAlHub(),
@@ -175,6 +186,10 @@ export class Coordinador {
     // desarrollo, pero por si acaso, nunca abrimos conexión para uno no jugable.
     if (definicion.estado !== "jugable") return;
     this.juegoSeleccionado = definicion;
+    // Panel de config del lobby si el juego lo ofrece (hoy Rumble); cada edición
+    // difunde la config por `actualizarConfig`. Genérico: el coordinador no conoce
+    // el juego concreto, solo la interfaz PanelConfigLobby.
+    this.panelConfig = definicion.crearConfigLobby?.((valor) => this.actualizarConfig(valor)) ?? null;
     this.hub.ocultar();
     this.conexionUI.configurarJuego({
       nombre: definicion.nombre,
@@ -201,6 +216,9 @@ export class Coordinador {
     void detenerHostOnline();
     this.fabricaTransporteHost = null;
     this.juegoSeleccionado = null;
+    this.panelConfig = null;
+    this.jugadoresSala = [];
+    this.miId = null;
     this.modoActual = null;
     this.codigoActual = null;
     this.conexionUI.ocultar();
@@ -313,6 +331,7 @@ export class Coordinador {
         alBienvenida: (jugadorId, token) => {
           if (miGen !== this.gen) return;
           this.intentosFallidos = 0; // reconexión lograda
+          this.miId = jugadorId;
           this.conexionUI.registrarJugadorId(jugadorId);
           guardarSesion(this.almacen, codigo, {
             token,
@@ -322,7 +341,14 @@ export class Coordinador {
         },
         alEstadoSala: (jugadores) => {
           if (miGen !== this.gen) return;
-          this.conexionUI.mostrarSala(jugadores, codigo);
+          this.jugadoresSala = jugadores;
+          this.renderSala(codigo);
+        },
+        alConfigSala: (config) => {
+          if (miGen !== this.gen) return;
+          // La copia autoritativa del orquestador; sobrescribe la edición local.
+          this.panelConfig?.fijarValor(config);
+          this.renderSala(codigo);
         },
         alVista: (vista) => {
           if (miGen !== this.gen) return;
@@ -433,6 +459,37 @@ export class Coordinador {
       this.reconexionPendiente = false;
       void this.conectar(modo, codigo, true, true);
     });
+  }
+
+  /**
+   * (Re)pinta la sala. Si el juego trae panel de config, lo construye (editable
+   * solo para el anfitrión) y calcula el bloqueo de "Iniciar" por validación §6
+   * (cortesía; el host revalida). Se llama al llegar `estadoSala`/`configSala`.
+   */
+  private renderSala(codigo: string): void {
+    const panel = this.panelConfig;
+    if (panel === null) {
+      this.conexionUI.mostrarSala(this.jugadoresSala, codigo);
+      return;
+    }
+    const soyAnfitrion =
+      this.jugadoresSala.find((j) => j.jugadorId === this.miId)?.esAnfitrion ?? false;
+    const n = this.jugadoresSala.length;
+    this.conexionUI.mostrarSala(this.jugadoresSala, codigo, {
+      panel: panel.render(soyAnfitrion, n),
+      bloqueoInicio: panel.bloqueoInicio(n),
+    });
+  }
+
+  /**
+   * El anfitrión editó el panel: difunde la config por `actualizarConfig` y re-pinta
+   * de inmediato (optimista). El `configSala` que devuelve el orquestador la
+   * reconfirma como copia autoritativa (todos ven la MISMA config en vivo).
+   */
+  private actualizarConfig(valor: Record<string, unknown>): void {
+    this.panelConfig?.fijarValor(valor);
+    this.conexion?.enviarMensaje({ tipo: "actualizarConfig", config: valor });
+    if (this.codigoActual !== null) this.renderSala(this.codigoActual);
   }
 
   private crearContexto(): ContextoJuego {

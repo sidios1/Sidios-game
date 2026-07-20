@@ -7,6 +7,7 @@
 
 import type { MensajeCliente } from "@juegos/server/protocolo";
 import type { VistaJuego } from "@juegos/server/vistaJuego";
+import type { PanelConfigLobby } from "./configLobby.js";
 import type { FichaCatalogo } from "./ficha.js";
 
 /** Recursos y canales que el hub entrega al juego al arrancarlo. */
@@ -54,4 +55,12 @@ export interface IJuego {
 export interface DefinicionJuego extends FichaCatalogo {
   /** Crea una instancia nueva del juego, sin montar nada todavía. */
   crear(): IJuego;
+  /**
+   * Opcional: crea el panel de configuración del lobby para juegos con opciones
+   * (hoy Rumble). El coordinador lo cablea genéricamente; `alCambiar` recibe el
+   * valor opaco nuevo cada vez que el anfitrión edita un control (para difundirlo
+   * por `actualizarConfig`). Los juegos sin config lo omiten. La ficha de catálogo
+   * (`FichaCatalogo`) sigue siendo solo presentación: la config vive aquí.
+   */
+  crearConfigLobby?(alCambiar: (valor: Record<string, unknown>) => void): PanelConfigLobby;
 }

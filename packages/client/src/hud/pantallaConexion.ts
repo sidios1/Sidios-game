@@ -244,7 +244,17 @@ export class PantallaConexion {
     this.miJugadorId = jugadorId;
   }
 
-  mostrarSala(jugadores: readonly JugadorEnSala[], codigo: string): void {
+  /**
+   * Pinta la sala de espera. `extras` es un enganche GENÉRICO (el hub no conoce
+   * juegos): `panel` es un DOM de configuración que se anexa (editable o no según
+   * lo horneó quien lo construyó) y `bloqueoInicio`, si no es null, deshabilita
+   * "Iniciar" mostrando el motivo (config infactible).
+   */
+  mostrarSala(
+    jugadores: readonly JugadorEnSala[],
+    codigo: string,
+    extras?: { readonly panel?: HTMLElement; readonly bloqueoInicio?: string | null },
+  ): void {
     this.velo.replaceChildren();
     this.velo.classList.remove("oculto");
     const tarjeta = document.createElement("div");
@@ -277,6 +287,10 @@ export class PantallaConexion {
     }
     tarjeta.appendChild(lista);
 
+    // Panel de configuración genérico (hoy Rumble): editable para el anfitrión,
+    // solo lectura para el resto — la distinción la horneó quien lo construyó.
+    if (extras?.panel !== undefined) tarjeta.appendChild(extras.panel);
+
     const soyAnfitrion =
       jugadores.find((j) => j.jugadorId === this.miJugadorId)?.esAnfitrion ?? false;
     if (soyAnfitrion) {
@@ -295,19 +309,27 @@ export class PantallaConexion {
         opcion.append(check, etiqueta);
         tarjeta.appendChild(opcion);
       }
+      const faltanJugadores = jugadores.length < this.juego.minJugadores;
+      const bloqueoConfig = extras?.bloqueoInicio ?? null;
       const iniciar = document.createElement("button");
       iniciar.className = "principal";
       iniciar.textContent = "Iniciar partida";
-      iniciar.disabled = jugadores.length < this.juego.minJugadores;
+      iniciar.disabled = faltanJugadores || bloqueoConfig !== null;
       iniciar.addEventListener("click", () => this.acciones.alIniciarPartida(turboActivado));
       tarjeta.appendChild(iniciar);
-      if (jugadores.length < this.juego.minJugadores) {
+      if (faltanJugadores) {
         const nota = document.createElement("p");
         nota.className = "nota";
         nota.textContent =
           this.juego.maxJugadores === undefined
             ? `Se necesitan al menos ${this.juego.minJugadores} jugadores.`
             : `Se necesitan ${this.juego.minJugadores} a ${this.juego.maxJugadores} jugadores.`;
+        tarjeta.appendChild(nota);
+      } else if (bloqueoConfig !== null) {
+        // Config infactible (validación §6 por cortesía; el host la revalida).
+        const nota = document.createElement("p");
+        nota.className = "nota";
+        nota.textContent = bloqueoConfig;
         tarjeta.appendChild(nota);
       }
     } else {

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import type { OyentesCliente, TransporteCliente } from "@juegos/server/transporte";
+import type { PanelConfigLobby } from "../juego/configLobby.js";
 import type {
   ContextoJuego,
   DefinicionJuego,
@@ -206,6 +207,65 @@ describe("Coordinador", () => {
     transporte.recibir(vista(2));
     expect(espia.iniciados).toBe(1); // no se recrea
     expect(espia.vistas).toEqual([{ marca: 1 }, { marca: 2 }]);
+  });
+
+  it("lobby con config: renderiza el panel, difunde actualizarConfig y adjunta la config al iniciar", async () => {
+    const espia = crearEspia();
+    // Holder (no `let` suelto): la CFA no ve la asignación dentro del closure y
+    // narrowaría a `null`; una propiedad se re-ensancha tras cada llamada.
+    const captura: { alCambiar: ((v: Record<string, unknown>) => void) | null } = {
+      alCambiar: null,
+    };
+    const panelFake: PanelConfigLobby = {
+      valorActual: () => ({ hpj: 2 }),
+      fijarValor: () => {},
+      bloqueoInicio: () => null,
+      render: () => {
+        const div = document.createElement("div");
+        div.className = "panel-fake";
+        return div;
+      },
+    };
+    espia.definicion.crearConfigLobby = (alCambiar) => {
+      captura.alCambiar = alCambiar;
+      return panelFake;
+    };
+    const transporte = new TransporteFalso();
+    const { coordinador, contenedorHud } = crearCoordinador(espia, transporte);
+    coordinador.iniciar();
+    coordinador.elegirJuego(espia.definicion);
+    await coordinador.conectar("local", "127.0.0.1:35711");
+    transporte.recibir(bienvenida("t1")); // soy j1 (anfitrión)
+    transporte.recibir(
+      JSON.stringify({
+        tipo: "estadoSala",
+        jugadores: [
+          { jugadorId: "j1", nombre: "Ana", esAnfitrion: true },
+          { jugadorId: "j2", nombre: "Ben", esAnfitrion: false },
+        ],
+      }),
+    );
+
+    // El panel de config se pintó en la sala.
+    expect(contenedorHud.querySelector(".panel-fake")).not.toBeNull();
+
+    // Editar un control difunde la config por actualizarConfig.
+    captura.alCambiar?.({ hpj: 3 });
+    expect(transporte.enviados.map((d) => JSON.parse(d))).toContainEqual({
+      tipo: "actualizarConfig",
+      config: { hpj: 3 },
+    });
+
+    // "Iniciar" adjunta la config actual del panel (congelada al iniciar).
+    const boton = [...contenedorHud.querySelectorAll("button")].find(
+      (b) => b.textContent === "Iniciar partida",
+    );
+    expect(boton).toBeDefined();
+    boton?.click();
+    expect(transporte.enviados.map((d) => JSON.parse(d))).toContainEqual({
+      tipo: "iniciarPartida",
+      config: { hpj: 2 },
+    });
   });
 
   it("un error durante la partida llega al juego como aviso", async () => {

@@ -29,12 +29,22 @@ export type MensajeLobby =
       /** Juego que el cliente espera jugar en la sala (enganche del registro). */
       readonly juego?: string;
     }
-  /** `turbo` activa el modo +Turbo (reloj por turno); lo decide el anfitrión. */
-  | { readonly tipo: "iniciarPartida"; readonly turbo?: boolean }
+  /** `turbo` activa el modo +Turbo (reloj por turno); lo decide el anfitrión.
+   *  `config` es un blob OPACO de opciones de partida por juego (hoy Rumble): el
+   *  protocolo no conoce su forma; el motor la revalida (autoridad del host). */
+  | {
+      readonly tipo: "iniciarPartida";
+      readonly turbo?: boolean;
+      readonly config?: Record<string, unknown>;
+    }
   | { readonly tipo: "listoSiguienteMano" }
   /** Aviso de que el jugador abrió el modal de bajarse: en +Turbo suma segundos
    *  a su turno (una sola vez por turno; el orquestador lo decide). */
   | { readonly tipo: "extenderTurboBajada" }
+  /** Solo el anfitrión, en el lobby: fija la config OPACA de la partida (hoy
+   *  Rumble). El orquestador la guarda y la redifunde por `configSala`; el motor
+   *  la revalida al iniciar. Mismo blob que viaja en `iniciarPartida.config`. */
+  | { readonly tipo: "actualizarConfig"; readonly config: Record<string, unknown> }
   /** Solo el anfitrión: reabre el canal de un jugador para que pueda reentrar
    *  (conserva su asiento, mano y estado; NO es una expulsión). */
   | { readonly tipo: "reabrirConexion"; readonly jugadorId: string };
@@ -78,6 +88,9 @@ export type CodigoErrorServidor = CodigoErrorSala | (string & {});
 export type MensajeServidor =
   | { readonly tipo: "bienvenida"; readonly jugadorId: string; readonly token: string }
   | { readonly tipo: "estadoSala"; readonly jugadores: readonly JugadorEnSala[] }
+  /** Config OPACA vigente de la sala (hoy Rumble): el orquestador la redifunde a
+   *  todos tras un `actualizarConfig` del anfitrión y al unirse un jugador. */
+  | { readonly tipo: "configSala"; readonly config: Record<string, unknown> }
   | { readonly tipo: "vista"; readonly vista: VistaJuego }
   | {
       readonly tipo: "error";
@@ -140,8 +153,27 @@ export function analizarMensajeCliente(datos: string): MensajeClienteParseado | 
     case "iniciarPartida": {
       const turbo = crudo["turbo"];
       if (turbo !== undefined && typeof turbo !== "boolean") return null;
-      // exactOptionalPropertyTypes: solo incluimos turbo si vino presente.
-      return { tipo: "iniciarPartida", ...(turbo !== undefined ? { turbo } : {}) };
+      // La config es un sobre OPACO: solo se exige "objeto o ausente" (igual que
+      // AccionJuego); su forma la valida el motor del juego, no el protocolo.
+      const config = crudo["config"];
+      if (
+        config !== undefined &&
+        (typeof config !== "object" || config === null || Array.isArray(config))
+      ) {
+        return null;
+      }
+      // exactOptionalPropertyTypes: solo incluimos las claves presentes.
+      return {
+        tipo: "iniciarPartida",
+        ...(turbo !== undefined ? { turbo } : {}),
+        ...(config !== undefined ? { config: config as Record<string, unknown> } : {}),
+      };
+    }
+    case "actualizarConfig": {
+      // Config OPACA (igual que iniciarPartida.config): solo "objeto presente".
+      const config = crudo["config"];
+      if (!esObjeto(config)) return null;
+      return { tipo: "actualizarConfig", config };
     }
     case "listoSiguienteMano":
       return { tipo: "listoSiguienteMano" };
@@ -185,6 +217,8 @@ function esMensajeServidor(valor: unknown): valor is MensajeServidor {
       return typeof valor["jugadorId"] === "string" && typeof valor["token"] === "string";
     case "estadoSala":
       return Array.isArray(valor["jugadores"]);
+    case "configSala":
+      return esObjeto(valor["config"]);
     case "vista":
       return esObjeto(valor["vista"]);
     case "error":

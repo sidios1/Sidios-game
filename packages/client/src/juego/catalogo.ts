@@ -5,11 +5,13 @@
 
 import type { DefinicionJuego } from "./ijuego.js";
 import { definicionCarioca } from "../juegos/carioca/definicion.js";
+import { definicionRumble } from "../juegos/carioca-rumble/definicion.js";
 import { definicionMentiroso } from "../juegos/mentiroso/definicion.js";
 import { definicionUno } from "../juegos/uno/definicion.js";
 
 export const CATALOGO: readonly DefinicionJuego[] = [
   definicionCarioca,
+  definicionRumble,
   definicionMentiroso,
   definicionUno,
 ];

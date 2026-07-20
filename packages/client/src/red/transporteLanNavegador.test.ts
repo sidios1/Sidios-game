@@ -62,8 +62,10 @@ async function conectarCliente(codigo: string, nombre: string): Promise<ClienteD
     alEstadoSala: (jugadores) => {
       cliente.sala = jugadores;
     },
+    alConfigSala: () => {},
     alVista: (vista) => {
-      cliente.vistas.push(vista);
+      // Sala de Carioca: la vista es siempre "carioca" (narrowing por discriminante).
+      if (vista.juego === "carioca") cliente.vistas.push(vista);
     },
     alError: () => {},
     alSalaCerrada: () => {},

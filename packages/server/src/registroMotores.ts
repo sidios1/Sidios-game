@@ -12,6 +12,7 @@ import { Orquestador } from "./orquestador.js";
 import type { Programador } from "./orquestador.js";
 import type { TransporteServidor } from "./transporte.js";
 import { crearMotorCarioca } from "./juegos/carioca/motorCarioca.js";
+import { crearMotorRumble } from "./juegos/carioca/motorRumble.js";
 import { crearMotorMentiroso } from "./juegos/mentiroso/motorMentiroso.js";
 import { crearMotorUno } from "./juegos/uno/motorUno.js";
 
@@ -34,6 +35,9 @@ type FabricaSala = (opciones: OpcionesSala) => SalaJuego;
 
 const REGISTRO: Readonly<Record<string, FabricaSala>> = {
   carioca: (opciones) => new Orquestador({ ...opciones, motor: crearMotorCarioca() }),
+  // Modo Rumble: game-id propio (B3), ficha aparte en el hub. La config del panel
+  // (§6) llega opaca por iniciarPartida y el motor la revalida.
+  "carioca-rumble": (opciones) => new Orquestador({ ...opciones, motor: crearMotorRumble() }),
   mentiroso: (opciones) => new Orquestador({ ...opciones, motor: crearMotorMentiroso() }),
   uno: (opciones) => new Orquestador({ ...opciones, motor: crearMotorUno() }),
 };

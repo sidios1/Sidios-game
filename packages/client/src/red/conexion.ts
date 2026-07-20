@@ -17,6 +17,8 @@ import type { VistaJuego } from "@juegos/server/vistaJuego";
 export interface OyentesConexion {
   readonly alBienvenida: (jugadorId: string, token: string) => void;
   readonly alEstadoSala: (jugadores: readonly JugadorEnSala[]) => void;
+  /** Config OPACA vigente de la sala (hoy Rumble); el juego la interpreta. */
+  readonly alConfigSala: (config: Record<string, unknown>) => void;
   readonly alVista: (vista: VistaJuego) => void;
   readonly alError: (codigo: CodigoErrorServidor, mensaje: string) => void;
   readonly alSalaCerrada: (motivo: string) => void;
@@ -68,6 +70,9 @@ function despachar(mensaje: MensajeServidor, oyentes: OyentesConexion): void {
       return;
     case "estadoSala":
       oyentes.alEstadoSala(mensaje.jugadores);
+      return;
+    case "configSala":
+      oyentes.alConfigSala(mensaje.config);
       return;
     case "vista":
       oyentes.alVista(mensaje.vista);

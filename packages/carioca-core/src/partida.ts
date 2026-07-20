@@ -3,8 +3,14 @@
 // Resultado con el estado nuevo o un error tipado. El servidor (Fase 2)
 // traduce intenciones de los clientes a estas acciones.
 
-import type { Carta } from "./carta.js";
-import { describirCarta, esComodin } from "./carta.js";
+import type { Carta, Pinta, ValorCarta } from "./carta.js";
+import {
+  crearComodinDePinta,
+  describirCarta,
+  esComodin,
+  esComodinDePinta,
+  esCualquierComodin,
+} from "./carta.js";
 import type { GeneradorAleatorio } from "./aleatorio.js";
 import { barajar } from "./aleatorio.js";
 import { crearMazoCompleto, repartir, reponerMazoDesdePozo } from "./mazo.js";
@@ -17,6 +23,7 @@ import type {
 } from "./combinaciones.js";
 import {
   contarComodines,
+  contarComodinesDePinta,
   extenderEscala,
   validarContrato,
   valorDeTrio,
@@ -40,7 +47,12 @@ export type CodigoError =
   | "PEGAR_MISMO_TURNO"
   | "PEGAR_INVALIDO"
   | "COMBINACION_INEXISTENTE"
-  | "COMODIN_AL_POZO";
+  | "COMODIN_AL_POZO"
+  // Códigos aditivos usados solo por las costuras de modos (Rumble); las
+  // acciones base de Carioca no los emiten.
+  | "CARTA_NO_ESTA_EN_POZO"
+  | "SIN_COMODINES"
+  | "JUGADOR_DESCONOCIDO";
 
 export interface ErrorJuego {
   readonly codigo: CodigoError;
@@ -356,14 +368,16 @@ export function robarDelPozo(
 }
 
 /**
- * Bajarse (§5/§6): solo tras robar, una única vez por mano y con el contrato
- * exacto. En las manos de cierre automático se bajan las 13 cartas y se gana
- * sin descartar.
+ * Núcleo de bajarse parametrizado por el contrato a cumplir. `bajarse` le pasa
+ * el contrato global de la mano (comportamiento normal de Carioca); la costura
+ * `bajarseConContrato` (Rumble/TOCO) le pasa una misión alterna por jugador. El
+ * orden de validaciones es idéntico al histórico para no alterar el juego base.
  */
-export function bajarse(
+function bajarseInterno(
   estado: EstadoPartida,
   jugadorId: string,
   propuesta: readonly PropuestaCombinacion[],
+  contrato: ContratoMano | undefined,
 ): Resultado<EstadoPartida> {
   const error = validarAccion(estado, jugadorId, "descartar");
   if (error !== null) return { ok: false, error };
@@ -374,7 +388,6 @@ export function bajarse(
   if (jugador.turnoEnQueSeBajo !== null) {
     return fallo("YA_TE_BAJASTE", "ya te bajaste en esta mano");
   }
-  const contrato = contratoActual(estado);
   if (contrato === undefined) {
     return fallo("MANO_DESCONOCIDA", `no existe la mano ${estado.manoActual}`);
   }
@@ -421,6 +434,19 @@ export function bajarse(
     return exito(cerrarMano(nuevo, jugadorId));
   }
   return exito(nuevo);
+}
+
+/**
+ * Bajarse (§5/§6): solo tras robar, una única vez por mano y con el contrato
+ * exacto de la mano en curso. En las manos de cierre automático se bajan las 13
+ * cartas y se gana sin descartar.
+ */
+export function bajarse(
+  estado: EstadoPartida,
+  jugadorId: string,
+  propuesta: readonly PropuestaCombinacion[],
+): Resultado<EstadoPartida> {
+  return bajarseInterno(estado, jugadorId, propuesta, contratoActual(estado));
 }
 
 /**
@@ -471,9 +497,18 @@ export function pegar(
       );
     }
   }
+  // Comodín-de-pinta (Rumble/GUASON): máx 1 por combinación, prohibido en real.
+  if (esComodinDePinta(carta)) {
+    if (combinacion.tipo === "escalaReal") {
+      return fallo("PEGAR_INVALIDO", "la escala real no admite comodines de pinta");
+    }
+    if (contarComodinesDePinta(combinacion.cartas) + 1 > 1) {
+      return fallo("PEGAR_INVALIDO", "máximo un comodín de pinta por combinación");
+    }
+  }
   let nuevasCartas: Carta[] | null = null;
   if (combinacion.tipo === "trio") {
-    if (!esComodin(carta)) {
+    if (!esCualquierComodin(carta)) {
       const valor = valorDeTrio(combinacion.cartas);
       if (valor === null || carta.valor !== valor) {
         return fallo(
@@ -539,7 +574,7 @@ export function descartar(
   if (contrato === undefined) {
     return fallo("MANO_DESCONOCIDA", `no existe la mano ${estado.manoActual}`);
   }
-  if (esComodin(carta) && contrato.comodinesPorCombinacion > 0) {
+  if (esCualquierComodin(carta) && contrato.comodinesPorCombinacion > 0) {
     return fallo("COMODIN_AL_POZO", "no puedes descartar un comodín en esta mano");
   }
   const manoRestante = jugador.mano.filter((c) => c.id !== cartaId);
@@ -597,5 +632,514 @@ export function pasarTurno(
       fase: "robar",
       numero: estado.turno.numero + 1,
     },
+  });
+}
+
+// === Costuras aditivas para modos (Rumble) ================================
+// Funciones puras NUEVAS que amplían el motor SIN cambiar ninguna regla base:
+// robo/cierre/misión normales siguen idénticos. Todas preservan el invariante de
+// multiset del mazo (mazo ∪ pozo ∪ manos ∪ mesa se conserva). Las consume el
+// MotorRumble (Sesión 2); ver SPIKE_RUMBLE.md §2 y REGLAS_RUMBLE.md.
+
+/** Carta objetivo para sesgar el robo (DECRETALO): casa solo cartas normales. */
+export interface ObjetivoCarta {
+  readonly pinta?: Pinta;
+  readonly valor?: ValorCarta;
+}
+
+function existeJugador(estado: EstadoPartida, jugadorId: string): boolean {
+  return estado.jugadores.some((j) => j.id === jugadorId);
+}
+
+function cartaCasaObjetivo(carta: Carta, objetivo: ObjetivoCarta): boolean {
+  if (carta.tipo !== "normal") return false;
+  if (objetivo.pinta !== undefined && carta.pinta !== objetivo.pinta) return false;
+  if (objetivo.valor !== undefined && carta.valor !== objetivo.valor) return false;
+  return true;
+}
+
+/**
+ * DECRETALO — robo del mazo sesgado hacia `objetivo`. Con probabilidad
+ * `probabilidad` (0.25 por defecto, PROVISIONAL §3.1), si hay una carta normal que
+ * casa con el objetivo en el mazo, se roba ESA (desde donde esté); si no, roba la
+ * cima como el robo normal. El sesgo es preferencia, no garantía. NO altera
+ * `robarDelMazo`.
+ */
+export function robarDelMazoSesgado(
+  estado: EstadoPartida,
+  jugadorId: string,
+  objetivo: ObjetivoCarta,
+  rng: GeneradorAleatorio,
+  probabilidad = 0.25,
+): Resultado<EstadoPartida> {
+  const error = validarAccion(estado, jugadorId, "robar");
+  if (error !== null) return { ok: false, error };
+  let mazo = [...estado.mazo];
+  let pozo = [...estado.pozo];
+  if (mazo.length === 0) {
+    const repuesto = reponerMazoDesdePozo(pozo);
+    mazo = repuesto.mazo;
+    pozo = repuesto.pozo;
+  }
+  const cartaSesgada =
+    rng() < probabilidad
+      ? (() => {
+          const idx = mazo.findIndex((c) => cartaCasaObjetivo(c, objetivo));
+          return idx === -1 ? undefined : mazo.splice(idx, 1)[0];
+        })()
+      : undefined;
+  const carta = cartaSesgada ?? mazo.pop();
+  if (carta === undefined) {
+    return fallo("MAZO_VACIO", "no quedan cartas para robar");
+  }
+  return exito({
+    ...estado,
+    mazo,
+    pozo,
+    jugadores: conManoActualizada(estado, jugadorId, (j) => ({
+      ...j,
+      mano: [...j.mano, carta],
+    })),
+    turno: { ...estado.turno, fase: "descartar" },
+  });
+}
+
+/**
+ * JUDIO — roba una carta ARBITRARIA del pozo por id (no solo la cima). Rompe la
+ * regla base "solo la última del pozo"; el motor la limita a 1 uso/ronda y avisa al
+ * resto (transparencia §3.1). `robarDelPozo` (cima) no se toca.
+ */
+export function robarDelPozoPorId(
+  estado: EstadoPartida,
+  jugadorId: string,
+  cartaId: string,
+): Resultado<EstadoPartida> {
+  const error = validarAccion(estado, jugadorId, "robar");
+  if (error !== null) return { ok: false, error };
+  const idx = estado.pozo.findIndex((c) => c.id === cartaId);
+  if (idx === -1) {
+    return fallo("CARTA_NO_ESTA_EN_POZO", `la carta ${cartaId} no está en el pozo`);
+  }
+  const pozo = [...estado.pozo];
+  const carta = pozo.splice(idx, 1)[0];
+  if (carta === undefined) {
+    return fallo("POZO_VACIO", "el pozo está vacío");
+  }
+  return exito({
+    ...estado,
+    pozo,
+    jugadores: conManoActualizada(estado, jugadorId, (j) => ({
+      ...j,
+      mano: [...j.mano, carta],
+    })),
+    turno: { ...estado.turno, fase: "descartar" },
+  });
+}
+
+/**
+ * GINYU — intercambia por completo las manos de dos jugadores. Sin RNG; el multiset
+ * total no cambia (solo se permutan los dueños). El motor la restringe a la ventana
+ * de 3 turnos y a un objetivo aleatorio (§3.2).
+ */
+export function intercambiarManos(
+  estado: EstadoPartida,
+  idA: string,
+  idB: string,
+): Resultado<EstadoPartida> {
+  if (idA === idB) {
+    return fallo("JUGADOR_DESCONOCIDO", "no se puede intercambiar la mano consigo mismo");
+  }
+  const a = estado.jugadores.find((j) => j.id === idA);
+  const b = estado.jugadores.find((j) => j.id === idB);
+  if (a === undefined || b === undefined) {
+    return fallo("JUGADOR_DESCONOCIDO", "jugador desconocido en el intercambio");
+  }
+  const manoA = a.mano;
+  const manoB = b.mano;
+  return exito({
+    ...estado,
+    jugadores: estado.jugadores.map((j) => {
+      if (j.id === idA) return { ...j, mano: manoB };
+      if (j.id === idB) return { ...j, mano: manoA };
+      return j;
+    }),
+  });
+}
+
+/**
+ * CHATO / MATO-propia — reparte de nuevo la mano de un jugador: sus cartas vuelven al
+ * mazo, se rebaraja y se le reparte la MISMA cantidad. El mazo crece con la mano
+ * antes de repartir, así que siempre alcanza. Conserva el multiset total.
+ */
+export function resetearManoJugador(
+  estado: EstadoPartida,
+  jugadorId: string,
+  rng: GeneradorAleatorio,
+): Resultado<EstadoPartida> {
+  const jugador = estado.jugadores.find((j) => j.id === jugadorId);
+  if (jugador === undefined) {
+    return fallo("JUGADOR_DESCONOCIDO", `no existe el jugador ${jugadorId}`);
+  }
+  const cantidad = jugador.mano.length;
+  const mazoConMano = barajar([...estado.mazo, ...jugador.mano], rng);
+  // La cima del mazo es el último elemento: la mano nueva sale de la cola.
+  const manoNueva = mazoConMano.slice(mazoConMano.length - cantidad);
+  const mazo = mazoConMano.slice(0, mazoConMano.length - cantidad);
+  return exito({
+    ...estado,
+    mazo,
+    jugadores: conManoActualizada(estado, jugadorId, (j) => ({
+      ...j,
+      mano: manoNueva,
+    })),
+  });
+}
+
+/**
+ * TROLL (costura genérica) — resetea SOLO las cartas indicadas de la mano de un
+ * jugador: se quitan de su mano, vuelven al mazo, se rebaraja y se le reparte esa
+ * misma cantidad. El descubrimiento de qué cartas forman tríos/escalas se decide en
+ * el motor (Sesión 2). Conserva el multiset total.
+ */
+export function resetearCartasDeMano(
+  estado: EstadoPartida,
+  jugadorId: string,
+  cartaIds: readonly string[],
+  rng: GeneradorAleatorio,
+): Resultado<EstadoPartida> {
+  const jugador = estado.jugadores.find((j) => j.id === jugadorId);
+  if (jugador === undefined) {
+    return fallo("JUGADOR_DESCONOCIDO", `no existe el jugador ${jugadorId}`);
+  }
+  const aReset = new Set(cartaIds);
+  const salientes = jugador.mano.filter((c) => aReset.has(c.id));
+  if (salientes.length !== aReset.size) {
+    return fallo("CARTA_NO_ESTA_EN_MANO", "alguna carta a resetear no está en la mano");
+  }
+  const cantidad = salientes.length;
+  const manoRestante = jugador.mano.filter((c) => !aReset.has(c.id));
+  const mazoConSalientes = barajar([...estado.mazo, ...salientes], rng);
+  const nuevas = mazoConSalientes.slice(mazoConSalientes.length - cantidad);
+  const mazo = mazoConSalientes.slice(0, mazoConSalientes.length - cantidad);
+  return exito({
+    ...estado,
+    mazo,
+    jugadores: conManoActualizada(estado, jugadorId, (j) => ({
+      ...j,
+      mano: [...manoRestante, ...nuevas],
+    })),
+  });
+}
+
+/**
+ * PILLO — transfiere una carta concreta de la mano de un jugador a la de otro.
+ * Conserva el multiset total (solo cambia de dueño). El motor decide la mecánica de
+ * acierto/fallo (§3.3).
+ */
+export function transferirCarta(
+  estado: EstadoPartida,
+  deId: string,
+  aId: string,
+  cartaId: string,
+): Resultado<EstadoPartida> {
+  if (deId === aId) {
+    return fallo("JUGADOR_DESCONOCIDO", "origen y destino no pueden ser el mismo jugador");
+  }
+  const origen = estado.jugadores.find((j) => j.id === deId);
+  const destino = estado.jugadores.find((j) => j.id === aId);
+  if (origen === undefined || destino === undefined) {
+    return fallo("JUGADOR_DESCONOCIDO", "jugador desconocido en la transferencia");
+  }
+  const carta = origen.mano.find((c) => c.id === cartaId);
+  if (carta === undefined) {
+    return fallo("CARTA_NO_ESTA_EN_MANO", `la carta ${cartaId} no está en la mano de ${deId}`);
+  }
+  return exito({
+    ...estado,
+    jugadores: estado.jugadores.map((j) => {
+      if (j.id === deId) return { ...j, mano: j.mano.filter((c) => c.id !== cartaId) };
+      if (j.id === aId) return { ...j, mano: [...j.mano, carta] };
+      return j;
+    }),
+  });
+}
+
+/**
+ * GUASON — reemplaza una carta de la mano propia por un COMODÍN tomado del mazo. La
+ * carta saliente (por id, o elegida al azar por `rng` si se omite) vuelve al mazo; a
+ * cambio entra un comodín que estaba en el mazo. Falla con SIN_COMODINES si el mazo
+ * no tiene ninguno. Conserva el multiset total.
+ *
+ * Nota de modelo: los comodines de Carioca NO tienen pinta (carta.ts), así que la
+ * "pinta elegida" de la habilidad es cosmética — el comodín ya actúa como cualquier
+ * pinta. El motor puede recordar la pinta pedida solo para la presentación.
+ */
+export function reemplazarCartaPorComodin(
+  estado: EstadoPartida,
+  jugadorId: string,
+  rng: GeneradorAleatorio,
+  cartaIdSaliente?: string,
+): Resultado<EstadoPartida> {
+  const jugador = estado.jugadores.find((j) => j.id === jugadorId);
+  if (jugador === undefined) {
+    return fallo("JUGADOR_DESCONOCIDO", `no existe el jugador ${jugadorId}`);
+  }
+  const idxComodin = estado.mazo.findIndex((c) => c.tipo === "comodin");
+  if (idxComodin === -1) {
+    return fallo("SIN_COMODINES", "no quedan comodines en el mazo");
+  }
+  let idxSaliente: number;
+  if (cartaIdSaliente !== undefined) {
+    idxSaliente = jugador.mano.findIndex((c) => c.id === cartaIdSaliente);
+    if (idxSaliente === -1) {
+      return fallo("CARTA_NO_ESTA_EN_MANO", `la carta ${cartaIdSaliente} no está en tu mano`);
+    }
+  } else {
+    if (jugador.mano.length === 0) {
+      return fallo("CARTA_NO_ESTA_EN_MANO", "la mano está vacía");
+    }
+    idxSaliente = Math.floor(rng() * jugador.mano.length);
+  }
+  const saliente = jugador.mano[idxSaliente];
+  const comodin = estado.mazo[idxComodin];
+  if (saliente === undefined || comodin === undefined) {
+    return fallo("CARTA_NO_ESTA_EN_MANO", "no se pudo reemplazar la carta");
+  }
+  // El comodín sale del mazo; la carta saliente entra al mazo (por la cima).
+  const mazo = estado.mazo.filter((_, i) => i !== idxComodin).concat(saliente);
+  const mano = jugador.mano.map((c, i) => (i === idxSaliente ? comodin : c));
+  return exito({
+    ...estado,
+    mazo,
+    jugadores: conManoActualizada(estado, jugadorId, (j) => ({ ...j, mano })),
+  });
+}
+
+/**
+ * EXTRA — roba DOS cartas del mazo en un mismo turno (fase "robar" → "descartar").
+ * Repone desde el pozo si el mazo se agota entre medio. El motor aplica la
+ * penalización (descartar 2 o perder el próximo turno, §3.3/§6.7). Una variante que
+ * mezcle mazo/pozo queda para la Sesión 2.
+ */
+export function robarDobleDelMazo(
+  estado: EstadoPartida,
+  jugadorId: string,
+): Resultado<EstadoPartida> {
+  const error = validarAccion(estado, jugadorId, "robar");
+  if (error !== null) return { ok: false, error };
+  let mazo = [...estado.mazo];
+  let pozo = [...estado.pozo];
+  const robadas: Carta[] = [];
+  for (let i = 0; i < 2; i++) {
+    if (mazo.length === 0) {
+      const repuesto = reponerMazoDesdePozo(pozo);
+      mazo = repuesto.mazo;
+      pozo = repuesto.pozo;
+    }
+    const carta = mazo.pop();
+    if (carta === undefined) {
+      return fallo("MAZO_VACIO", "no quedan cartas para robar");
+    }
+    robadas.push(carta);
+  }
+  return exito({
+    ...estado,
+    mazo,
+    pozo,
+    jugadores: conManoActualizada(estado, jugadorId, (j) => ({
+      ...j,
+      mano: [...j.mano, ...robadas],
+    })),
+    turno: { ...estado.turno, fase: "descartar" },
+  });
+}
+
+/**
+ * EXTRA (penalización "descartar 2") — descarta una carta al pozo SIN avanzar el
+ * turno (queda en fase "descartar"). Complementa a `descartar`, que sí pasa el turno:
+ * el motor la usa para el descarte EXTRA de penalización, y luego el jugador cierra el
+ * turno con un `descartar` normal. No permite vaciar la mano (el cierre lo hace el
+ * descarte normal). Mismas reglas de comodín que `descartar`. Conserva el multiset.
+ */
+export function descartarExtra(
+  estado: EstadoPartida,
+  jugadorId: string,
+  cartaId: string,
+): Resultado<EstadoPartida> {
+  const error = validarAccion(estado, jugadorId, "descartar");
+  if (error !== null) return { ok: false, error };
+  const jugador = jugadorActual(estado);
+  if (jugador === undefined) {
+    return fallo("JUGADORES_INVALIDOS", "jugador desconocido");
+  }
+  const carta = jugador.mano.find((c) => c.id === cartaId);
+  if (carta === undefined) {
+    return fallo("CARTA_NO_ESTA_EN_MANO", `la carta ${cartaId} no está en tu mano`);
+  }
+  const contrato = contratoActual(estado);
+  if (contrato === undefined) {
+    return fallo("MANO_DESCONOCIDA", `no existe la mano ${estado.manoActual}`);
+  }
+  if (esCualquierComodin(carta) && contrato.comodinesPorCombinacion > 0) {
+    return fallo("COMODIN_AL_POZO", "no puedes descartar un comodín en esta mano");
+  }
+  const manoRestante = jugador.mano.filter((c) => c.id !== cartaId);
+  if (manoRestante.length === 0) {
+    return fallo("CONTRATO_INVALIDO", "el descarte extra no puede dejarte sin cartas");
+  }
+  return exito({
+    ...estado,
+    pozo: [...estado.pozo, carta],
+    jugadores: conManoActualizada(estado, jugadorId, (j) => ({
+      ...j,
+      mano: manoRestante,
+    })),
+  });
+}
+
+/**
+ * OJO (compensación) — entrega la carta superior del mazo a un jugador SIN cambiar el
+ * turno ni la fase. La usa el motor cuando OJO salta el turno del que iba a cerrar,
+ * dándole 1 carta extra de compensación (§3.1). Repone del pozo si el mazo está
+ * vacío. Conserva el multiset.
+ */
+export function entregarCartaDelMazo(
+  estado: EstadoPartida,
+  jugadorId: string,
+): Resultado<EstadoPartida> {
+  if (!existeJugador(estado, jugadorId)) {
+    return fallo("JUGADOR_DESCONOCIDO", `no existe el jugador ${jugadorId}`);
+  }
+  let mazo = [...estado.mazo];
+  let pozo = [...estado.pozo];
+  if (mazo.length === 0) {
+    const repuesto = reponerMazoDesdePozo(pozo);
+    mazo = repuesto.mazo;
+    pozo = repuesto.pozo;
+  }
+  const carta = mazo.pop();
+  if (carta === undefined) {
+    return fallo("MAZO_VACIO", "no quedan cartas para la compensación");
+  }
+  return exito({
+    ...estado,
+    mazo,
+    pozo,
+    jugadores: conManoActualizada(estado, jugadorId, (j) => ({
+      ...j,
+      mano: [...j.mano, carta],
+    })),
+  });
+}
+
+/**
+ * TOCO — bajarse validando contra una MISIÓN alterna por jugador en vez del contrato
+ * de la mano. Misma mecánica que `bajarse` (robar antes, una vez por mano,
+ * cumplimiento exacto); solo cambia el contrato objetivo. El motor genera la misión.
+ */
+export function bajarseConContrato(
+  estado: EstadoPartida,
+  jugadorId: string,
+  propuesta: readonly PropuestaCombinacion[],
+  contrato: ContratoMano,
+): Resultado<EstadoPartida> {
+  return bajarseInterno(estado, jugadorId, propuesta, contrato);
+}
+
+/**
+ * EXODIA — cierre de mano forzado por una condición externa (p. ej. bajarse dentro
+ * de los 3 primeros turnos), aunque al ganador le queden cartas. Expone el cierre
+ * interno con una guarda: puntúa como el cierre normal (el ganador suma 0, el resto
+ * sus cartas). El motor decide CUÁNDO se cumple la condición (ventana B1).
+ */
+export function cerrarManoManual(
+  estado: EstadoPartida,
+  ganadorId: string,
+): Resultado<EstadoPartida> {
+  if (estado.fase !== "jugandoMano") {
+    return fallo("FASE_INCORRECTA", "no hay una mano en curso");
+  }
+  if (!existeJugador(estado, ganadorId)) {
+    return fallo("JUGADOR_DESCONOCIDO", `no existe el jugador ${ganadorId}`);
+  }
+  return exito(cerrarMano(estado, ganadorId));
+}
+
+/** Todas las cartas presentes en el estado (mazo ∪ pozo ∪ manos ∪ mesa). */
+function todasLasCartas(estado: EstadoPartida): readonly Carta[] {
+  return [
+    ...estado.mazo,
+    ...estado.pozo,
+    ...estado.jugadores.flatMap((j) => j.mano),
+    ...estado.mesa.flatMap((m) => m.combinacion.cartas),
+  ];
+}
+
+/** Índice único para un comodín-de-pinta nuevo de `pinta` dentro del estado. */
+function siguienteIndiceComodinPinta(
+  estado: EstadoPartida,
+  pinta: Pinta,
+): number {
+  let max = -1;
+  for (const carta of todasLasCartas(estado)) {
+    if (carta.tipo === "comodinPinta" && carta.pinta === pinta) {
+      const n = Number(carta.id.slice(carta.id.lastIndexOf("-") + 1));
+      if (Number.isFinite(n) && n > max) max = n;
+    }
+  }
+  return max + 1;
+}
+
+/**
+ * GUASON (Rumble, §3.2 REGLAS_RUMBLE.md) — ACUÑA un comodín-de-pinta NUEVO de `pinta`
+ * y reemplaza con él una carta de la mano propia (por id, o al azar por `rng` si se
+ * omite). La carta saliente vuelve al FONDO del mazo (§8.5), donde seguirá en
+ * circulación.
+ *
+ * ⚠️ EXCEPCIÓN ÚNICA AL INVARIANTE DE MULTISET. A diferencia de TODAS las demás
+ * costuras (que conservan mazo ∪ pozo ∪ manos ∪ mesa), esta mete al juego una carta
+ * que NO existía: el comodín-de-pinta acuñado. Es la única ruptura deliberada del
+ * invariante, y está aislada aquí y documentada. Por eso NO usa `reemplazarCartaPorComodin`
+ * (que saca un comodín finito del mazo) y el modo de fallo SIN_COMODINES NO aplica.
+ */
+export function acunarComodinDePinta(
+  estado: EstadoPartida,
+  jugadorId: string,
+  pinta: Pinta,
+  rng: GeneradorAleatorio,
+  cartaIdSaliente?: string,
+): Resultado<EstadoPartida> {
+  const jugador = estado.jugadores.find((j) => j.id === jugadorId);
+  if (jugador === undefined) {
+    return fallo("JUGADOR_DESCONOCIDO", `no existe el jugador ${jugadorId}`);
+  }
+  if (jugador.mano.length === 0) {
+    return fallo("CARTA_NO_ESTA_EN_MANO", "la mano está vacía");
+  }
+  let idxSaliente: number;
+  if (cartaIdSaliente !== undefined) {
+    idxSaliente = jugador.mano.findIndex((c) => c.id === cartaIdSaliente);
+    if (idxSaliente === -1) {
+      return fallo("CARTA_NO_ESTA_EN_MANO", `la carta ${cartaIdSaliente} no está en tu mano`);
+    }
+  } else {
+    idxSaliente = Math.floor(rng() * jugador.mano.length);
+  }
+  const saliente = jugador.mano[idxSaliente];
+  if (saliente === undefined) {
+    return fallo("CARTA_NO_ESTA_EN_MANO", "no se pudo reemplazar la carta");
+  }
+  const comodin = crearComodinDePinta(
+    pinta,
+    siguienteIndiceComodinPinta(estado, pinta),
+  );
+  // Acuñado: la carta saliente va al FONDO del mazo (la cima es el último elemento,
+  // así que el fondo es el índice 0). El comodín-de-pinta es la carta net-nueva.
+  const mazo = [saliente, ...estado.mazo];
+  const mano = jugador.mano.map((c, i) => (i === idxSaliente ? comodin : c));
+  return exito({
+    ...estado,
+    mazo,
+    jugadores: conManoActualizada(estado, jugadorId, (j) => ({ ...j, mano })),
   });
 }

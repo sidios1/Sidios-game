@@ -8,5 +8,9 @@
   },
   "include": ["src"],
   "exclude": ["src/**/*.test.ts", "src/pruebas"],
-  "references": [{ "path": "../carioca-core" }, { "path": "../server" }]
+  "references": [
+    { "path": "../carioca-core" },
+    { "path": "../rumble-core" },
+    { "path": "../server" }
+  ]
 }

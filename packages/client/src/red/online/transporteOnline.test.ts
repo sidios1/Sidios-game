@@ -170,6 +170,7 @@ async function conectarCon(
     alEstadoSala: (jugadores) => {
       cliente.sala = jugadores;
     },
+    alConfigSala: () => {},
     alVista: (vista) => {
       cliente.vistas.push(vista);
     },

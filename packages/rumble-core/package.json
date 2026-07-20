@@ -1,0 +1,21 @@
+{
+  "name": "@juegos/rumble-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Modelo, pool y config del modo Rumble sobre Carioca (lógica pura, sin red ni render)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@juegos/carioca-core": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

@@ -121,6 +121,30 @@ function dibujarCaraComodin(ctx: CanvasRenderingContext2D): void {
   ctx.restore();
 }
 
+/**
+ * Comodín-de-pinta (Rumble/GUASON): comodín restringido a una pinta, así que se
+ * dibuja con el ★ del comodín PERO en el color de su pinta y con el glifo al lado,
+ * para que no se confunda con el comodín libre. Concuerda con el `★♠` que muestran
+ * el tooltip y el HUD (hud/formatoCarta.ts).
+ */
+function dibujarCaraComodinPinta(ctx: CanvasRenderingContext2D, pinta: Pinta): void {
+  fondoBlanco(ctx);
+  const color = colorDePinta(pinta);
+  const simbolo = SIMBOLOS[pinta];
+  ctx.fillStyle = color;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "110px Georgia, serif";
+  ctx.fillText("★", ANCHO / 2, ALTO / 2 - 40);
+  ctx.font = "72px Georgia, serif";
+  ctx.fillText(simbolo, ANCHO / 2, ALTO / 2 + 42);
+  ctx.font = "bold 26px Georgia, serif";
+  ctx.fillText("COMODÍN", ANCHO / 2, ALTO / 2 + 108);
+  // Esquinas: ★ sobre el glifo de la pinta, en ambas orientaciones.
+  dibujarEsquina(ctx, "★", simbolo, color, false);
+  dibujarEsquina(ctx, "★", simbolo, color, true);
+}
+
 function dibujarDorso(ctx: CanvasRenderingContext2D): void {
   ctx.fillStyle = "#fbf9f4";
   ctx.beginPath();
@@ -165,6 +189,8 @@ export function texturaCara(carta: Carta): THREE.CanvasTexture {
   const ctx = crearLienzo();
   if (carta.tipo === "comodin") {
     dibujarCaraComodin(ctx);
+  } else if (carta.tipo === "comodinPinta") {
+    dibujarCaraComodinPinta(ctx, carta.pinta);
   } else {
     dibujarCaraNormal(ctx, carta.pinta, carta.valor);
   }

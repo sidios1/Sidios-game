@@ -155,20 +155,33 @@ npm run tauri:build -w @juegos/client         # ejecutable/instalador distribuib
 ### 4. Dependencias permitidas entre paquetes
 ```
 client ──> carioca-core (solo tipos/validaciones de presentación)
+client ──> rumble-core (solo config §6 + catálogo de habilidades para el panel del lobby)
 client ──> server (solo protocolo, vista e interfaz TransporteCliente)
-server ──> carioca-core, mentiroso-core
+server ──> carioca-core, mentiroso-core, rumble-core
+rumble-core ──> carioca-core (solo tipos: Carta/Pinta y el RNG determinista)
 carioca-core ──> (nada)
 mentiroso-core ──> (nada)
 ```
+- `rumble-core` es la lógica pura del modo Rumble (modelo de las 18 habilidades
+  como datos, config §6 + validación cruzada, muestreo ponderado determinista).
+  Depende de `carioca-core` SOLO por tipos (`Carta`/`Pinta` para el snapshot RADAR,
+  el RNG `GeneradorAleatorio`); cero Three.js/red/orquestador. Ver REGLAS_RUMBLE.md.
+  Es browser-safe, así que el CLIENTE puede importarlo directo SOLO para el panel
+  de config del lobby (`ConfigRumble`, `CONFIG_DEFAULT`, `validarConfigRumble`,
+  `HABILIDADES`): reusa el schema y la validación §6 sin duplicar reglas. El resto
+  de Rumble (motor, vista) sigue viviendo en el server; el cliente NO lo importa.
 - El cliente importa SIEMPRE los subpaths `@juegos/server/protocolo`,
   `@juegos/server/vista`, `@juegos/server/vistaJuego`, `@juegos/server/transporte`
   y `@juegos/server/latido` (definidos en el `exports` del server; todos
   type-only o puros, sin `ws`/Node), nunca la raíz `@juegos/server`: la raíz
   reexporta `transporteLan.ts` y arrastraría `ws`/`node:os` al bundle del
   navegador. `vistaJuego.ts` es el punto de composición de las vistas: exporta
-  la unión `VistaJuego` (la vista de cualquier juego) y reexporta las formas de
-  Mentiroso y los tipos de carta de su core (el cliente no depende de
-  mentiroso-core directamente).
+  la unión DISCRIMINADA `VistaJuego` (la vista de cualquier juego) y reexporta las
+  formas de Mentiroso y los tipos de carta de su core (el cliente no depende de
+  mentiroso-core directamente). El discriminante es el campo `juego` (= game-id)
+  en las cuatro variantes: `"carioca"` (VistaPartida), `"carioca-rumble"`
+  (VistaRumble), `"mentiroso"`, `"uno"`; con él se estrecha la unión con seguridad
+  (`vista.juego === "…"`), además del narrowing bivariante que hace cada juego.
   (Excepción: los tests del cliente pueden importar la raíz para HOSPEDAR
   una sala real, como hace `transporteLanNavegador.test.ts`.)
 - **Modo online (Fase 7): el host corre el orquestador en el webview

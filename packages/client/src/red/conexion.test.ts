@@ -51,7 +51,12 @@ function crearOyentes(): { oyentes: OyentesConexion; registro: Registro } {
   const oyentes: OyentesConexion = {
     alBienvenida: (jugadorId, token) => registro.bienvenidas.push({ jugadorId, token }),
     alEstadoSala: () => {},
-    alVista: (vista) => registro.vistas.push(vista),
+    alConfigSala: () => {},
+    // Esta sala hospeda Carioca: la vista es siempre "carioca" (narrowing seguro
+    // por el discriminante de VistaJuego).
+    alVista: (vista) => {
+      if (vista.juego === "carioca") registro.vistas.push(vista);
+    },
     alError: (codigo, mensaje) => registro.errores.push({ codigo, mensaje }),
     alSalaCerrada: (motivo) => registro.cierres.push(motivo),
     alDesconectar: () => {

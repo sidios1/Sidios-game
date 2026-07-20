@@ -1,0 +1,22 @@
+  Reempaquetar
+
+  1. Sitúate en la raíz del proyecto (C:\Users\penaj\Desktop\Juegos rapidos).
+
+  2. (Recomendado) confirma que todo compila y los tests pasan:
+  npm run build
+  npm test
+
+  3. Lanza el empaquetado completo:
+  npm run tauri:build -w @juegos/client
+
+  Ese único comando hace todo en cadena (lo vi en tu log de build):
+  1. Construye el sidecar del servidor LAN (empaquetar:sidecar).
+  2. Compila el cliente web (tsc -b && vite build) — aquí entra el nuevo CSP y el código de dist-web.
+  3. Compila el binario Rust de Tauri en modo release (~1–2 min la primera vez; luego más rápido).
+  4. Genera los instaladores con WiX (MSI) y NSIS (setup .exe).
+
+  4. Recoge los instaladores. Quedan en:
+  packages\client\src-tauri\target\release\bundle\
+  ├── msi\Sidios Game_0.5.0_x64_en-US.msi
+  └── nsis\Sidios Game_0.5.0_x64-setup.exe
+  El .exe de NSIS es el instalador típico para compartir.

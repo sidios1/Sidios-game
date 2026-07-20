@@ -94,6 +94,11 @@ export class Orquestador<E = unknown, A = unknown> {
   private estado: E | null = null;
   private readonly listos = new Set<string>();
   private contadorJugadores = 0;
+  // Config OPACA de la partida fijada por el anfitrión en el lobby (hoy Rumble).
+  // El orquestador solo la guarda y redifunde; el motor la valida. `null` = el
+  // anfitrión no la editó (los clientes usan su default local, que coincide con
+  // el del motor). Se congela al iniciar (motor.crear la embebe en el estado).
+  private configSala: Record<string, unknown> | null = null;
 
   // Modo +Turbo (reloj por turno). El servidor es la autoridad del reloj.
   private turbo = false;
@@ -171,13 +176,21 @@ export class Orquestador<E = unknown, A = unknown> {
     }
     switch (mensaje.tipo) {
       case "iniciarPartida":
-        this.procesarIniciarPartida(conexionId, jugadorId, mensaje.turbo ?? false);
+        this.procesarIniciarPartida(
+          conexionId,
+          jugadorId,
+          mensaje.turbo ?? false,
+          mensaje.config,
+        );
         return;
       case "listoSiguienteMano":
         this.procesarListo(conexionId, jugadorId);
         return;
       case "extenderTurboBajada":
         this.procesarExtenderTurbo(jugadorId);
+        return;
+      case "actualizarConfig":
+        this.procesarActualizarConfig(conexionId, jugadorId, mensaje.config);
         return;
       case "reabrirConexion":
         this.procesarReabrir(conexionId, jugadorId, mensaje.jugadorId);
@@ -277,6 +290,8 @@ export class Orquestador<E = unknown, A = unknown> {
       token: asiento.token,
     });
     this.difundirEstadoSala();
+    // Los que llegan tarde reciben la config autoritativa vigente (si la hay).
+    this.difundirConfigSala();
   }
 
   private procesarReconexion(conexionId: IdConexion, token: string): void {
@@ -347,10 +362,35 @@ export class Orquestador<E = unknown, A = unknown> {
     this.reaccionar();
   }
 
+  /**
+   * El anfitrión fija la config OPACA de la partida en el lobby. El orquestador la
+   * guarda como copia autoritativa y la redifunde a TODOS por `configSala` (misma
+   * garantía que `estadoSala`: única fuente de verdad, todos ven lo mismo en vivo).
+   * Guard host-only + solo-en-lobby, análogo a reabrir/iniciar. El motor la
+   * revalida al iniciar; aquí no se conoce su forma (es genérica).
+   */
+  private procesarActualizarConfig(
+    conexionId: IdConexion,
+    emisorId: string,
+    config: Record<string, unknown>,
+  ): void {
+    if (this.faseSala !== "lobby") {
+      this.enviarError(conexionId, "accionInvalida", "la partida ya comenzó");
+      return;
+    }
+    if (this.asientos[0]?.jugadorId !== emisorId) {
+      this.enviarError(conexionId, "noEresAnfitrion", "solo el anfitrión puede configurar");
+      return;
+    }
+    this.configSala = config;
+    this.difundirConfigSala();
+  }
+
   private procesarIniciarPartida(
     conexionId: IdConexion,
     jugadorId: string,
     turbo: boolean,
+    config?: Record<string, unknown>,
   ): void {
     if (this.faseSala !== "lobby") {
       this.enviarError(conexionId, "accionInvalida", "la partida ya comenzó");
@@ -365,7 +405,9 @@ export class Orquestador<E = unknown, A = unknown> {
       id: a.jugadorId,
       nombre: a.nombre,
     }));
-    const resultado = this.motor.crear(jugadores, this.rng);
+    // La config es un blob opaco: el orquestador la pasa tal cual; el motor la
+    // revalida (autoridad). Los motores que no la usan la ignoran.
+    const resultado = this.motor.crear(jugadores, this.rng, config);
     if (!resultado.ok) {
       this.enviarError(conexionId, resultado.error.codigo, resultado.error.mensaje);
       return;
@@ -595,6 +637,13 @@ export class Orquestador<E = unknown, A = unknown> {
       esAnfitrion: idx === 0,
     }));
     this.difundir({ tipo: "estadoSala", jugadores });
+  }
+
+  /** Redifunde la config vigente de la sala (si el anfitrión ya la editó). */
+  private difundirConfigSala(): void {
+    if (this.configSala !== null) {
+      this.difundir({ tipo: "configSala", config: this.configSala });
+    }
   }
 
   /** Cada jugador conectado recibe SU vista; las manos ajenas nunca viajan. */

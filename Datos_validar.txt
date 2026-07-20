@@ -1,0 +1,40 @@
+Rango Métricas:
+PF<=1 aceptable
+PF>1 riesgo
+// Definir rango para alerta amarilla
+Consultar sobre SPI, deberia ser:
+SPI>=1 Aceptable
+SPI<1 Atrasado
+//Definir rango para alerta amarilla
+
+
+Datos para reporte:
+        
+avance_real_parcial(%)(float)
+avance_real_acumulado(%)(float)
+prog_parcial_early(%)(float)
+prog_parcial_late(%)(float)
+prog_acumulado_early(%)(float)
+prog_acum_late(%)(float)
+hh_ganadas_parcial(float)
+hh_gastadas_parcial(float)
+hh_ganadas_acum(float)
+hh_gastadas_acum(float)
+Dotacion:
+dotacion_real(int)
+dotacion_proyectada(int)
+mod_contratada(int)
+moi_contratada(int)
+mo_total_contratada(int)
+
+dotacion_local(%)(int)
+dotacion_femenina(%)(int)
+dotacion_comunidad(%)(int)
+dotacion_discapacidad(%)(int)
+
+//Comprobar rangos para las variables anteriores, confirmar rango de valores para avances(%) aplica para curva S y HH para manpower
+pf=hh_gastadas_parcial/HH_ganadas_parcial
+Spi=HH_ganadas_parcial/prog_parcial_HH
+
+// Para dashboard consultar si se quiere ver el %real del periodo, el %real acumulado del proyecto o deben estar ambos. preguntar si falta que se muestre algún dato/tabla
+y su rango correspondiente

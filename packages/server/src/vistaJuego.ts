@@ -1,18 +1,37 @@
 // Punto de composición de las VISTAS por jugador (espejo de registroMotores.ts,
 // que compone los motores). El canal de vista del orquestador/protocolo es
-// GENÉRICO: viaja una `VistaJuego`, la unión de las formas de vista de cada
-// juego. Cada juego del cliente confía en su selección local del hub y narra su
-// propia forma; no se discrimina en el código del juego.
+// GENÉRICO: viaja una `VistaJuego`, la unión DISCRIMINADA de las formas de vista
+// de cada juego. El discriminante es el campo `juego` (= game-id) presente en las
+// cuatro variantes: "carioca", "carioca-rumble", "mentiroso", "uno". Cada juego
+// del cliente narra su propia forma (por método bivariante) confiando en su
+// selección local del hub; el discriminante hace ese narrowing SEGURO y permite
+// estrechar a cualquier variante con `vista.juego === "..."`.
 //
 // Es type-only: se borra del bundle del navegador (no arrastra runtime). El
 // cliente lo importa por el subpath `@juegos/server/vistaJuego`.
 
 import type { VistaPartida } from "./vista.js";
+import type { VistaRumble } from "./juegos/carioca/vistaRumble.js";
 import type { VistaMentiroso } from "./juegos/mentiroso/vistaMentiroso.js";
 import type { VistaUno } from "@juegos/uno-core";
 
 /** La vista que viaja por el canal genérico: la de cualquiera de los juegos. */
-export type VistaJuego = VistaPartida | VistaMentiroso | VistaUno;
+export type VistaJuego = VistaPartida | VistaRumble | VistaMentiroso | VistaUno;
+
+// Re-exporta la forma de Rumble (y sus tipos) para que el cliente la use por
+// `@juegos/server/vistaJuego` SIN depender directamente de rumble-core.
+export type {
+  VistaRumble,
+  VistaRumbleJugador,
+  HabilidadVista,
+} from "./juegos/carioca/vistaRumble.js";
+export type {
+  EventoRumble,
+  TipoEventoRumble,
+  Ubicacion,
+  RevelacionMish,
+} from "./juegos/carioca/estadoRumble.js";
+export type { HabilidadId } from "@juegos/rumble-core";
 
 // Re-exporta las formas de Mentiroso (y los tipos de carta del core) para que el
 // cliente las use SIN depender directamente de @juegos/mentiroso-core.

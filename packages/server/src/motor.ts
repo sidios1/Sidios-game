@@ -39,8 +39,17 @@ export interface JugadorMotor {
  * rondas vive AQUÍ, no en el orquestador.
  */
 export interface MotorJuego<E, A> {
-  /** Estado inicial dados los jugadores; el RNG inyecta el barajado. */
-  crear(jugadores: readonly JugadorMotor[], rng: GeneradorAleatorio): Resultado<E>;
+  /**
+   * Estado inicial dados los jugadores; el RNG inyecta el barajado. `config` es un
+   * blob OPACO opcional (el orquestador ni lo mira): los juegos con opciones de
+   * partida — hoy Rumble — lo REVALIDAN aquí (autoridad del host) y lo embeben en el
+   * estado. Los motores sin config (Carioca base, Mentiroso, UNO) lo ignoran.
+   */
+  crear(
+    jugadores: readonly JugadorMotor[],
+    rng: GeneradorAleatorio,
+    config?: unknown,
+  ): Resultado<E>;
   /**
    * Valida SOLO la forma de una acción cruda del protocolo. Devuelve la acción
    * tipada del juego, o null si el tipo es desconocido o los campos no calzan

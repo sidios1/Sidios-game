@@ -1,6 +1,6 @@
 {
   "name": "@juegos/client",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "private": true,
   "description": "Cliente gráfico: Three.js + Vite (Fase 3); Tauri lo empaqueta en la Fase 5",
   "type": "module",
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@juegos/carioca-core": "*",
+    "@juegos/rumble-core": "*",
     "@juegos/server": "*",
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-shell": "^2.0.0",

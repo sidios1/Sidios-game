@@ -2,8 +2,14 @@
 // Las escalas se validan en el ORDEN PROPUESTO por el jugador (ascendente),
 // tal como se colocan las cartas sobre la mesa.
 
-import type { Carta, CartaNormal, ValorCarta } from "./carta.js";
-import { describirCarta, esComodin, VALORES } from "./carta.js";
+import type {
+  Carta,
+  CartaComodin,
+  CartaComodinPinta,
+  CartaNormal,
+  ValorCarta,
+} from "./carta.js";
+import { describirCarta, esComodin, esComodinDePinta, VALORES } from "./carta.js";
 import type { ContratoMano } from "./contratos.js";
 import { ESCALA, TRIO } from "./contratos.js";
 
@@ -31,6 +37,23 @@ const LONGITUD_ESCALA_COMPLETA = VALORES.length;
 
 export function contarComodines(cartas: readonly Carta[]): number {
   return cartas.filter(esComodin).length;
+}
+
+/** Cuenta comodines-de-pinta (Rumble/GUASON); no cuentan como comodín normal. */
+export function contarComodinesDePinta(cartas: readonly Carta[]): number {
+  return cartas.filter(esComodinDePinta).length;
+}
+
+/**
+ * ¿Actúa esta carta como comodín flotante dentro de una combinación? Tanto el
+ * comodín normal como el comodín-de-pinta toman su valor de la posición y no fijan
+ * número/pinta por sí mismos (la restricción de pinta del comodín-de-pinta se valida
+ * aparte, contra la pinta de la escala).
+ */
+function esComodinFlotante(
+  carta: Carta,
+): carta is CartaComodin | CartaComodinPinta {
+  return carta.tipo === "comodin" || carta.tipo === "comodinPinta";
 }
 
 function cartasNormales(cartas: readonly Carta[]): readonly CartaNormal[] {
@@ -92,6 +115,12 @@ export function validarTrio(
   if (contarComodines(cartas) > maxComodines) {
     return invalida(`máximo ${maxComodines} comodín(es) por combinación`);
   }
+  // Comodín-de-pinta (Rumble/GUASON): actúa como comodín en el trío (aporta una
+  // carta de su pinta con el número del trío). Máx 1 por combinación, aparte del
+  // tope de comodines normales.
+  if (contarComodinesDePinta(cartas) > 1) {
+    return invalida("máximo un comodín de pinta por combinación");
+  }
   const normales = cartasNormales(cartas);
   const primera = normales[0];
   if (primera === undefined) {
@@ -120,6 +149,9 @@ export function validarEscala(
   if (contarComodines(cartas) > maxComodines) {
     return invalida(`máximo ${maxComodines} comodín(es) por combinación`);
   }
+  if (contarComodinesDePinta(cartas) > 1) {
+    return invalida("máximo un comodín de pinta por combinación");
+  }
   const normales = cartasNormales(cartas);
   if (normales.length === 0) {
     return invalida("una escala necesita al menos una carta normal");
@@ -127,13 +159,20 @@ export function validarEscala(
   if (!mismaPinta(normales)) {
     return invalida("todas las cartas de una escala deben ser de la misma pinta");
   }
+  // Comodín-de-pinta (Rumble/GUASON): solo sirve en escalas de SU pinta.
+  const pintaEscala = normales[0]?.pinta;
+  for (const carta of cartas) {
+    if (carta.tipo === "comodinPinta" && carta.pinta !== pintaEscala) {
+      return invalida("el comodín de pinta no corresponde a la pinta de la escala");
+    }
+  }
   const valores = valoresDeEscala(cartas);
   if (valores === null) {
     return invalida("las cartas no forman una secuencia válida");
   }
   for (let i = 0; i < cartas.length; i++) {
     const carta = cartas[i];
-    if (carta === undefined || carta.tipo === "comodin") continue;
+    if (carta === undefined || esComodinFlotante(carta)) continue;
     if (carta.valor !== valores[i]) {
       return invalida(
         `las cartas no son consecutivas: ${describirCarta(carta)} rompe la secuencia`,
@@ -156,9 +195,12 @@ export function validarEscalaSucia(
   if (contarComodines(cartas) > maxComodines) {
     return invalida(`máximo ${maxComodines} comodín(es) por combinación`);
   }
+  if (contarComodinesDePinta(cartas) > 1) {
+    return invalida("máximo un comodín de pinta por combinación");
+  }
   for (let i = 0; i < cartas.length; i++) {
     const carta = cartas[i];
-    if (carta === undefined || carta.tipo === "comodin") continue;
+    if (carta === undefined || esComodinFlotante(carta)) continue;
     if (carta.valor !== VALORES[i]) {
       return invalida(
         `la escala debe ir del As al Rey en orden: ${describirCarta(carta)} está fuera de lugar`,
@@ -175,6 +217,10 @@ export function validarEscalaReal(
 ): Validacion {
   const comoSucia = validarEscalaSucia(cartas, maxComodines);
   if (!comoSucia.valida) return comoSucia;
+  // La escala real no admite comodín de NINGÚN tipo (§2 + Rumble/GUASON).
+  if (contarComodinesDePinta(cartas) > 0) {
+    return invalida("la escala real no admite comodines de pinta");
+  }
   if (!mismaPinta(cartasNormales(cartas))) {
     return invalida("la escala real exige una sola pinta");
   }
@@ -278,6 +324,17 @@ export function extenderEscala(
   const valorInicio = valorDesplazado(primero, -1);
   const valorFin = valorDesplazado(ultimo, 1);
   if (carta.tipo === "comodin") {
+    const lado = extremo ?? "fin";
+    if (lado === "fin") {
+      return valorFin === null ? null : [...cartas, carta];
+    }
+    return valorInicio === null ? null : [carta, ...cartas];
+  }
+  // Comodín-de-pinta (Rumble/GUASON): extiende como comodín, pero solo si su pinta
+  // coincide con la de la escala.
+  if (carta.tipo === "comodinPinta") {
+    const pintaEscala = cartasNormales(cartas)[0]?.pinta;
+    if (pintaEscala !== undefined && carta.pinta !== pintaEscala) return null;
     const lado = extremo ?? "fin";
     if (lado === "fin") {
       return valorFin === null ? null : [...cartas, carta];

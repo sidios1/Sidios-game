@@ -772,3 +772,63 @@ describe("orquestador: modo +Turbo (reloj por turno)", () => {
     await sala.orquestador.detener();
   });
 });
+
+describe("orquestador: sincronización de config de sala (Sesión 3)", () => {
+  /** Última config que recibió el cliente por `configSala` (null si ninguna). */
+  function ultimaConfig(cliente: ClientePrueba): Record<string, unknown> | null {
+    for (let i = cliente.mensajes.length - 1; i >= 0; i--) {
+      const m = cliente.mensajes[i];
+      if (m !== undefined && m.tipo === "configSala") return m.config;
+    }
+    return null;
+  }
+
+  it("el anfitrión fija la config y TODOS reciben el mismo configSala", async () => {
+    const sala = await abrirSala(["Ana", "Ben"]);
+    const [ana, ben] = sala.clientes;
+    if (ana === undefined || ben === undefined) throw new Error("faltan clientes");
+    const config = { habilidadesPorJugador: 2, visibilidad: "publica" };
+    ana.enviar({ tipo: "actualizarConfig", config });
+    await asentar();
+    expect(ultimaConfig(ana)).toEqual(config);
+    expect(ultimaConfig(ben)).toEqual(config);
+    await sala.orquestador.detener();
+  });
+
+  it("un no-anfitrión recibe noEresAnfitrion y no se difunde su config", async () => {
+    const sala = await abrirSala(["Ana", "Ben"]);
+    const ben = sala.clientes[1];
+    if (ben === undefined) throw new Error("falta el cliente");
+    ben.enviar({ tipo: "actualizarConfig", config: { visibilidad: "publica" } });
+    await asentar();
+    expect(ben.ultimoError().codigo).toBe("noEresAnfitrion");
+    expect(ultimaConfig(ben)).toBeNull();
+    await sala.orquestador.detener();
+  });
+
+  it("quien se une tarde recibe la config autoritativa vigente", async () => {
+    const sala = await abrirSala(["Ana"]);
+    const ana = sala.clientes[0];
+    if (ana === undefined) throw new Error("falta el anfitrión");
+    const config = { habilidadesPorJugador: 3 };
+    ana.enviar({ tipo: "actualizarConfig", config });
+    await asentar();
+    const cami = new ClientePrueba(sala.transporte.crearCliente());
+    await cami.conectar(sala.codigo);
+    cami.enviar({ tipo: "unirse", nombre: "Cami" });
+    await asentar();
+    expect(ultimaConfig(cami)).toEqual(config);
+    await sala.orquestador.detener();
+  });
+
+  it("actualizar la config en partida ya iniciada da accionInvalida", async () => {
+    const sala = await abrirSala(["Ana", "Ben"], { mazoParaMano: mazosParaSala(2) });
+    const ana = sala.clientes[0];
+    if (ana === undefined) throw new Error("falta el anfitrión");
+    await iniciarPartida(sala);
+    ana.enviar({ tipo: "actualizarConfig", config: { visibilidad: "publica" } });
+    await asentar();
+    expect(ana.ultimoError().codigo).toBe("accionInvalida");
+    await sala.orquestador.detener();
+  });
+});

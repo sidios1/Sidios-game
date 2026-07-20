@@ -36,6 +36,9 @@ body {
 #hud .panel,
 #hud .mentiroso,
 #hud .uno-selector,
+#hud .rumble-selector,
+#hud .rumble-panel,
+#hud .rumble-hab,
 #hud .log-panel {
   pointer-events: auto;
 }
@@ -1263,4 +1266,439 @@ button.perfil-avatar.seleccionado {
   border: 1px solid #3a567e;
   max-width: min(560px, 90vw);
   text-align: center;
+}
+
+/* ── Panel de config de Rumble en la sala de espera (Sesión 3) ───────────── */
+.config-rumble {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  text-align: left;
+  margin-top: 0.4rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid #2a3442;
+  max-height: 44vh;
+  overflow-y: auto;
+}
+
+.config-rumble-titulo {
+  margin: 0;
+  font-size: 1rem;
+  color: #e6ebf1;
+}
+
+.config-rumble-subtitulo {
+  margin: 0.3rem 0 0;
+  font-size: 0.85rem;
+  color: #9aa5b1;
+}
+
+.config-rumble-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.config-rumble-fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.config-rumble-etiqueta {
+  color: #c3cbd6;
+}
+
+.config-rumble select,
+.config-rumble input[type="number"] {
+  min-width: 8.5rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 8px;
+  background: #0f141a;
+  color: #e6ebf1;
+  border: 1px solid #2a3442;
+}
+
+.config-rumble input[type="number"] {
+  width: 4.5rem;
+  min-width: 0;
+}
+
+.config-rumble-grupo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-top: 0.3rem;
+  cursor: pointer;
+}
+
+.config-rumble-habilidades,
+.config-rumble-manos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.2rem 0.6rem;
+  padding-left: 1.2rem;
+}
+
+.config-rumble-habilidad,
+.config-rumble-mano {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: #9aa5b1;
+  cursor: pointer;
+}
+
+/* ── HUD de Rumble (overlay HTML sobre el render de Carioca) ────────────────── */
+/* Rumble RODEA a Carioca: este HUD se monta aparte y no pisa sus slots. Carioca
+   ocupa .hud-top (arriba), 4.6rem, 7rem, el centro y bottom 0.9rem; Rumble usa el
+   borde DERECHO a media altura y la esquina inferior izquierda. */
+
+.rumble-barra {
+  position: absolute;
+  top: 50%;
+  right: 0.9rem;
+  transform: translateY(-50%);
+  width: 15.5rem;
+  max-height: 70vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rumble-barra-titulo {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9aa5b1;
+  padding-left: 0.2rem;
+}
+
+.rumble-hab {
+  background: rgba(13, 18, 24, 0.85);
+  border: 1px solid #2a3442;
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  color: #e8e4da;
+}
+
+.rumble-hab.fuera-de-ventana {
+  opacity: 0.6;
+  border-color: #3a2f22;
+}
+
+.rumble-hab-cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.rumble-hab-nombre {
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.rumble-hab-cargas {
+  font-size: 0.8rem;
+  color: #d8b44a;
+  white-space: nowrap;
+}
+
+.rumble-hab-cargas.agotada {
+  color: #9aa5b1;
+  text-decoration: line-through;
+}
+
+.rumble-hab-desc {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #9aa5b1;
+}
+
+.rumble-hab-estado,
+.rumble-hab-nota {
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  color: #d8b44a;
+}
+
+.rumble-hab-nota {
+  color: #9aa5b1;
+  font-style: italic;
+}
+
+.rumble-hab-boton {
+  margin-top: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.82rem;
+}
+
+/* ── Revelaciones (paneles informativos, borde izquierdo) ───────────────────── */
+
+.rumble-revelaciones {
+  position: absolute;
+  top: 50%;
+  left: 0.9rem;
+  transform: translateY(-50%);
+  width: 16rem;
+  max-height: 70vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rumble-panel {
+  background: rgba(13, 18, 24, 0.85);
+  border: 1px solid #2a3442;
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  color: #e8e4da;
+  font-size: 0.8rem;
+}
+
+.rumble-panel p {
+  margin: 0.3rem 0 0;
+  color: #9aa5b1;
+  line-height: 1.35;
+}
+
+.rumble-panel ul {
+  margin: 0.3rem 0 0;
+  padding-left: 1rem;
+  color: #9aa5b1;
+}
+
+.rumble-panel-titulo {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d8b44a;
+}
+
+.rumble-panel button {
+  margin-top: 0.5rem;
+  width: 100%;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.6rem;
+}
+
+/* DOBLE se anuncia siempre (§6.8): destacado. */
+.rumble-doble {
+  border-color: #d8b44a;
+}
+
+/* PILLO pendiente exige acción: rojo de urgencia. */
+.rumble-pillo {
+  border-color: #c0392b;
+  background: rgba(70, 36, 36, 0.95);
+}
+
+.rumble-fila-cartas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.4rem;
+}
+
+.rumble-carta-chip {
+  background: #1f2937;
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  padding: 0.15rem 0.4rem;
+  font-size: 0.8rem;
+}
+
+/* ── Feed de eventos (esquina inferior izquierda) ───────────────────────────── */
+
+.rumble-eventos {
+  position: absolute;
+  bottom: 0.9rem;
+  left: 0.9rem;
+  width: 18rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.rumble-evento {
+  background: rgba(13, 18, 24, 0.85);
+  border-left: 3px solid #2a3442;
+  border-radius: 0 8px 8px 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.74rem;
+  color: #9aa5b1;
+}
+
+.rumble-evento.tipo-doble {
+  border-left-color: #d8b44a;
+}
+
+.rumble-evento.tipo-victoria {
+  border-left-color: #4ea36b;
+  color: #e8e4da;
+}
+
+.rumble-evento.tipo-pilloFallo,
+.rumble-evento.tipo-pilloAcierto,
+.rumble-evento.tipo-swap,
+.rumble-evento.tipo-reset,
+.rumble-evento.tipo-skip {
+  border-left-color: #c0392b;
+  color: #e8e4da;
+}
+
+.rumble-toast {
+  position: absolute;
+  top: 9.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13, 18, 24, 0.94);
+  border: 1px solid #d8b44a;
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  color: #e8e4da;
+  font-size: 0.85rem;
+  max-width: 32rem;
+  text-align: center;
+}
+
+/* ── Selectores modales de targeting ────────────────────────────────────────── */
+
+.rumble-selector {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.rumble-selector-panel {
+  background: rgba(13, 18, 24, 0.94);
+  border: 1px solid #2a3442;
+  border-radius: 14px;
+  padding: 1.1rem 1.3rem;
+  color: #e8e4da;
+  max-width: 30rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.rumble-selector-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.rumble-selector-ayuda {
+  margin: 0 0 0.7rem;
+  font-size: 0.8rem;
+  color: #9aa5b1;
+  line-height: 1.35;
+}
+
+.rumble-selector-paso {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d8b44a;
+  margin-bottom: 0.5rem;
+}
+
+.rumble-selector-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rumble-opcion {
+  width: 100%;
+  text-align: left;
+}
+
+.rumble-selector-pintas {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rumble-pinta {
+  width: 3.4rem;
+  height: 3.4rem;
+  font-size: 1.8rem;
+  line-height: 1;
+  background: #fbf9f4;
+  border-color: #c9c4ba;
+}
+
+.rumble-pinta.roja {
+  color: #b3303a;
+}
+
+.rumble-pinta.negra {
+  color: #22272e;
+}
+
+.rumble-pinta:hover:not(:disabled) {
+  background: #fff;
+}
+
+.rumble-selector-valores {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.35rem;
+}
+
+.rumble-valor {
+  padding: 0.4rem 0;
+  text-align: center;
+}
+
+.rumble-volver {
+  grid-column: 1 / -1;
+  font-size: 0.78rem;
+}
+
+.rumble-selector-mano,
+.rumble-selector-dorsos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  max-width: 26rem;
+}
+
+.rumble-carta {
+  min-width: 3.2rem;
+  background: #fbf9f4;
+  color: #22272e;
+  border-color: #c9c4ba;
+}
+
+/* Dorsos del robo a ciegas de PILLO: indistinguibles a propósito. */
+.rumble-dorso {
+  width: 2.8rem;
+  height: 4rem;
+  background: #274b6d;
+  border-color: #3f6f99;
+  color: #cfe0ef;
+  font-size: 0.8rem;
+}
+
+.rumble-dorso:hover:not(:disabled) {
+  background: #315b82;
+}
+
+.rumble-selector-cancelar {
+  margin-top: 0.9rem;
+  width: 100%;
+  font-size: 0.82rem;
 }
