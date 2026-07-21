@@ -1,8 +1,8 @@
 {
   "name": "@juegos/client",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "private": true,
-  "description": "Cliente gráfico: Three.js + Vite (Fase 3); Tauri lo empaqueta en la Fase 5",
+  "description": "Cliente grÃ¡fico: Three.js + Vite (Fase 3); Tauri lo empaqueta en la Fase 5",
   "type": "module",
   "scripts": {
     "build": "tsc -b",
