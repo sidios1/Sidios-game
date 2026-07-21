@@ -11,6 +11,7 @@ import type {
   TransporteCliente,
   TransporteServidor,
 } from "./transporte.js";
+import { frameSincronia, responderSincronia } from "./sincroniaReloj.js";
 
 export const CODIGO_SALA_MEMORIA = "memoria";
 
@@ -108,6 +109,15 @@ export class TransporteMemoria implements TransporteServidor {
   entregarAlServidor(conexionId: IdConexion, datos: string): void {
     const oyentes = this.oyentes;
     if (oyentes === null || !this.conexiones.has(conexionId)) return;
+    // La invariante vale para TODO TransporteServidor, sin excepciones: los
+    // frames de control se consumen en el adaptador y nunca llegan al
+    // orquestador (si no, caerían en `accionJuego`/`mensajeInvalido`).
+    const sinc = frameSincronia(datos);
+    if (sinc !== null) {
+      const pong = responderSincronia(sinc, Date.now());
+      if (pong !== null) this.conexiones.get(conexionId)?.recibir(pong);
+      return;
+    }
     queueMicrotask(() => oyentes.alRecibir(conexionId, datos));
   }
 

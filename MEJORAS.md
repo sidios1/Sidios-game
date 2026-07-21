@@ -580,5 +580,43 @@ Commit: "fix(net): estabilidad LAN (heartbeat, anti-throttling) y reconexión co
 
 ---
 
-*Mejoras post-Fase 5 (1-11). Cada una es una sesión independiente, mismo flujo modular del PLAN.md.*
+# MEJORA 12 — Deuda: el reloj del orquestador está atado al turno  `[DEUDA — detectada en SPIKE_MELOQUIZ.md]`
+
+**Toca:** `packages/server/src/motor.ts` y `packages/server/src/orquestador.ts`.
+**Origen:** spike S0 de MeloQuiz (2026-07-21). **No implementar por separado**: se resuelve dentro de
+la sesión que introduzca el reloj de fases (MeloQuiz S1/S4). Esta entrada existe para que ninguna
+sesión intermedia rompa los supuestos de abajo.
+
+**Deuda concreta:**
+
+1. **`MotorJuego.turnoTurbo` declara un campo muerto.** La firma
+   (`motor.ts:74`) devuelve `{ clave, jugadorId, duracionMs }`, pero el orquestador **solo lee
+   `clave` y `duracionMs`** (`orquestador.ts:560-564`); el `jugadorId` del descriptor nunca se lee —
+   `alVencerTurno` lo obtiene de `motor.jugadorEnTurno(estado)` (`orquestador.ts:580`). Es un campo
+   público que miente sobre lo que el orquestador necesita.
+2. **El reloj no puede expresar una fase de SALA.** `alVencerTurno` aborta si
+   `jugadorEnTurno === null` (`orquestador.ts:580-581`), así que un juego simultáneo (fases que
+   vencen para todos, no para uno) no puede usar el temporizador existente.
+
+**Dirección recomendada:** al agregar `faseTemporizada`/`expirarFase` para MeloQuiz, evaluar
+**unificar los dos relojes en uno solo de sala** en vez de dejar dos rutas de temporizador paralelas
+en el orquestador. Los juegos por turnos derivarían el jugador de `jugadorEnTurno` — que es
+literalmente lo que `alVencerTurno:580` ya hace hoy.
+
+**Supuestos que otras sesiones deben respetar:**
+
+- **El reloj de fases no puede quedar detrás del flag `turbo` del lobby.** Hoy el temporizador es
+  opt-in del anfitrión (`orquestador.ts:416` y el early-return de `reprogramarTurnoTurbo:552`). Para
+  un juego dirigido por reloj, el temporizador es obligatorio: debe armarse por el solo hecho de que
+  el motor implemente el método.
+- **`MensajeServidor` (`protocolo.ts:88-100`) es una unión cerrada: el orquestador no puede responder
+  un pedido puntual a un cliente.** Cualquier mecanismo de request/response por conexión (sync de
+  reloj, sondeos) va en la CAPA DE TRANSPORTE, junto a `latido.ts` — no agregando variantes a
+  `MensajeServidor`, que pagarían todos los juegos.
+- **Los acks y confirmaciones de juego viajan como `AccionJuego`**, no reciclando `listoSiguienteMano`
+  (`procesarListo:450-461` está cableado a `motor.esperandoContinuar`).
+
+---
+
+*Mejoras post-Fase 5 (1-11) + deuda 12. Cada una es una sesión independiente, mismo flujo modular del PLAN.md.*
 *Conectividad: la Mejora 8 define la semántica de desconexión; la Mejora 11 consolida la robustez y la reconexión.*

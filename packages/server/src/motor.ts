@@ -78,6 +78,23 @@ export interface MotorJuego<E, A> {
    * inyecta cualquier elección aleatoria (carta a botar).
    */
   expirarTurno?(estado: E, jugadorId: string, rng: GeneradorAleatorio): Resultado<E>;
+  /**
+   * Fase temporizada de SALA (opcional; hermana de `turnoTurbo` pero SIN
+   * `jugadorId`: la fase vence para TODOS, no para un jugador). `clave` identifica
+   * de forma estable la fase en curso (para saber cuándo re-armar el reloj) y
+   * `duracionMs` cuánto dura. `null` = no hay fase corriendo (partida terminada).
+   *
+   * A diferencia de +Turbo, el reloj de fase NO es opt-in del anfitrión: el
+   * orquestador lo arma por el solo hecho de que el motor implemente este método.
+   */
+  faseTemporizada?(estado: E): { clave: string; duracionMs: number } | null;
+  /**
+   * Política al vencer la fase de sala: la decide el juego (p. ej. pasar de la
+   * votación al reveal). Sin `jugadorId` y sin consultar `jugadorEnTurno`: los
+   * juegos dirigidos por reloj no tienen turnos. El `rng` inyecta cualquier
+   * elección aleatoria (armar la ronda siguiente).
+   */
+  expirarFase?(estado: E, rng: GeneradorAleatorio): Resultado<E>;
   /** ¿La partida terminó del todo? */
   terminada(estado: E): boolean;
   /** ¿El juego está pausado esperando que los jugadores voten continuar? */

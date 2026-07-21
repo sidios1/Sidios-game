@@ -11,6 +11,7 @@
   "references": [
     { "path": "../carioca-core" },
     { "path": "../rumble-core" },
+    { "path": "../meloquiz-fuente-local" },
     { "path": "../server" }
   ]
 }

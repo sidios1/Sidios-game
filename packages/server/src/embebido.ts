@@ -9,8 +9,9 @@
 //  - Cierra limpio ante SIGINT y SIGTERM (Tauri mata el hijo con SIGTERM/kill).
 
 import { crearSala } from "./registroMotores.js";
-import type { SalaJuego } from "./registroMotores.js";
+import type { OpcionesSala, SalaJuego } from "./registroMotores.js";
 import { TransporteLanServidor } from "./transporteLan.js";
+import { cargarPoolDeCarpeta } from "./juegos/meloquiz/cargarPool.js";
 
 const PUERTO_POR_DEFECTO = 35711;
 
@@ -24,17 +25,44 @@ if (!Number.isInteger(puerto) || puerto < 0 || puerto > 65535) {
 // El juego de la sala embebida; por ahora Carioca (el cliente aún no envía
 // game-id). El env JUEGO permite cambiarlo sin tocar código.
 const juego = process.env["JUEGO"] ?? "carioca";
-const transporte = new TransporteLanServidor({ puerto });
-const orquestador = crearSala(juego, { transporte });
-if (orquestador === undefined) {
-  console.error(`juego desconocido: ${juego}`);
-  process.exit(1);
+
+/**
+ * Arma la sala del juego pedido. MeloQuiz necesita además su catálogo, que este
+ * proceso lee de la carpeta que indica CARPETA_MUSICA (REGLAS §1: a los peers
+ * solo les viaja la orden, nunca el audio). Por eso la creación es asíncrona y
+ * vive acá dentro: `crearSala` a nivel de módulo no podría esperar la lectura.
+ */
+async function armarSala(transporte: TransporteLanServidor): Promise<SalaJuego | undefined> {
+  let poolMeloquiz: OpcionesSala["poolMeloquiz"];
+  if (juego === "meloquiz") {
+    const carpeta = process.env["CARPETA_MUSICA"];
+    if (carpeta === undefined || carpeta.length === 0) {
+      console.error("meloquiz necesita la carpeta de música en el env CARPETA_MUSICA");
+      process.exit(1);
+    }
+    const carga = await cargarPoolDeCarpeta(carpeta);
+    if (!carga.ok) {
+      console.error(`No se pudo armar el catálogo: ${carga.error.mensaje}`);
+      process.exit(1);
+    }
+    poolMeloquiz = carga.valor.pool;
+  }
+  return crearSala(juego, {
+    transporte,
+    // exactOptionalPropertyTypes: se omite la clave si no hay pool.
+    ...(poolMeloquiz !== undefined ? { poolMeloquiz } : {}),
+  });
 }
 
 // Sin top-level await: esbuild empaqueta a CJS (formato del sidecar SEA) y CJS
-// no admite top-level await. El arranque vive en una función asíncrona; la sala
-// viaja como argumento (ya no es undefined tras la guarda de arriba).
-async function arrancar(sala: SalaJuego): Promise<void> {
+// no admite top-level await. El arranque vive en una función asíncrona.
+async function arrancar(): Promise<void> {
+  const transporte = new TransporteLanServidor({ puerto });
+  const sala = await armarSala(transporte);
+  if (sala === undefined) {
+    console.error(`juego desconocido: ${juego}`);
+    process.exit(1);
+  }
   let cerrando = false;
   const cerrar = (): void => {
     if (cerrando) return;
@@ -54,4 +82,4 @@ async function arrancar(sala: SalaJuego): Promise<void> {
   process.on("SIGTERM", cerrar);
 }
 
-void arrancar(orquestador);
+void arrancar();

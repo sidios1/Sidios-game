@@ -5,6 +5,8 @@
     { "path": "packages/rumble-core" },
     { "path": "packages/mentiroso-core" },
     { "path": "packages/uno-core" },
+    { "path": "packages/meloquiz-core" },
+    { "path": "packages/meloquiz-fuente-local" },
     { "path": "packages/server" },
     { "path": "packages/client" }
   ]

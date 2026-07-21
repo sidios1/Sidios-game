@@ -22,6 +22,7 @@ import type {
 } from "@juegos/server/transporte";
 import type { ProgramarTimeout } from "@juegos/server/latido";
 import { frameLatido, PONG, TIMEOUT_SILENCIO_MS, Watchdog } from "@juegos/server/latido";
+import { frameSincronia, responderSincronia } from "@juegos/server/sincroniaReloj";
 import type { CanalDatos, ClienteSenalizacion } from "./senalizacion.js";
 import { generarCodigoSala } from "./codigoSala.js";
 
@@ -114,6 +115,14 @@ export class TransporteOnlineServidor implements TransporteServidor {
     });
     canal.alMensaje((datos) => {
       vigia.reiniciar(); // cualquier tráfico confirma que el canal sigue vivo.
+      // Sincronía de reloj primero: el frame de control más frecuente. El pong
+      // es un send directo por el canal — mide el RTT real, no al orquestador.
+      const sinc = frameSincronia(datos);
+      if (sinc !== null) {
+        const pong = responderSincronia(sinc, Date.now());
+        if (pong !== null) canal.enviar(pong);
+        return;
+      }
       const tipo = frameLatido(datos);
       if (tipo === "ping") {
         canal.enviar(PONG); // respondemos el latido sin pasarlo al orquestador.
@@ -147,6 +156,16 @@ export class TransporteOnlineServidor implements TransporteServidor {
   entregarDeLocal(conexionId: IdConexion, datos: string): void {
     const oyentes = this.oyentes;
     if (oyentes === null || !this.conexiones.has(conexionId)) return;
+    // Invariante de TODO TransporteServidor: los frames de control se consumen
+    // en el adaptador. El loopback no monta estimador (mismo proceso ⇒ offset 0
+    // por definición), pero si un frame llegara igual, jamás debe caer en el
+    // orquestador como `mensajeInvalido`.
+    const sinc = frameSincronia(datos);
+    if (sinc !== null) {
+      const pong = responderSincronia(sinc, Date.now());
+      if (pong !== null) this.conexiones.get(conexionId)?.enviar(pong);
+      return;
+    }
     queueMicrotask(() => oyentes.alRecibir(conexionId, datos));
   }
 

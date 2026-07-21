@@ -85,6 +85,20 @@ export interface MetaSala {
   readonly turbo?: boolean;
   /** Milisegundos restantes del turno en curso, o null (sin reloj/turno). */
   readonly turboMsRestantes?: number | null;
+  /**
+   * Milisegundos restantes de la FASE de sala en curso, o null (sin reloj/fase).
+   * Independiente de `turboMsRestantes`: ese es el reloj por JUGADOR (+Turbo),
+   * este el reloj por SALA (juegos dirigidos por reloj, como MeloQuiz).
+   */
+  readonly faseMsRestantes?: number | null;
+  /**
+   * Instante ABSOLUTO (epoch ms, reloj del host) en que arrancó la fase — el
+   * `start_at` de SPIKE_MELOQUIZ.md §2.2. Convive con `faseMsRestantes`, no lo
+   * sustituye: el relativo es el contador (inmune al desfase entre relojes), el
+   * absoluto es el arranque de audio. `difundirVistas` es un `for` serial sobre
+   * asientos, así que un "faltan 800 ms" llega distinto a cada cliente.
+   */
+  readonly faseInicioMs?: number | null;
 }
 
 export function construirVista(

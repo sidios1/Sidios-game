@@ -7,12 +7,14 @@
 // estado/acción de cada motor queda borrado en el límite del registro y motores
 // con estados distintos conviven en el mismo mapa.
 
+import type { PoolPartida } from "@juegos/meloquiz-core";
 import type { GeneradorAleatorio } from "./motor.js";
 import { Orquestador } from "./orquestador.js";
 import type { Programador } from "./orquestador.js";
 import type { TransporteServidor } from "./transporte.js";
 import { crearMotorCarioca } from "./juegos/carioca/motorCarioca.js";
 import { crearMotorRumble } from "./juegos/carioca/motorRumble.js";
+import { crearMotorMeloquiz } from "./juegos/meloquiz/motorMeloquiz.js";
 import { crearMotorMentiroso } from "./juegos/mentiroso/motorMentiroso.js";
 import { crearMotorUno } from "./juegos/uno/motorUno.js";
 
@@ -29,6 +31,17 @@ export interface OpcionesSala {
   readonly generarToken?: () => string;
   readonly maxJugadores?: number;
   readonly programar?: Programador;
+  /**
+   * Recurso de CONSTRUCCIÓN del motor de MeloQuiz, no config de partida: el
+   * catálogo que la fuente local arma leyendo una carpeta del disco (ver
+   * juegos/meloquiz/cargarPool.ts). Se separa de la config del lobby porque el
+   * motor lo necesita para EXISTIR, antes de que haya jugadores; la config
+   * (p. ej. modo entrenamiento) llega después, en `iniciarPartida`.
+   *
+   * Vive aquí y no en un tipo genérico porque este archivo ES la raíz de
+   * composición: el único lugar del servidor que conoce juegos concretos.
+   */
+  readonly poolMeloquiz?: PoolPartida;
 }
 
 type FabricaSala = (opciones: OpcionesSala) => SalaJuego;
@@ -40,6 +53,15 @@ const REGISTRO: Readonly<Record<string, FabricaSala>> = {
   "carioca-rumble": (opciones) => new Orquestador({ ...opciones, motor: crearMotorRumble() }),
   mentiroso: (opciones) => new Orquestador({ ...opciones, motor: crearMotorMentiroso() }),
   uno: (opciones) => new Orquestador({ ...opciones, motor: crearMotorUno() }),
+  // MeloQuiz es el único motor que necesita un recurso para construirse. Los
+  // puntos de entrada validan la carpeta antes de llegar acá, así que esto es
+  // una guarda de programación, no un camino de error esperado.
+  meloquiz: (opciones) => {
+    if (opciones.poolMeloquiz === undefined) {
+      throw new Error("meloquiz requiere `poolMeloquiz` en las opciones de sala");
+    }
+    return new Orquestador({ ...opciones, motor: crearMotorMeloquiz(opciones.poolMeloquiz) });
+  },
 };
 
 /** Crea la sala del juego pedido, o undefined si el game-id no está registrado. */

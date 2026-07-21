@@ -33,6 +33,7 @@ import {
   timeoutReal,
   Watchdog,
 } from "./latido.js";
+import { frameSincronia, responderSincronia } from "./sincroniaReloj.js";
 
 export interface OpcionesLan {
   /** 0 (default) = puerto efímero; la Fase 5 pasará uno fijo configurable. */
@@ -123,6 +124,14 @@ export class TransporteLanServidor implements TransporteServidor {
         socket.on("message", (datos) => {
           vigia.reiniciar();
           const texto = datos.toString();
+          // Sincronía de reloj primero: es el frame de control más frecuente.
+          // El pong es un send DIRECTO — mide el RTT real, no al orquestador.
+          const sinc = frameSincronia(texto);
+          if (sinc !== null) {
+            const pong = responderSincronia(sinc, Date.now());
+            if (pong !== null && socket.readyState === WebSocket.OPEN) socket.send(pong);
+            return; // frame de control: NO llega al orquestador.
+          }
           if (frameLatido(texto) === "ping") {
             // El navegador no ve el pong nativo: se le responde a nivel app.
             if (socket.readyState === WebSocket.OPEN) socket.send(PONG);
@@ -222,6 +231,9 @@ export class TransporteLanCliente implements TransporteCliente {
           latido.registrarTrafico();
           const texto = datos.toString();
           if (frameLatido(texto) !== null) return; // PONG: no es del juego.
+          // Este cliente Node no sondea el reloj (no lo necesita), pero consume
+          // igual cualquier frame de sincronía: son de control, jamás del juego.
+          if (frameSincronia(texto) !== null) return;
           oyentes.alRecibir(texto);
         });
         socket.on("close", () => {

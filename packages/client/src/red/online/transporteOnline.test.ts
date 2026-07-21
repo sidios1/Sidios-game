@@ -11,7 +11,8 @@ import type { VistaJuego, VistaMentiroso } from "@juegos/server/vistaJuego";
 import type { VistaPartida } from "@juegos/server/vista";
 import { crearSala } from "@juegos/server/registroMotores";
 import type { SalaJuego } from "@juegos/server/registroMotores";
-import type { TransporteCliente } from "@juegos/server/transporte";
+import { frameSincronia, pingSincronia } from "@juegos/server/sincroniaReloj";
+import type { OyentesServidor, TransporteCliente } from "@juegos/server/transporte";
 import { Conexion } from "../conexion.js";
 import type { CanalDatos, ClienteSenalizacion, OyentesHost } from "./senalizacion.js";
 import { TransporteOnlineServidor } from "./transporteOnlineServidor.js";
@@ -289,6 +290,63 @@ describe("TransporteOnline contra el orquestador real (señalización falsa)", (
     expect(vAna.tuJugadorId).not.toBe(vBeto.tuJugadorId);
     expect(vAna.juego).toBe("mentiroso");
     expect(vBeto.juego).toBe("mentiroso");
+  });
+
+  it("sincronía de reloj: el ping de un remoto vuelve como pong directo, sin orquestador", async () => {
+    // Sin sala: el transporte a pelo con oyentes espía, para afirmar que el
+    // frame se consume en el ADAPTADOR (el orquestador ni existe acá).
+    const broker = new BrokerFalso();
+    const servidor = new TransporteOnlineServidor(new SenalizacionFalsa(broker), {
+      generarCodigo: () => "SINCRO",
+    });
+    const recibidos: Array<[string, string]> = [];
+    const oyentes: OyentesServidor = {
+      alConectar: () => {},
+      alDesconectar: () => {},
+      alRecibir: (id, datos) => recibidos.push([id, datos]),
+    };
+    const codigo = await servidor.iniciar(oyentes);
+
+    const canal = broker.conectar(codigo);
+    const respuestas: string[] = [];
+    canal.alMensaje((datos) => respuestas.push(datos));
+    const t0 = 42_000;
+    canal.enviar(pingSincronia(t0));
+    await esperar("el pong de sincronía", () => (respuestas.length > 0 ? respuestas : null));
+
+    const pong = frameSincronia(respuestas[0] ?? "");
+    expect(pong?.tipo).toBe("pong");
+    if (pong?.tipo === "pong") expect(pong.t0).toBe(t0);
+    expect(recibidos).toEqual([]); // el oyente del servidor jamás lo vio
+
+    await servidor.detener();
+  });
+
+  it("sincronía de reloj: el loopback también la consume (jamás un mensajeInvalido)", async () => {
+    const broker = new BrokerFalso();
+    const servidor = new TransporteOnlineServidor(new SenalizacionFalsa(broker), {
+      generarCodigo: () => "LOOPBK",
+    });
+    const recibidos: Array<[string, string]> = [];
+    await servidor.iniciar({
+      alConectar: () => {},
+      alDesconectar: () => {},
+      alRecibir: (id, datos) => recibidos.push([id, datos]),
+    });
+
+    const local = servidor.crearClienteLocal();
+    const respuestas: string[] = [];
+    await local.conectar("loopback", {
+      alRecibir: (datos) => respuestas.push(datos),
+      alDesconectar: () => {},
+    });
+    local.enviar(pingSincronia(7));
+    await esperar("el pong del loopback", () => (respuestas.length > 0 ? respuestas : null));
+
+    expect(frameSincronia(respuestas[0] ?? "")?.tipo).toBe("pong");
+    expect(recibidos).toEqual([]);
+
+    await servidor.detener();
   });
 
   it("reattach por token: reconectar recupera el MISMO asiento, sin crear otro", async () => {

@@ -1,0 +1,51 @@
+{
+  "name": "@juegos/meloquiz-fuente-local",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fuente LOCAL de catálogo para MeloQuiz: carpeta de audio en disco → PoolPartida",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "//exports": "El barrel (.) arrastra sistemaArchivosNode.js, que importa node:fs. Los subpaths son PUROS (WebCrypto/File API), así el cliente los importa sin meter Node en el bundle del navegador. EXCEPCIÓN: ./sistemaArchivosNode existe SOLO para tests (el test cruzado de huella del cliente compara el adaptador Node real contra la File API); arrastra node:fs y está PROHIBIDO en código de producción del cliente.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./huella": {
+      "types": "./dist/huella.d.ts",
+      "default": "./dist/huella.js"
+    },
+    "./sistemaArchivos": {
+      "types": "./dist/sistemaArchivos.d.ts",
+      "default": "./dist/sistemaArchivos.js"
+    },
+    "./metadatos": {
+      "types": "./dist/metadatos.d.ts",
+      "default": "./dist/metadatos.js"
+    },
+    "./metadatosMusicMetadata": {
+      "types": "./dist/metadatosMusicMetadata.d.ts",
+      "default": "./dist/metadatosMusicMetadata.js"
+    },
+    "./sistemaArchivosNode": {
+      "types": "./dist/sistemaArchivosNode.d.ts",
+      "default": "./dist/sistemaArchivosNode.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "probar:carpeta": "node scripts/probarCarpeta.mjs"
+  },
+  "dependencies": {
+    "@juegos/meloquiz-core": "*",
+    "music-metadata": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

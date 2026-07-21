@@ -146,6 +146,16 @@ npm run tauri:build -w @juegos/client         # ejecutable/instalador distribuib
   reattach por token (idempotente: una `gen` descarta los canales viejos). El
   botón "Reconectar" del HUD es respaldo de TODOS los jugadores; el anfitrión
   además tiene "Reabrir conexión" por jugador (`reabrirConexion`, no expulsa).
+- **Sincronía de reloj (MeloQuiz S4).** Igual que el latido, vive en la CAPA DE
+  TRANSPORTE (`@juegos/server/sincroniaReloj`, espejo de `latido.ts`): frames
+  `{"__sinc":…}` que TODO adaptador servidor consume y responde con un send
+  directo, sin pasar por el orquestador. El cliente corre un `EstimadorOffset`
+  por conexión (ráfaga + cadencia, filtro de mínimo RTT, descarte por salto del
+  reloj de pared) que publica en el singleton `client/src/red/relojHost.ts` —
+  estado 100 % LOCAL: el host jamás conoce el offset de nadie. Los juegos lo
+  leen para traducir `faseInicioMs` (start_at absoluto del host) a hora local;
+  MeloQuiz deriva el instante de arranque con `instanteArranqueHost()`
+  (`faseInicioMs + MARGEN_ARRANQUE_MS`, el mismo número para todos).
 - **Anti-throttling.** El servidor embebido corre como proceso aparte (sidecar),
   inmune al throttling del webview. Del lado cliente, `transporteLanNavegador.ts`
   escucha `visibilitychange`: al volver al frente sondea de inmediato para
@@ -156,12 +166,25 @@ npm run tauri:build -w @juegos/client         # ejecutable/instalador distribuib
 ```
 client ──> carioca-core (solo tipos/validaciones de presentación)
 client ──> rumble-core (solo config §6 + catálogo de habilidades para el panel del lobby)
+client ──> meloquiz-fuente-local (SOLO subpaths puros: /huella, /sistemaArchivos, /metadatos*)
 client ──> server (solo protocolo, vista e interfaz TransporteCliente)
-server ──> carioca-core, mentiroso-core, rumble-core
+server ──> carioca-core, mentiroso-core, rumble-core, meloquiz-core, meloquiz-fuente-local
 rumble-core ──> carioca-core (solo tipos: Carta/Pinta y el RNG determinista)
+meloquiz-fuente-local ──> meloquiz-core
 carioca-core ──> (nada)
 mentiroso-core ──> (nada)
+meloquiz-core ──> (nada)
 ```
+- `meloquiz-fuente-local` lee una carpeta de audio del disco y produce el
+  `PoolPartida` (REGLAS_MELOQUIZ §1, §2). El SERVIDOR la usa entera (adaptadores de
+  Node) para armar el pool de la sala; el CLIENTE importa SOLO los subpaths puros
+  (`/huella`, `/sistemaArchivos`, `/metadatos`, `/metadatosMusicMetadata`), que
+  corren con WebCrypto + File API. La raíz del paquete está PROHIBIDA en el
+  cliente: su barrel reexporta `sistemaArchivosNode.ts` y arrastraría `node:fs`
+  al bundle.
+  El cliente reusa `calcularHuella` en vez de reimplementarla porque la huella
+  del cliente TIENE que coincidir con la del servidor: es lo que traduce el
+  `pistaId` que difunde el host al archivo de la carpeta propia de cada jugador.
 - `rumble-core` es la lógica pura del modo Rumble (modelo de las 18 habilidades
   como datos, config §6 + validación cruzada, muestreo ponderado determinista).
   Depende de `carioca-core` SOLO por tipos (`Carta`/`Pinta` para el snapshot RADAR,
@@ -171,8 +194,9 @@ mentiroso-core ──> (nada)
   `HABILIDADES`): reusa el schema y la validación §6 sin duplicar reglas. El resto
   de Rumble (motor, vista) sigue viviendo en el server; el cliente NO lo importa.
 - El cliente importa SIEMPRE los subpaths `@juegos/server/protocolo`,
-  `@juegos/server/vista`, `@juegos/server/vistaJuego`, `@juegos/server/transporte`
-  y `@juegos/server/latido` (definidos en el `exports` del server; todos
+  `@juegos/server/vista`, `@juegos/server/vistaJuego`, `@juegos/server/transporte`,
+  `@juegos/server/latido` y `@juegos/server/sincroniaReloj` (definidos en el
+  `exports` del server; todos
   type-only o puros, sin `ws`/Node), nunca la raíz `@juegos/server`: la raíz
   reexporta `transporteLan.ts` y arrastraría `ws`/`node:os` al bundle del
   navegador. `vistaJuego.ts` es el punto de composición de las vistas: exporta

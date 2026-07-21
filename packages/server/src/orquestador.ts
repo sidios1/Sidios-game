@@ -111,6 +111,19 @@ export class Orquestador<E = unknown, A = unknown> {
   /** Cancela el temporizador de turno pendiente (null si no hay). */
   private cancelarTurbo: (() => void) | null = null;
 
+  // Reloj de FASE de sala (juegos dirigidos por reloj, como MeloQuiz). Estado
+  // propio y SEPARADO del reloj de turno: si compartieran cancelador, armar uno
+  // apagaría el otro en silencio. Ningún motor implementa ambos hoy, pero nada
+  // lo impide.
+  /** Instante (epoch ms) en que vence la fase actual, o null si no corre. */
+  private venceEnFase: number | null = null;
+  /** Clave de la fase para la que está armado el reloj (ver motor.faseTemporizada). */
+  private claveFaseSala: string | null = null;
+  /** Instante ABSOLUTO (epoch ms, reloj del host) en que arrancó la fase; el `start_at`. */
+  private inicioFaseMs: number | null = null;
+  /** Cancela el temporizador de fase pendiente (null si no hay). */
+  private cancelarFaseTimer: (() => void) | null = null;
+
   constructor(opciones: OpcionesOrquestador<E, A>) {
     this.transporte = opciones.transporte;
     this.motor = opciones.motor;
@@ -132,6 +145,7 @@ export class Orquestador<E = unknown, A = unknown> {
   async detener(): Promise<void> {
     for (const asiento of this.asientos) this.cancelarGracia(asiento);
     this.cancelarTurnoTurbo();
+    this.cancelarFaseSala();
     this.difundir({ tipo: "salaCerrada", motivo: "la sala fue cerrada" });
     await this.transporte.detener();
   }
@@ -417,6 +431,7 @@ export class Orquestador<E = unknown, A = unknown> {
     this.estado = resultado.valor;
     this.faseSala = "enPartida";
     this.reprogramarTurnoTurbo();
+    this.reprogramarFaseSala();
     this.difundirVistas();
   }
 
@@ -505,6 +520,7 @@ export class Orquestador<E = unknown, A = unknown> {
     this.avanzarRondaSiCorresponde(); // solo actúa si el motor espera continuar
     this.saltarTurnosAusentes(); // solo actúa con un turno activo
     this.reprogramarTurnoTurbo(); // (re)arma el reloj si el turno cambió
+    this.reprogramarFaseSala(); // (re)arma el reloj si la fase de sala cambió
     this.difundirVistas();
   }
 
@@ -607,6 +623,66 @@ export class Orquestador<E = unknown, A = unknown> {
     this.difundirVistas(); // todos ven el nuevo restante
   }
 
+  // ── Reloj de FASE de sala ─────────────────────────────────────────────────
+
+  /**
+   * (Re)arma el reloj de la fase de sala en curso. Espejo de
+   * `reprogramarTurnoTurbo` con dos diferencias deliberadas:
+   *
+   *  - El gate es SOLO la capacidad del motor: no depende del flag `turbo` del
+   *    lobby. En un juego dirigido por reloj el temporizador no es opcional, es
+   *    el motor de la partida.
+   *  - No hay jugador: la fase vence para toda la sala.
+   *
+   * El re-armado por `clave` se reusa tal cual: misma clave ⇒ el reloj sigue
+   * corriendo, así una acción DENTRO de la misma fase (un voto, un ack de
+   * precarga) no reinicia la cuenta.
+   */
+  private reprogramarFaseSala(): void {
+    if (this.motor.faseTemporizada === undefined) return;
+    const estado = this.estado;
+    const desc = estado === null ? null : this.motor.faseTemporizada(estado);
+    if (desc === null) {
+      this.cancelarFaseSala();
+      this.claveFaseSala = null;
+      return;
+    }
+    if (desc.clave === this.claveFaseSala) return; // misma fase: sigue corriendo
+    this.cancelarFaseSala();
+    this.claveFaseSala = desc.clave;
+    const ahora = Date.now();
+    this.inicioFaseMs = ahora; // el `start_at` absoluto que viaja en la vista
+    this.venceEnFase = ahora + desc.duracionMs;
+    this.cancelarFaseTimer = this.programar(desc.duracionMs, () => this.alVencerFaseSala());
+  }
+
+  private cancelarFaseSala(): void {
+    this.cancelarFaseTimer?.();
+    this.cancelarFaseTimer = null;
+    this.venceEnFase = null;
+    this.inicioFaseMs = null;
+  }
+
+  /**
+   * Al vencer la fase: el motor aplica su transición. A diferencia de
+   * `alVencerTurno`, NO consulta `jugadorEnTurno` (sería null en un juego sin
+   * turnos y la partida se congelaría en la primera fase).
+   */
+  private alVencerFaseSala(): void {
+    this.cancelarFaseTimer = null;
+    this.venceEnFase = null;
+    const estado = this.estado;
+    if (this.faseSala !== "enPartida" || estado === null) return;
+    if (this.motor.expirarFase === undefined) return;
+    const resultado = this.motor.expirarFase(estado, this.rng);
+    if (resultado.ok) {
+      this.estado = resultado.valor;
+      if (this.motor.terminada(resultado.valor)) this.faseSala = "terminada";
+    }
+    // reaccionar re-arma el reloj de la fase siguiente y difunde.
+    this.reaccionar();
+  }
+
   // ── Envío de mensajes ─────────────────────────────────────────────────────
 
   private enviarA(conexionId: IdConexion, mensaje: MensajeServidor): void {
@@ -665,6 +741,11 @@ export class Orquestador<E = unknown, A = unknown> {
       turbo: this.turbo,
       turboMsRestantes:
         this.venceEnTurbo === null ? null : Math.max(0, this.venceEnTurbo - Date.now()),
+      // Los DOS campos del reloj de fase (SPIKE §2.2): el relativo es el contador,
+      // el absoluto el arranque de audio. No se sustituyen.
+      faseMsRestantes:
+        this.venceEnFase === null ? null : Math.max(0, this.venceEnFase - Date.now()),
+      faseInicioMs: this.inicioFaseMs,
     };
     for (const asiento of this.asientos) {
       if (asiento.conexionId === null) continue;

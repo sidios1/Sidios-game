@@ -9,6 +9,8 @@
   "exclude": ["src/**/*.test.ts", "src/pruebas"],
   "references": [
     { "path": "../carioca-core" },
+    { "path": "../meloquiz-core" },
+    { "path": "../meloquiz-fuente-local" },
     { "path": "../mentiroso-core" },
     { "path": "../uno-core" }
   ]

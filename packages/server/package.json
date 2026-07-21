@@ -31,6 +31,10 @@
       "types": "./dist/latido.d.ts",
       "default": "./dist/latido.js"
     },
+    "./sincroniaReloj": {
+      "types": "./dist/sincroniaReloj.d.ts",
+      "default": "./dist/sincroniaReloj.js"
+    },
     "./motor": {
       "types": "./dist/motor.d.ts",
       "default": "./dist/motor.js"
@@ -54,6 +58,8 @@
   },
   "dependencies": {
     "@juegos/carioca-core": "*",
+    "@juegos/meloquiz-core": "*",
+    "@juegos/meloquiz-fuente-local": "*",
     "@juegos/mentiroso-core": "*",
     "@juegos/uno-core": "*",
     "ws": "^8.18.0"

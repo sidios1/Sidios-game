@@ -10,6 +10,7 @@ import { crearMotorCarioca } from "./juegos/carioca/motorCarioca.js";
 import { TransporteLanCliente, TransporteLanServidor } from "./transporteLan.js";
 import type { ProgramarIntervalo, ProgramarTimeout } from "./latido.js";
 import { PING, PONG } from "./latido.js";
+import { frameSincronia, pingSincronia } from "./sincroniaReloj.js";
 import type { OyentesServidor } from "./transporte.js";
 import {
   cartasFiltradasEnVista,
@@ -146,6 +147,31 @@ describe("transporte LAN: latido (heartbeat)", () => {
     });
 
     expect(pong).toBe(PONG);
+    // El frame de control NO llega a los oyentes (sería "mensajeInvalido").
+    expect(espia.recibidos).toEqual([]);
+  });
+
+  it("responde un ping de SINCRONÍA con un pong directo, sin tocar al orquestador", async () => {
+    const espia = oyentesEspia();
+    servidor = new TransporteLanServidor({ puerto: 0, ipAnunciada: "127.0.0.1" });
+    const codigo = await servidor.iniciar(espia.oyentes);
+
+    const cliente = new WebSocket(`ws://${codigo}`);
+    crudo = cliente;
+    const t0 = Date.now() - 5; // un t0 "del pasado" verificable en el pong
+    const antes = Date.now();
+    const respuesta = await new Promise<string>((resolver, rechazar) => {
+      cliente.on("open", () => cliente.send(pingSincronia(t0)));
+      cliente.on("message", (datos) => resolver(datos.toString()));
+      cliente.on("error", rechazar);
+    });
+
+    const pong = frameSincronia(respuesta);
+    expect(pong?.tipo).toBe("pong");
+    if (pong?.tipo !== "pong") throw new Error("no volvió un pong de sincronía");
+    expect(pong.t0).toBe(t0); // t0 intacto: es lo que casa la muestra
+    expect(pong.t1).toBeGreaterThanOrEqual(antes);
+    expect(pong.t1).toBeLessThanOrEqual(Date.now());
     // El frame de control NO llega a los oyentes (sería "mensajeInvalido").
     expect(espia.recibidos).toEqual([]);
   });

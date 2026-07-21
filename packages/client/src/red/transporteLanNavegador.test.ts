@@ -9,9 +9,11 @@ import type { JugadorEnSala } from "@juegos/server/protocolo";
 import type { VistaPartida } from "@juegos/server/vista";
 import type { ProgramarIntervalo, ProgramarTimeout } from "@juegos/server/latido";
 import { PING, PONG } from "@juegos/server/latido";
+import { frameSincronia, pongSincronia } from "@juegos/server/sincroniaReloj";
 import { crearSala, TransporteLanServidor } from "@juegos/server";
 import type { SalaJuego } from "@juegos/server";
 import { Conexion } from "./conexion.js";
+import { RelojHost } from "./relojHost.js";
 import type { SocketNavegador } from "./transporteLanNavegador.js";
 import { TransporteLanNavegador } from "./transporteLanNavegador.js";
 
@@ -236,7 +238,7 @@ interface MontajeLatido {
   desconectado: boolean;
 }
 
-async function montarConLatido(): Promise<MontajeLatido> {
+async function montarConLatido(reloj?: RelojHost): Promise<MontajeLatido> {
   const socket = new SocketFalso();
   const doc = new DocumentoFalso();
   const relojes = new Relojes();
@@ -247,6 +249,7 @@ async function montarConLatido(): Promise<MontajeLatido> {
     timeout: relojes.timeout,
     documento: doc,
     crearSocket: () => socket,
+    reloj: reloj ?? new RelojHost(), // un reloj propio: no ensuciar el singleton
   });
   const conectando = adaptador.conectar("127.0.0.1:1234", {
     alRecibir: (datos) => recibidos.push(datos),
@@ -293,5 +296,65 @@ describe("TransporteLanNavegador: latido", () => {
     const montaje = await montarConLatido();
     montaje.doc.cambiar(true); // hidden=true
     expect(montaje.socket.enviados).not.toContain(PING);
+  });
+});
+
+// ── Sincronía de reloj ──────────────────────────────────────────────────────
+
+describe("TransporteLanNavegador: sincronía de reloj", () => {
+  let orquestadorSinc: SalaJuego | null = null;
+
+  afterEach(async () => {
+    await orquestadorSinc?.detener();
+    orquestadorSinc = null;
+  });
+
+  it("arranca al ABRIR (caliente desde el lobby) y el pong alimenta el reloj", async () => {
+    const reloj = new RelojHost();
+    const montaje = await montarConLatido(reloj);
+
+    // El primer envío tras `open` es un ping de sincronía: antes de `unirse`.
+    const ping = frameSincronia(montaje.socket.enviados[0] ?? "");
+    expect(ping?.tipo).toBe("ping");
+    if (ping?.tipo !== "ping") throw new Error("no hubo ping de sincronía");
+
+    // Un host 3 s "adelantado" responde; el viaje simulado es instantáneo.
+    montaje.socket.recibir(pongSincronia(ping.t0, Date.now() + 3_000));
+    expect(montaje.recibidos).toEqual([]); // el pong se consumió en el adaptador
+    expect(reloj.muestras).toBe(1);
+    expect(Math.abs(reloj.offsetMs - 3_000)).toBeLessThan(50);
+    expect(reloj.aHoraLocal(Date.now() + 3_000) - Date.now()).toBeLessThan(50);
+  });
+
+  it("dos transportes solapados: el pong tardío del viejo no pisa al nuevo", async () => {
+    const reloj = new RelojHost();
+    const viejo = await montarConLatido(reloj);
+    const pingViejo = frameSincronia(viejo.socket.enviados[0] ?? "");
+    if (pingViejo?.tipo !== "ping") throw new Error("no hubo ping del transporte viejo");
+
+    // Reintento del coordinador: transporte nuevo sobre el MISMO reloj.
+    await montarConLatido(reloj);
+    expect(reloj.muestras).toBe(0); // sesión nueva, de cero
+
+    // El transporte viejo recibe su pong tarde, con un offset absurdo.
+    viejo.socket.recibir(pongSincronia(pingViejo.t0, Date.now() + 60_000));
+    expect(reloj.muestras).toBe(0); // la sesión vieja ya no escribe
+    expect(reloj.offsetMs).toBe(0);
+  });
+
+  it("contra el servidor real: el offset se puebla al conectar (~0 en el mismo proceso)", async () => {
+    const salaCarioca = crearSala("carioca", {
+      transporte: new TransporteLanServidor({ ipAnunciada: "127.0.0.1" }),
+    });
+    if (salaCarioca === undefined) throw new Error("juego 'carioca' no registrado");
+    orquestadorSinc = salaCarioca;
+    const codigo = await salaCarioca.iniciar();
+
+    const reloj = new RelojHost();
+    const transporte = new TransporteLanNavegador({ reloj });
+    await transporte.conectar(codigo, { alRecibir: () => {}, alDesconectar: () => {} });
+    await esperar("una muestra de sincronía", () => (reloj.muestras > 0 ? reloj : null));
+    expect(Math.abs(reloj.offsetMs)).toBeLessThan(50); // mismo reloj físico
+    await transporte.desconectar();
   });
 });

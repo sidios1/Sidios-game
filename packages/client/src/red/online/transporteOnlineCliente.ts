@@ -13,7 +13,10 @@
 import type { OyentesCliente, TransporteCliente } from "@juegos/server/transporte";
 import type { ProgramarIntervalo, ProgramarTimeout } from "@juegos/server/latido";
 import { frameLatido, Latido, PING } from "@juegos/server/latido";
+import { EstimadorOffset, frameSincronia } from "@juegos/server/sincroniaReloj";
 import type { FuenteVisibilidad } from "../transporteLanNavegador.js";
+import type { SesionReloj } from "../relojHost.js";
+import { RelojHost, relojHost } from "../relojHost.js";
 import type { CanalDatos, ClienteSenalizacion } from "./senalizacion.js";
 import { SenalizacionPeerJs } from "./senalizacionPeerJs.js";
 
@@ -37,12 +40,17 @@ export interface OpcionesOnlineCliente {
   readonly timeout?: ProgramarTimeout;
   /** Fuente de visibilidad; default: `document` global si existe. */
   readonly documento?: FuenteVisibilidad;
+  /** Reloj del host a alimentar; default: el singleton `relojHost`. */
+  readonly reloj?: RelojHost;
 }
 
 export class TransporteOnlineCliente implements TransporteCliente {
   private senal: ClienteSenalizacion | null = null;
   private canal: CanalDatos | null = null;
   private latido: Latido | null = null;
+  private estimador: EstimadorOffset | null = null;
+  private sesionReloj: SesionReloj | null = null;
+  private readonly reloj: RelojHost;
   private readonly documento: FuenteVisibilidad | null;
   private oyenteVisibilidad: (() => void) | null = null;
   private readonly opciones: OpcionesOnlineCliente;
@@ -50,6 +58,7 @@ export class TransporteOnlineCliente implements TransporteCliente {
   constructor(opciones: OpcionesOnlineCliente = {}) {
     this.opciones = opciones;
     this.documento = opciones.documento ?? documentoPorDefecto();
+    this.reloj = opciones.reloj ?? relojHost;
   }
 
   /** El código de sala es el código corto del host (su id en el broker). */
@@ -61,6 +70,12 @@ export class TransporteOnlineCliente implements TransporteCliente {
     let cerrado = false;
     canal.alMensaje((datos) => {
       this.latido?.registrarTrafico();
+      const sinc = frameSincronia(datos);
+      if (sinc !== null) {
+        // Pong de sincronía: alimenta el estimador y se consume acá.
+        if (sinc.tipo === "pong") this.estimador?.registrarPong(sinc);
+        return;
+      }
       if (frameLatido(datos) !== null) return; // PONG: no es del juego.
       oyentes.alRecibir(datos);
     });
@@ -71,6 +86,8 @@ export class TransporteOnlineCliente implements TransporteCliente {
       oyentes.alDesconectar();
     });
     this.iniciarLatido(canal);
+    // Caliente desde el lobby: el offset ya está poblado en la primera precarga.
+    this.iniciarSincronia(canal);
   }
 
   private iniciarLatido(canal: CanalDatos): void {
@@ -100,6 +117,8 @@ export class TransporteOnlineCliente implements TransporteCliente {
         if (this.documento?.hidden === false && canal.abierto) {
           latido.pingAhora();
           latido.registrarTrafico();
+          // Re-ráfaga de sincronía: la ventana pudo envenenarse en background.
+          this.estimador?.resincronizar();
         }
       };
       this.oyenteVisibilidad = oyente;
@@ -107,9 +126,29 @@ export class TransporteOnlineCliente implements TransporteCliente {
     }
   }
 
+  private iniciarSincronia(canal: CanalDatos): void {
+    const sesion = this.reloj.nuevaSesion();
+    this.sesionReloj = sesion;
+    const estimador = new EstimadorOffset({
+      enviarPing: (frame) => {
+        if (canal.abierto) canal.enviar(frame);
+      },
+      alActualizar: (offsetMs) => sesion.actualizar(offsetMs),
+      ...(this.opciones.intervalo !== undefined
+        ? { intervalo: this.opciones.intervalo }
+        : {}),
+    });
+    this.estimador = estimador;
+    estimador.iniciar();
+  }
+
   private limpiarLatido(): void {
     this.latido?.detener();
     this.latido = null;
+    this.estimador?.detener();
+    this.estimador = null;
+    this.sesionReloj?.cerrar();
+    this.sesionReloj = null;
     if (this.documento !== null && this.oyenteVisibilidad !== null) {
       this.documento.removeEventListener("visibilitychange", this.oyenteVisibilidad);
     }

@@ -1702,3 +1702,239 @@ button.perfil-avatar.seleccionado {
   width: 100%;
   font-size: 0.82rem;
 }
+
+/* ── MeloQuiz (UI de DOM + <audio> HTML5) ───────────────────────────────── */
+
+.meloquiz {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, 94vw);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 3.2rem 1rem 1.2rem;
+  overflow-y: auto;
+}
+
+.meloquiz-cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  background: rgba(13, 18, 24, 0.9);
+  border: 1px solid #2a3442;
+}
+
+.meloquiz-cab h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.meloquiz-ronda {
+  color: #9aa5b1;
+  font-size: 0.9rem;
+}
+
+/* Contador de fase: tiempo RELATIVO de la vista, interpolado localmente. */
+.meloquiz-contador {
+  min-width: 2.6rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: #7a5cc4;
+}
+
+.meloquiz-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 1.1rem 1rem;
+  border-radius: 12px;
+  background: rgba(13, 18, 24, 0.85);
+  border: 1px solid #2a3442;
+  text-align: center;
+}
+
+.meloquiz-panel p {
+  margin: 0;
+}
+
+.meloquiz-nota {
+  color: #9aa5b1;
+  font-size: 0.85rem;
+}
+
+/* Durante el clip no se muestra nada de la canción: solo se escucha (§4). */
+.meloquiz-clip p {
+  font-size: 2.4rem;
+  letter-spacing: 0.5rem;
+  color: #7a5cc4;
+}
+
+.meloquiz-caratula {
+  width: 5.5rem;
+  height: 5.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #1e1830;
+  border: 1px solid #3d2e63;
+  font-size: 2rem;
+  color: #7a5cc4;
+  overflow: hidden;
+}
+
+.meloquiz-caratula img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.meloquiz-artista {
+  color: #9aa5b1;
+  font-size: 0.9rem;
+}
+
+.meloquiz-veredicto {
+  font-weight: 600;
+}
+
+.meloquiz-opciones {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.meloquiz-opcion {
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  background: rgba(13, 18, 24, 0.9);
+  border: 1px solid #2a3442;
+  color: #e8e4da;
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.meloquiz-opcion:hover:not(:disabled) {
+  border-color: #7a5cc4;
+}
+
+.meloquiz-opcion:disabled {
+  cursor: default;
+}
+
+.meloquiz-opcion.votada {
+  box-shadow: 0 0 0 1px rgba(122, 92, 196, 0.6);
+}
+
+.meloquiz-opcion.correcta {
+  border-color: #2f8a57;
+  color: #9fd0ae;
+}
+
+.meloquiz-opcion.incorrecta {
+  opacity: 0.55;
+}
+
+.meloquiz-jugadores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.meloquiz-jugador {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  background: rgba(13, 18, 24, 0.85);
+  border: 1px solid #2a3442;
+  font-size: 0.95rem;
+}
+
+.meloquiz-jugador.acerto {
+  border-color: #2f8a57;
+}
+
+.meloquiz-jugador.desconectado {
+  opacity: 0.5;
+}
+
+.meloquiz-marca {
+  color: #9aa5b1;
+}
+
+.meloquiz-puntos {
+  font-weight: 700;
+  min-width: 1.5rem;
+  text-align: right;
+}
+
+.meloquiz-volver {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1.2rem;
+}
+
+.meloquiz-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  padding: 0.6rem 1.1rem;
+  border-radius: 10px;
+  background: rgba(13, 18, 24, 0.95);
+  border: 1px solid #2a3442;
+  font-size: 0.9rem;
+  z-index: 5;
+}
+
+/* ── Panel de lobby de MeloQuiz ─────────────────────────────────────────── */
+
+.config-meloquiz {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  text-align: left;
+  margin-top: 0.4rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid #2a3442;
+}
+
+.config-meloquiz-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: #c3cbd6;
+}
+
+.config-meloquiz-nota {
+  width: 100%;
+  color: #9aa5b1;
+  font-size: 0.78rem;
+}
+
+.config-meloquiz-carpeta {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+.config-meloquiz-carpeta input[type="file"] {
+  font-size: 0.78rem;
+  color: #9aa5b1;
+}
