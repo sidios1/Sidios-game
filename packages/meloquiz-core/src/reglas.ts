@@ -9,22 +9,20 @@ export interface DuracionesFase {
   readonly precarga: number;
   /** Suena el clip desde ~30%; nada visible aún (§4). */
   readonly clip: number;
-  /** Ventana de votación; cierra antes si votan todos (§5). */
-  readonly voto: number;
-  /** Se revela la respuesta: carátula + título (§4). */
+  /** Se revela la respuesta: carátula + título; el audio sigue (§4). */
   readonly revelar: number;
-  /** Tabla de puntos: se actualiza el marcador (§4). */
+  /** Ventana para votar QUÉ JUGADOR ganó; cierra antes si votan todos (§5). */
+  readonly voto: number;
+  /** Tabla de puntos: se computa la mayoría y se actualiza el marcador (§4). */
   readonly puntaje: number;
 }
 
 export interface ReglasMeloquiz {
   readonly duraciones: DuracionesFase;
-  /** Correcta + 3 distractores del mismo pool (§5). */
-  readonly opcionesPorRonda: number;
-  /** Mínimo de canciones válidas para iniciar: lo justo para 4 opciones (§2). */
+  /** Mínimo de canciones válidas para iniciar (§2). */
   readonly minimoCanciones: number;
-  /** Puntaje PLANO: cada acierto vale 1, sin bonus por velocidad (§5). */
-  readonly puntosPorAcierto: number;
+  /** Puntaje PLANO: el más votado de la ronda suma 1; empate = nadie (§5). */
+  readonly puntosPorRonda: number;
   /** Jugadores admitidos (§6). */
   readonly jugadores: { readonly min: number; readonly max: number };
   /**
@@ -40,13 +38,12 @@ export const REGLAS_MELOQUIZ: ReglasMeloquiz = {
   duraciones: {
     precarga: 15_000,
     clip: 10_000,
-    voto: 10_000,
     revelar: 5_000,
+    voto: 10_000,
     puntaje: 5_000,
   },
-  opcionesPorRonda: 4,
   minimoCanciones: 4,
-  puntosPorAcierto: 1,
+  puntosPorRonda: 1,
   jugadores: { min: 2, max: 8 },
   jugadoresEntrenamiento: { min: 1, max: 1 },
   empateCompartido: true,

@@ -12,18 +12,14 @@ describe("REGLAS_MELOQUIZ como datos", () => {
     expect(REGLAS_MELOQUIZ.duraciones).toEqual({
       precarga: 15_000,
       clip: 10_000,
-      voto: 10_000,
       revelar: 5_000,
+      voto: 10_000,
       puntaje: 5_000,
     });
   });
 
-  it("4 opciones por ronda: correcta + 3 distractores (§5)", () => {
-    expect(REGLAS_MELOQUIZ.opcionesPorRonda).toBe(4);
-  });
-
-  it("puntaje PLANO: 1 punto por acierto, sin bonus (§5)", () => {
-    expect(REGLAS_MELOQUIZ.puntosPorAcierto).toBe(1);
+  it("puntaje PLANO: el más votado de la ronda suma 1, sin bonus (§5)", () => {
+    expect(REGLAS_MELOQUIZ.puntosPorRonda).toBe(1);
   });
 
   it("mínimo de 4 canciones para iniciar (§2)", () => {

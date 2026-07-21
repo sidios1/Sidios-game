@@ -315,16 +315,10 @@ describe("criterio de hecho: el núcleo de S1 consume el pool sin cambios", () =
     expect(partida.ok).toBe(true);
     if (!partida.ok) return;
 
-    // El núcleo arma los 3 distractores del mismo pool (§5): la fuente no los
-    // duplica, solo garantiza que haya material suficiente.
+    // La ronda 1 quedó armada con una canción DEL pool que produjo la fuente
+    // (§4, pivote: ya no hay opciones ni distractores, solo la que suena).
     const ronda = partida.valor.rondaActual;
-    expect(ronda?.opciones).toHaveLength(REGLAS_MELOQUIZ.opcionesPorRonda);
-    const titulos = pool.canciones.map((c) => c.titulo);
-    for (const opcion of ronda?.opciones ?? []) {
-      expect(titulos).toContain(opcion.titulo);
-    }
-    expect(new Set((ronda?.opciones ?? []).map((o) => o.id)).size).toBe(
-      REGLAS_MELOQUIZ.opcionesPorRonda,
-    );
+    expect(ronda).not.toBeNull();
+    expect(pool.canciones.some((c) => c.id === ronda?.cancionId)).toBe(true);
   });
 });

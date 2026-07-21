@@ -3,7 +3,7 @@
 // para que los tests armen partidas exactas sin tocar disco ni el reloj real.
 
 import type { CancionPool, PoolPartida } from "./catalogo.js";
-import type { DatosJugador, EstadoMeloquiz } from "./partida.js";
+import type { DatosJugador } from "./partida.js";
 
 /**
  * Pool mock de `n` canciones. Los ids son OPACOS a propósito (`c1`, `c2`, …),
@@ -61,20 +61,4 @@ export function exito<T>(
     throw new Error(`se esperaba ok pero fue error: ${r.error.codigo} (${r.error.mensaje})`);
   }
   return r.valor;
-}
-
-/** La opción correcta de la ronda en curso (para simular un acierto). */
-export function opcionCorrecta(estado: EstadoMeloquiz): string {
-  if (estado.rondaActual === null) throw new Error("no hay ronda en curso");
-  return estado.rondaActual.opcionCorrectaId;
-}
-
-/** Una opción incorrecta de la ronda en curso (para simular un fallo). */
-export function opcionIncorrecta(estado: EstadoMeloquiz): string {
-  if (estado.rondaActual === null) throw new Error("no hay ronda en curso");
-  const mala = estado.rondaActual.opciones.find(
-    (o) => o.id !== estado.rondaActual?.opcionCorrectaId,
-  );
-  if (mala === undefined) throw new Error("la ronda no tiene opciones incorrectas");
-  return mala.id;
 }

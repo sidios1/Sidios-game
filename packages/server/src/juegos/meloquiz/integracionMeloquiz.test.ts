@@ -141,18 +141,18 @@ describe("MeloQuiz en el orquestador (reloj de fase de sala)", () => {
 
     reloj.avanzar();
     await asentar();
-    expect(j1.ultimaVista().fase).toBe("voto");
+    expect(j1.ultimaVista().fase).toBe("revelar");
 
     reloj.avanzar();
     await asentar();
-    expect(j1.ultimaVista().fase).toBe("revelar");
+    expect(j1.ultimaVista().fase).toBe("voto");
 
     reloj.avanzar();
     await asentar();
     expect(j1.ultimaVista().fase).toBe("puntaje");
 
     // Cada fase re-armó el reloj con SU duración (§4).
-    expect(reloj.msProgramados).toEqual([15_000, 10_000, 10_000, 5_000, 5_000]);
+    expect(reloj.msProgramados).toEqual([15_000, 10_000, 5_000, 10_000, 5_000]);
     await orquestador.detener();
   });
 
@@ -194,7 +194,7 @@ describe("MeloQuiz en el orquestador (reloj de fase de sala)", () => {
   it("al terminar la partida el reloj se apaga y no queda timer colgado", async () => {
     const { orquestador, reloj, j1 } = await abrir({ rondas: 1 });
 
-    // precarga → clip → voto → revelar → puntaje → final
+    // precarga → clip → revelar → voto → puntaje → final
     for (let i = 0; i < 5; i++) {
       reloj.avanzar();
       await asentar();
@@ -245,22 +245,18 @@ describe("MeloQuiz en el orquestador (reloj de fase de sala)", () => {
     // (RelojHost sin muestras) el plan de arranque es idéntico para el solitario.
     expect(clip.faseInicioMs).not.toBeNull();
 
-    reloj.avanzar(); // clip → voto
+    reloj.avanzar(); // clip → revelar
     await asentar();
-    const opciones = solo.ultimaVista().opciones;
-    const primera = opciones[0];
-    if (primera === undefined) throw new Error("la ronda no trajo opciones");
-    solo.enviar({ tipo: "votar", opcionId: primera.id });
-    await asentar();
-    expect(solo.ultimaVista().fase).toBe("revelar"); // cierre anticipado con 1 voto
+    const revelada = solo.ultimaVista();
+    expect(revelada.fase).toBe("revelar");
+    expect(revelada.tituloCorrecto).not.toBeNull();
 
-    reloj.avanzar(); // revelar → puntaje
-    await asentar();
-    reloj.avanzar(); // puntaje → final
+    // SIN votación en entrenamiento (§4): revelar salta directo al cierre.
+    reloj.avanzar(); // revelar → final (era la única ronda)
     await asentar();
     const final = solo.ultimaVista();
     expect(final.fase).toBe("final");
-    expect(final.ganadores).toEqual([solo.jugadorId]); // gana él, acierte o no
+    expect(final.ganadores).toEqual([solo.jugadorId]); // único participante, gana igual
 
     await orquestador.detener();
   });
@@ -272,7 +268,9 @@ describe("MeloQuiz en el orquestador (reloj de fase de sala)", () => {
     j1.enviar({ tipo: "listoPrecarga" });
     j2.enviar({ tipo: "listoPrecarga" });
     await asentar();
-    reloj.avanzar(); // clip → voto
+    reloj.avanzar(); // clip → revelar
+    await asentar();
+    reloj.avanzar(); // revelar → voto
     await asentar();
     expect(j1.ultimaVista().fase).toBe("voto");
 
@@ -294,15 +292,12 @@ describe("MeloQuiz en el orquestador (reloj de fase de sala)", () => {
     expect(vista.fase).toBe("voto");
     expect(vista.jugadores).toHaveLength(2);
 
-    // Y el reingresado puede votar como si nada.
-    const opciones = vista.opciones;
-    const primera = opciones[0];
-    if (primera === undefined) throw new Error("la ronda no trajo opciones");
-    j1.enviar({ tipo: "votar", opcionId: primera.id });
+    // Y el reingresado puede votar como si nada (por JUGADOR, §5).
+    j1.enviar({ tipo: "votar", votadoId: j1.jugadorId });
     await asentar();
-    j2Bis.enviar({ tipo: "votar", opcionId: primera.id });
+    j2Bis.enviar({ tipo: "votar", votadoId: j1.jugadorId });
     await asentar();
-    expect(j2Bis.ultimaVista().fase).toBe("revelar");
+    expect(j2Bis.ultimaVista().fase).toBe("puntaje"); // cierre anticipado → tabla
 
     await orquestador.detener();
   });
@@ -324,38 +319,45 @@ describe("MeloQuiz en el orquestador (reloj de fase de sala)", () => {
     await orquestador.detener();
   });
 
-  it("un voto puntúa y el marcador se aplica en la fase de puntaje", async () => {
+  it("la mayoría puntúa y la tabla trae el conteo de votos (§5)", async () => {
     const { orquestador, reloj, j1, j2 } = await abrir();
 
     reloj.avanzar(); // → clip
     await asentar();
-    reloj.avanzar(); // → voto
-    await asentar();
-
-    const opciones = j1.ultimaVista().opciones;
-    expect(opciones).toHaveLength(4);
-
-    // j1 y j2 votan: cierre anticipado de la votación → revelar.
-    const primera = opciones[0];
-    if (primera === undefined) throw new Error("la ronda no trajo opciones");
-    j1.enviar({ tipo: "votar", opcionId: primera.id });
-    await asentar();
-    j2.enviar({ tipo: "votar", opcionId: primera.id });
+    reloj.avanzar(); // → revelar (la respuesta ANTES de votar, §4)
     await asentar();
 
     const revelada = j1.ultimaVista();
     expect(revelada.fase).toBe("revelar");
-    expect(revelada.opcionCorrectaId).not.toBeNull();
-    // Tu voto viaja; el ajeno no, solo el booleano.
-    expect(revelada.tuVotoId).toBe(primera.id);
-    expect(revelada.jugadores.every((j) => j.haVotado)).toBe(true);
+    expect(revelada.tituloCorrecto).not.toBeNull();
 
-    reloj.avanzar(); // → puntaje (aquí se aplica el marcador, §5)
+    reloj.avanzar(); // → voto
     await asentar();
+    expect(j1.ultimaVista().fase).toBe("voto");
+    // La respuesta sigue a la vista mientras se vota (el grupo juzga viéndola).
+    expect(j1.ultimaVista().tituloCorrecto).not.toBeNull();
+
+    // Ambos votan a j1: cierre anticipado de la votación → tabla de puntos.
+    j1.enviar({ tipo: "votar", votadoId: j1.jugadorId }); // auto-voto permitido
+    await asentar();
+    const aMedias = j1.ultimaVista();
+    expect(aMedias.fase).toBe("voto");
+    // Tu voto viaja; el ajeno no, solo el booleano.
+    expect(aMedias.tuVotoJugadorId).toBe(j1.jugadorId);
+    expect(j2.ultimaVista().tuVotoJugadorId).toBeNull();
+
+    j2.enviar({ tipo: "votar", votadoId: j1.jugadorId });
+    await asentar();
+
     const conPuntaje = j1.ultimaVista();
     expect(conPuntaje.fase).toBe("puntaje");
-    const acerto = revelada.opcionCorrectaId === primera.id;
-    expect(conPuntaje.jugadores.every((j) => j.puntos === (acerto ? 1 : 0))).toBe(true);
+    expect(conPuntaje.ganadorRonda).toBe(j1.jugadorId);
+    const deJ1 = conPuntaje.jugadores.find((j) => j.id === j1.jugadorId);
+    const deJ2 = conPuntaje.jugadores.find((j) => j.id === j2.jugadorId);
+    expect(deJ1?.puntos).toBe(1);
+    expect(deJ1?.votosRecibidos).toBe(2);
+    expect(deJ2?.puntos).toBe(0);
+    expect(deJ2?.votosRecibidos).toBe(0);
 
     await orquestador.detener();
   });

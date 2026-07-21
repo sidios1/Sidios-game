@@ -1,19 +1,13 @@
 // Proyección por jugador: el GUARDIÁN de la información oculta.
-// SPIKE_MELOQUIZ.md §6.4 — el título correcto no puede estar en la vista antes
-// de la fase `revelar`. Si alguien añade un campo revelador, este archivo cae.
+// SPIKE_MELOQUIZ.md §6.4 + pivote 2026-07-21 — el título correcto no puede
+// estar en la vista antes de la fase `revelar` (protege la gracia de adivinar
+// de viva voz), y de la votación solo viaja `haVotado` hasta que cierra.
 
 import { describe, expect, it } from "vitest";
 import { crearGeneradorSemilla } from "./aleatorio.js";
 import { crearPartida, expirarFase, marcarListo, votar, type EstadoMeloquiz } from "./partida.js";
 import { construirVistaMeloquiz } from "./vista.js";
-import {
-  JUGADORES,
-  cancionDe,
-  exito,
-  opcionCorrecta,
-  opcionIncorrecta,
-  poolDePrueba,
-} from "./apoyoPruebas.js";
+import { JUGADORES, cancionDe, exito, poolDePrueba } from "./apoyoPruebas.js";
 
 const rng = (): (() => number) => crearGeneradorSemilla(555);
 const POOL = poolDePrueba(6);
@@ -49,47 +43,31 @@ describe("ocultamiento de la respuesta (SPIKE §6.4)", () => {
     });
   }
 
-  it('en "voto" el título correcto está, pero INDISTINGUIBLE entre las 4 opciones', () => {
-    const estado = hasta(partidaNueva(), "voto");
-    const { titulo, archivo, artista } = correcta(estado);
-    const vista = construirVistaMeloquiz(estado, "j1");
-    const serializada = JSON.stringify(vista);
-
-    // Tiene que estar: es una de las opciones a votar. Lo que no puede haber es
-    // NADA que lo señale como la correcta.
-    expect(vista.opciones.map((o) => o.titulo)).toContain(titulo);
-    expect(vista.opcionCorrectaId).toBeNull();
-    expect(vista.tituloCorrecto).toBeNull();
-    expect(vista.jugadores.every((j) => j.acerto === null)).toBe(true);
-    // Y el resto de los metadatos de la canción sigue oculto.
-    expect(serializada).not.toContain(archivo);
-    expect(serializada).not.toContain(artista);
-  });
-
-  it('en "revelar" sí aparece la respuesta', () => {
-    const estado = hasta(partidaNueva(), "revelar");
-    const vista = construirVistaMeloquiz(estado, "j1");
-    const { titulo } = correcta(estado);
-
-    expect(vista.tituloCorrecto).toBe(titulo);
-    expect(vista.artistaCorrecto).not.toBeNull();
-    expect(vista.opcionCorrectaId).toBe(estado.rondaActual?.opcionCorrectaId);
-  });
-
-  it("los campos de respuesta son null antes de revelar", () => {
-    for (const fase of ["precarga", "clip", "voto"] as const) {
-      const vista = construirVistaMeloquiz(hasta(partidaNueva(), fase), "j1");
-      expect(vista.tituloCorrecto).toBeNull();
-      expect(vista.artistaCorrecto).toBeNull();
-      expect(vista.opcionCorrectaId).toBeNull();
+  it('desde "revelar" aparece la respuesta y sigue visible en "voto" (se vota viéndola, §4)', () => {
+    for (const fase of ["revelar", "voto", "puntaje"] as const) {
+      const estado = hasta(partidaNueva(), fase);
+      const vista = construirVistaMeloquiz(estado, "j1");
+      const { titulo } = correcta(estado);
+      expect(vista.tituloCorrecto).toBe(titulo);
+      expect(vista.artistaCorrecto).not.toBeNull();
     }
   });
 
-  it("la vista nunca expone el cancionId de las opciones (sería comparable con pistaId)", () => {
-    const estado = hasta(partidaNueva(), "voto");
-    const vista = construirVistaMeloquiz(estado, "j1");
-    for (const opcion of vista.opciones) {
-      expect(Object.keys(opcion).sort()).toEqual(["id", "titulo"]);
+  it("los campos de respuesta son null antes de revelar", () => {
+    for (const fase of ["precarga", "clip"] as const) {
+      const vista = construirVistaMeloquiz(hasta(partidaNueva(), fase), "j1");
+      expect(vista.tituloCorrecto).toBeNull();
+      expect(vista.artistaCorrecto).toBeNull();
+    }
+  });
+
+  it("no queda NINGÚN resto de opciones de canción en la vista (pivote §5)", () => {
+    for (const fase of ["precarga", "clip", "revelar", "voto", "puntaje"] as const) {
+      const vista = construirVistaMeloquiz(hasta(partidaNueva(), fase), "j1");
+      const claves = Object.keys(vista);
+      expect(claves).not.toContain("opciones");
+      expect(claves).not.toContain("opcionCorrectaId");
+      expect(claves).not.toContain("tuVotoId");
     }
   });
 
@@ -111,41 +89,51 @@ describe("la orden de reproducción (§1: la orden, no el archivo)", () => {
   });
 });
 
-describe("opciones y votos", () => {
-  it("las opciones están vacías antes de la votación", () => {
-    expect(construirVistaMeloquiz(hasta(partidaNueva(), "precarga"), "j1").opciones).toEqual([]);
-    expect(construirVistaMeloquiz(hasta(partidaNueva(), "clip"), "j1").opciones).toEqual([]);
-  });
-
-  it("en votación llegan las 4 opciones", () => {
-    const vista = construirVistaMeloquiz(hasta(partidaNueva(), "voto"), "j1");
-    expect(vista.opciones).toHaveLength(4);
-  });
-
+describe("votos por jugador (§5)", () => {
   it("cada jugador ve SOLO su propio voto", () => {
     let estado = hasta(partidaNueva(), "voto");
-    estado = exito(votar(estado, "j1", opcionCorrecta(estado), 10));
-    estado = exito(votar(estado, "j2", opcionIncorrecta(estado), 20));
+    estado = exito(votar(estado, "j1", "j2", 10));
+    estado = exito(votar(estado, "j2", "j2", 20));
 
     const deJ1 = construirVistaMeloquiz(estado, "j1");
     const deJ3 = construirVistaMeloquiz(estado, "j3");
 
-    expect(deJ1.tuVotoId).not.toBeNull();
-    expect(deJ3.tuVotoId).toBeNull();
-    // De los demás solo se sabe SI votaron, no qué votaron.
+    expect(deJ1.tuVotoJugadorId).toBe("j2");
+    expect(deJ3.tuVotoJugadorId).toBeNull();
+    // De los demás solo se sabe SI votaron, no A QUIÉN.
     expect(deJ3.jugadores.map((j) => j.haVotado)).toEqual([true, true, false]);
   });
 
-  it("`acerto` es null hasta revelar y luego dice la verdad", () => {
+  it("los conteos son null hasta `puntaje`: publicarlos en vivo sesgaría al grupo", () => {
     let estado = hasta(partidaNueva(), "voto");
-    estado = exito(votar(estado, "j1", opcionCorrecta(estado), 10));
-    estado = exito(votar(estado, "j2", opcionIncorrecta(estado), 20));
+    estado = exito(votar(estado, "j1", "j2", 10));
 
     const enVoto = construirVistaMeloquiz(estado, "j1");
-    expect(enVoto.jugadores.every((j) => j.acerto === null)).toBe(true);
+    expect(enVoto.jugadores.every((j) => j.votosRecibidos === null)).toBe(true);
+    expect(enVoto.ganadorRonda).toBeNull();
+  });
 
-    const enRevelar = construirVistaMeloquiz(hasta(estado, "revelar"), "j1");
-    expect(enRevelar.jugadores.map((j) => j.acerto)).toEqual([true, false, false]);
+  it("en `puntaje` la tabla trae el conteo por jugador y el ganador de la ronda", () => {
+    let estado = hasta(partidaNueva(), "voto");
+    estado = exito(votar(estado, "j1", "j2", 10));
+    estado = exito(votar(estado, "j2", "j2", 20));
+    estado = exito(votar(estado, "j3", "j1", 30)); // cierre anticipado → puntaje
+
+    const vista = construirVistaMeloquiz(estado, "j1");
+    expect(vista.fase).toBe("puntaje");
+    expect(vista.jugadores.map((j) => j.votosRecibidos)).toEqual([1, 2, 0]);
+    expect(vista.ganadorRonda).toBe("j2");
+  });
+
+  it("empate en `puntaje`: conteos visibles pero sin ganador de ronda (§5)", () => {
+    let estado = hasta(partidaNueva(), "voto");
+    estado = exito(votar(estado, "j1", "j2", 10));
+    estado = exito(votar(estado, "j2", "j1", 20));
+    estado = hasta(estado, "puntaje"); // j3 calló: 1-1
+
+    const vista = construirVistaMeloquiz(estado, "j3");
+    expect(vista.jugadores.map((j) => j.votosRecibidos)).toEqual([1, 1, 0]);
+    expect(vista.ganadorRonda).toBeNull();
   });
 
   it("los acks de precarga sí son públicos (§3.2)", () => {

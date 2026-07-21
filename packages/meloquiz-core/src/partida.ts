@@ -10,13 +10,17 @@
 //    JAMÁS llama Date.now() ni decide por su cuenta que una fase venció: solo
 //    sella el instante que le pasan. Quien decide es el llamador (el orquestador
 //    en S1b, el test aquí). Esta es la restricción dura de SPIKE §4/§6.1.
-//  - Orden de fases (REGLAS §4, corregido): precarga → clip → voto → revelar →
-//    puntaje. `revelar` es el reveal de la RESPUESTA, tras cerrar la votación.
+//  - Orden de fases (REGLAS §4, pivote 2026-07-21): precarga → clip → revelar →
+//    voto → puntaje. Se revela ANTES de votar: el juego no juzga aciertos, los
+//    jugadores adivinan de viva voz y el grupo vota QUÉ JUGADOR ganó la ronda.
+//    El juego es escribano, no árbitro.
+//  - Modo entrenamiento (1 jugador, §4/§6): SIN votación — revelar salta
+//    directo a la ronda siguiente.
 //  - El avance de ronda NO usa esperandoContinuar/continuar (SPIKE §6.3): las
 //    rondas avanzan dentro de la expiración de la fase `puntaje`.
 
 import { barajar, type GeneradorAleatorio } from "./aleatorio.js";
-import type { CancionPool, PoolPartida } from "./catalogo.js";
+import type { PoolPartida } from "./catalogo.js";
 import { validarPool } from "./catalogo.js";
 import { REGLAS_MELOQUIZ, type DuracionesFase } from "./reglas.js";
 import { error, ok, type ErrorJuego, type Resultado } from "./resultado.js";
@@ -27,28 +31,23 @@ export interface DatosJugador {
 }
 
 /** Las fases de una ronda (§4); `final` es el estado terminal de la partida. */
-export type ClaveFase = "precarga" | "clip" | "voto" | "revelar" | "puntaje" | "final";
+export type ClaveFase = "precarga" | "clip" | "revelar" | "voto" | "puntaje" | "final";
 
 /**
- * Una opción de respuesta. `id` es local a la ronda y NO es el id de la canción:
- * el jugador vota con este id.
- *
- * ⚠️ INVARIANTE DE SEGURIDAD: `cancionId` es campo INTERNO. Si las opciones
- * viajaran identificadas por el id de canción, bastaría compararlas con el
- * `pistaId` que la vista publica durante el clip para acertar siempre. La
- * proyección (vista.ts) nunca lo expone.
+ * La ronda en curso: qué canción suena (§4). Tras el pivote no hay opciones ni
+ * respuesta correcta: el veredicto lo da el grupo votando por un JUGADOR (§5).
  */
-export interface OpcionRonda {
-  readonly id: string;
-  readonly cancionId: string;
-  readonly titulo: string;
-}
-
-/** La ronda en curso: qué suena y cuáles son las 4 opciones (§5). */
 export interface RondaMeloquiz {
   readonly cancionId: string;
-  readonly opciones: readonly OpcionRonda[];
-  readonly opcionCorrectaId: string;
+}
+
+/**
+ * El veredicto de una votación (§5): conteo de votos por jugador y el ganador
+ * por mayoría simple, o null si hubo empate en el máximo o nadie votó.
+ */
+export interface ResolucionVotacion {
+  readonly conteos: Readonly<Record<string, number>>;
+  readonly ganadorId: string | null;
 }
 
 export interface EstadoMeloquiz {
@@ -59,6 +58,8 @@ export interface EstadoMeloquiz {
   /** Instante (ms) en que empezó la fase actual: el `ahoraMs` que nos pasaron. */
   readonly faseIniciadaEnMs: number;
   readonly duraciones: DuracionesFase;
+  /** Modo entrenamiento (§6): partida de a uno, sin fase de votación. */
+  readonly entrenamiento: boolean;
   /** Ronda en curso, 1-based. */
   readonly ronda: number;
   readonly rondasTotales: number;
@@ -69,7 +70,7 @@ export interface EstadoMeloquiz {
   readonly puntajes: Readonly<Record<string, number>>;
   /** Acks de precarga de la ronda en curso (§3.2). */
   readonly listos: readonly string[];
-  /** jugadorId → id de OPCIÓN votada, en la ronda en curso. */
+  /** jugadorId → id del JUGADOR votado, en la ronda en curso (§5). */
   readonly votos: Readonly<Record<string, string>>;
   /** Vacío hasta `final`; puede traer varios (empate compartido, §6). */
   readonly ganadores: readonly string[];
@@ -82,8 +83,8 @@ export interface OpcionesMeloquiz {
   /** Duraciones de fase a medida; por defecto las de REGLAS §4. */
   readonly duraciones?: Partial<DuracionesFase>;
   /**
-   * Modo entrenamiento (§6): habilita la partida de UN jugador. Solo cambia el
-   * rango de jugadores admitidos; fases, opciones y puntaje son los de siempre.
+   * Modo entrenamiento (§6): habilita la partida de UN jugador y elimina la
+   * votación (precarga → clip → revelar → siguiente canción).
    */
   readonly entrenamiento?: boolean;
 }
@@ -125,30 +126,10 @@ function validarJugadores(
   return null;
 }
 
-/**
- * Arma la ronda: la correcta + 3 distractores de OTRAS canciones del mismo pool
- * (§5), todo barajado. Los ids de opción se asignan DESPUÉS de mezclar, para que
- * la posición no filtre cuál es la correcta.
- */
-function armarRonda(
-  pool: PoolPartida,
-  cancionId: string,
-  ronda: number,
-  rng: GeneradorAleatorio,
-): RondaMeloquiz | null {
-  const correcta = pool.canciones.find((c) => c.id === cancionId);
-  if (correcta === undefined) return null;
-  const otras = pool.canciones.filter((c) => c.id !== cancionId);
-  const distractores = barajar(otras, rng).slice(0, REGLAS_MELOQUIZ.opcionesPorRonda - 1);
-  const mezcladas: readonly CancionPool[] = barajar([correcta, ...distractores], rng);
-  const opciones = mezcladas.map((c, i) => ({
-    id: `${ronda}-op${i + 1}`,
-    cancionId: c.id,
-    titulo: c.titulo,
-  }));
-  const correctaEnMezcla = opciones.find((o) => o.cancionId === cancionId);
-  if (correctaEnMezcla === undefined) return null;
-  return { cancionId, opciones, opcionCorrectaId: correctaEnMezcla.id };
+/** Arma la ronda: solo la canción sorteada; el grupo juzga, no hay opciones (§5). */
+function armarRonda(pool: PoolPartida, cancionId: string): RondaMeloquiz | null {
+  if (!pool.canciones.some((c) => c.id === cancionId)) return null;
+  return { cancionId };
 }
 
 /** Cambia de fase sellando el instante recibido. El núcleo no consulta reloj. */
@@ -161,24 +142,42 @@ function entrarEnFase(
 }
 
 /**
- * Aplica el puntaje de la ronda: +1 a cada jugador cuyo voto apunte a la opción
- * correcta (§5, puntaje PLANO). Si nadie acertó, nadie suma.
+ * Resuelve la votación de la ronda (§5): mayoría simple. El más votado gana;
+ * empate en el máximo (o nadie votó) → `ganadorId` null y nadie suma. Quien no
+ * votó no aporta voto. ÚNICA implementación de la regla: la usan el puntaje y
+ * la vista (que publica los conteos en `puntaje`).
+ */
+export function resolverVotacion(
+  votos: Readonly<Record<string, string>>,
+  jugadores: readonly DatosJugador[],
+): ResolucionVotacion {
+  const conteos: Record<string, number> = {};
+  for (const j of jugadores) conteos[j.id] = 0;
+  for (const votadoId of Object.values(votos)) {
+    conteos[votadoId] = (conteos[votadoId] ?? 0) + 1;
+  }
+  const maximo = Math.max(0, ...Object.values(conteos));
+  const punteros = jugadores.filter((j) => conteos[j.id] === maximo);
+  const ganadorId = maximo > 0 && punteros.length === 1 ? (punteros[0]?.id ?? null) : null;
+  return { conteos, ganadorId };
+}
+
+/**
+ * Aplica el puntaje de la ronda (§5): +1 SOLO al ganador por mayoría simple.
+ * Empate o ronda sin votos: nadie suma.
  */
 function aplicarPuntaje(estado: EstadoMeloquiz): Readonly<Record<string, number>> {
-  const ronda = estado.rondaActual;
-  if (ronda === null) return estado.puntajes;
-  const puntajes: Record<string, number> = { ...estado.puntajes };
-  for (const jugador of estado.jugadores) {
-    if (estado.votos[jugador.id] === ronda.opcionCorrectaId) {
-      puntajes[jugador.id] = (puntajes[jugador.id] ?? 0) + REGLAS_MELOQUIZ.puntosPorAcierto;
-    }
-  }
-  return puntajes;
+  const { ganadorId } = resolverVotacion(estado.votos, estado.jugadores);
+  if (ganadorId === null) return estado.puntajes;
+  return {
+    ...estado.puntajes,
+    [ganadorId]: (estado.puntajes[ganadorId] ?? 0) + REGLAS_MELOQUIZ.puntosPorRonda,
+  };
 }
 
 /**
  * Ganadores: todos los que empatan en el puntaje máximo (§6, empate compartido).
- * Si nadie acertó nunca, todos empatan en 0 y todos son ganadores.
+ * Si nadie sumó nunca, todos empatan en 0 y todos son ganadores.
  */
 function calcularGanadores(
   jugadores: readonly DatosJugador[],
@@ -187,6 +186,43 @@ function calcularGanadores(
   const puntosDe = (id: string): number => puntajes[id] ?? 0;
   const maximo = Math.max(...jugadores.map((j) => puntosDe(j.id)));
   return jugadores.filter((j) => puntosDe(j.id) === maximo).map((j) => j.id);
+}
+
+/**
+ * Cierra la ronda: precarga de la siguiente canción, o `final` si era la
+ * última. Lo comparten `puntaje` (flujo normal) y `revelar` en entrenamiento
+ * (que salta la votación, §4).
+ */
+function avanzarRonda(estado: EstadoMeloquiz, ahoraMs: number): Resultado<EstadoMeloquiz> {
+  if (estado.ronda >= estado.rondasTotales) {
+    return ok(
+      entrarEnFase(
+        {
+          ...estado,
+          rondaActual: null,
+          ganadores: calcularGanadores(estado.jugadores, estado.puntajes),
+        },
+        "final",
+        ahoraMs,
+      ),
+    );
+  }
+  const ronda = estado.ronda + 1;
+  const cancionId = estado.ordenCanciones[ronda - 1];
+  if (cancionId === undefined) {
+    return error("POOL_INVALIDO", "no hay canción sorteada para la ronda siguiente");
+  }
+  const rondaActual = armarRonda(estado.pool, cancionId);
+  if (rondaActual === null) {
+    return error("POOL_INVALIDO", "no se pudo armar la ronda siguiente");
+  }
+  return ok(
+    entrarEnFase(
+      { ...estado, ronda, rondaActual, listos: [], votos: {} },
+      "precarga",
+      ahoraMs,
+    ),
+  );
 }
 
 // ── Creación de partida ─────────────────────────────────────────────────────
@@ -203,7 +239,8 @@ export function crearPartida(
   rng: GeneradorAleatorio,
   ahoraMs: number,
 ): Resultado<EstadoMeloquiz> {
-  const errJugadores = validarJugadores(jugadores, opciones.entrenamiento === true);
+  const entrenamiento = opciones.entrenamiento === true;
+  const errJugadores = validarJugadores(jugadores, entrenamiento);
   if (errJugadores !== null) return { ok: false, error: errJugadores };
 
   const poolValido = validarPool(pool);
@@ -232,7 +269,7 @@ export function crearPartida(
   if (primera === undefined) {
     return error("POOL_INVALIDO", "el pool quedó sin canciones que sortear");
   }
-  const rondaActual = armarRonda(pool, primera, 1, rng);
+  const rondaActual = armarRonda(pool, primera);
   if (rondaActual === null) {
     return error("POOL_INVALIDO", "no se pudo armar la primera ronda");
   }
@@ -246,6 +283,7 @@ export function crearPartida(
     fase: "precarga",
     faseIniciadaEnMs: ahoraMs,
     duraciones,
+    entrenamiento,
     ronda: 1,
     rondasTotales,
     ordenCanciones,
@@ -311,13 +349,14 @@ export function marcarListo(
 }
 
 /**
- * Voto de un jugador (§5): un voto por ronda, por id de OPCIÓN. Si votan TODOS,
- * la ventana se cierra de inmediato y se pasa a revelar (cierre anticipado).
+ * Voto de un jugador (§5): un voto por ronda, por el JUGADOR que cree que ganó.
+ * Auto-voto permitido. Si votan TODOS, la ventana se cierra de inmediato, se
+ * computa la mayoría y se pasa a la tabla de puntos (cierre anticipado).
  */
 export function votar(
   estado: EstadoMeloquiz,
   jugadorId: string,
-  opcionId: string,
+  votadoId: string,
   ahoraMs: number,
 ): Resultado<EstadoMeloquiz> {
   if (estado.fase === "final") {
@@ -332,14 +371,13 @@ export function votar(
   if (estado.votos[jugadorId] !== undefined) {
     return error("YA_VOTASTE", "ya votaste en esta ronda");
   }
-  const ronda = estado.rondaActual;
-  if (ronda === null || !ronda.opciones.some((o) => o.id === opcionId)) {
-    return error("OPCION_DESCONOCIDA", "esa opción no existe en esta ronda");
+  if (!estado.jugadores.some((j) => j.id === votadoId)) {
+    return error("VOTADO_DESCONOCIDO", "ese jugador no está en la partida");
   }
-  const votos = { ...estado.votos, [jugadorId]: opcionId };
+  const votos = { ...estado.votos, [jugadorId]: votadoId };
   const siguiente: EstadoMeloquiz = { ...estado, votos };
   if (Object.keys(votos).length === estado.jugadores.length) {
-    return ok(entrarEnFase(siguiente, "revelar", ahoraMs));
+    return ok(entrarEnFase({ ...siguiente, puntajes: aplicarPuntaje(siguiente) }, "puntaje", ahoraMs));
   }
   return ok(siguiente);
 }
@@ -349,12 +387,13 @@ export function votar(
 /**
  * Venció la fase en curso: la ÚNICA vía por la que avanza la partida además del
  * cierre anticipado de precarga y voto. El llamador decide cuándo (el reloj vive
- * fuera del núcleo); aquí solo se aplica la transición.
+ * fuera del núcleo); aquí solo se aplica la transición. `rng` queda en la firma
+ * por el contrato del motor (SPIKE §6.2), aunque hoy nada se sortea al expirar.
  *
  *   precarga → clip     (se arranca sin los rezagados, §3.3)
- *   clip     → voto
- *   voto     → revelar  (los que no votaron se quedan sin punto)
- *   revelar  → puntaje  (AQUÍ se aplica el marcador, §5)
+ *   clip     → revelar  (primero la respuesta: el grupo necesita verla, §4)
+ *   revelar  → voto     (o directo a la ronda siguiente en entrenamiento, §4)
+ *   voto     → puntaje  (AQUÍ se computa la mayoría, §5; sin voto no aporta)
  *   puntaje  → precarga de la ronda siguiente, o `final`
  */
 export function expirarFase(
@@ -362,50 +401,23 @@ export function expirarFase(
   ahoraMs: number,
   rng: GeneradorAleatorio,
 ): Resultado<EstadoMeloquiz> {
+  void rng;
   switch (estado.fase) {
     case "precarga":
       return ok(entrarEnFase(estado, "clip", ahoraMs));
 
     case "clip":
-      return ok(entrarEnFase(estado, "voto", ahoraMs));
-
-    case "voto":
       return ok(entrarEnFase(estado, "revelar", ahoraMs));
 
     case "revelar":
+      if (estado.entrenamiento) return avanzarRonda(estado, ahoraMs);
+      return ok(entrarEnFase(estado, "voto", ahoraMs));
+
+    case "voto":
       return ok(entrarEnFase({ ...estado, puntajes: aplicarPuntaje(estado) }, "puntaje", ahoraMs));
 
-    case "puntaje": {
-      if (estado.ronda >= estado.rondasTotales) {
-        return ok(
-          entrarEnFase(
-            {
-              ...estado,
-              rondaActual: null,
-              ganadores: calcularGanadores(estado.jugadores, estado.puntajes),
-            },
-            "final",
-            ahoraMs,
-          ),
-        );
-      }
-      const ronda = estado.ronda + 1;
-      const cancionId = estado.ordenCanciones[ronda - 1];
-      if (cancionId === undefined) {
-        return error("POOL_INVALIDO", "no hay canción sorteada para la ronda siguiente");
-      }
-      const rondaActual = armarRonda(estado.pool, cancionId, ronda, rng);
-      if (rondaActual === null) {
-        return error("POOL_INVALIDO", "no se pudo armar la ronda siguiente");
-      }
-      return ok(
-        entrarEnFase(
-          { ...estado, ronda, rondaActual, listos: [], votos: {} },
-          "precarga",
-          ahoraMs,
-        ),
-      );
-    }
+    case "puntaje":
+      return avanzarRonda(estado, ahoraMs);
 
     case "final":
       return error("PARTIDA_TERMINADA", "la partida ya terminó");
@@ -413,13 +425,6 @@ export function expirarFase(
 }
 
 // ── Consultas ───────────────────────────────────────────────────────────────
-
-/** ¿Acertó este jugador en la ronda en curso? Para la vista, a partir de revelar. */
-export function acerto(estado: EstadoMeloquiz, jugadorId: string): boolean {
-  const ronda = estado.rondaActual;
-  if (ronda === null) return false;
-  return estado.votos[jugadorId] === ronda.opcionCorrectaId;
-}
 
 /** Puntos acumulados de un jugador. */
 export function puntosDe(estado: EstadoMeloquiz, jugadorId: string): number {

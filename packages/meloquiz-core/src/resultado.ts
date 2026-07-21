@@ -13,7 +13,7 @@ export type CodigoError =
   | "JUGADOR_DESCONOCIDO"
   | "YA_VOTASTE"
   | "YA_LISTO"
-  | "OPCION_DESCONOCIDA";
+  | "VOTADO_DESCONOCIDO";
 
 export interface ErrorJuego {
   readonly codigo: CodigoError;

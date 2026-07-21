@@ -1,6 +1,7 @@
 // La vista de MeloQuiz tal como sale del servidor: la proyección PURA del núcleo
 // (`construirVistaMeloquiz`, que a propósito no sabe nada de sala) más los datos
-// que solo el orquestador conoce — anfitrión, conexiones y el reloj de fase.
+// que solo el orquestador conoce — anfitrión, conexiones, el reloj de fase y el
+// avatar elegido en el lobby.
 //
 // La invariante de ocultamiento vive ENTERA en el núcleo (meloquiz-core/vista.ts):
 // aquí no se agrega ni se destapa nada del juego. Mismo reparto que
@@ -8,22 +9,27 @@
 // mentiroso-core no la trae; acá el core ya la trae y solo la envolvemos.
 
 import { construirVistaMeloquiz } from "@juegos/meloquiz-core";
-import type { EstadoMeloquiz, VistaMeloquiz } from "@juegos/meloquiz-core";
+import type { EstadoMeloquiz, JugadorVistaMeloquiz, VistaMeloquiz } from "@juegos/meloquiz-core";
 import type { EstadoConexion, MetaSala } from "../../vista.js";
+
+/** El jugador del núcleo + el avatar del lobby (los botones de voto lo pintan). */
+export type JugadorVistaMeloquizSala = JugadorVistaMeloquiz & {
+  readonly avatar?: string;
+};
 
 /**
  * La vista del núcleo + los datos de sala. El núcleo ya declara `juego:
- * "meloquiz"` (el discriminante de `VistaJuego`), así que basta intersectar: no
- * hace falta el `Omit` que sí necesita Rumble para no colapsar dos literales
- * distintos en `never`.
+ * "meloquiz"` (el discriminante de `VistaJuego`) y el `Omit` de `jugadores` no
+ * lo toca: solo reemplaza la lista por la versión con avatar.
  */
-export type VistaMeloquizSala = VistaMeloquiz & {
+export type VistaMeloquizSala = Omit<VistaMeloquiz, "jugadores"> & {
+  readonly jugadores: readonly JugadorVistaMeloquizSala[];
   /** Asiento anfitrión (puede reabrir conexiones); en partida es estable. */
   readonly anfitrionId: string;
   /**
    * Ciclo de vida de la conexión por jugador. Va como mapa aparte en vez de
    * fusionarse en `JugadorVistaMeloquiz`: el núcleo es puro y no conoce el
-   * concepto, y así no hay que hacerle un `Omit` a `jugadores`.
+   * concepto (el avatar sí se fusiona: es un dato del jugador, no del canal).
    */
   readonly estadosConexion: Readonly<Record<string, EstadoConexion>>;
   /** Ms que le quedan a la fase en curso, o null (sin reloj/fase). */
@@ -41,8 +47,14 @@ export function construirVistaMeloquizSala(
   for (const jugador of estado.jugadores) {
     estadosConexion[jugador.id] = meta.estados.get(jugador.id) ?? "conectado";
   }
+  const nucleo = construirVistaMeloquiz(estado, jugadorId);
   return {
-    ...construirVistaMeloquiz(estado, jugadorId),
+    ...nucleo,
+    jugadores: nucleo.jugadores.map((j) => {
+      const avatar = meta.avatares?.get(j.id);
+      // exactOptionalPropertyTypes: omitimos avatar cuando no hay.
+      return avatar !== undefined ? { ...j, avatar } : j;
+    }),
     anfitrionId: meta.anfitrionId,
     estadosConexion,
     faseMsRestantes: meta.faseMsRestantes ?? null,

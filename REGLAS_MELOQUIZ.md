@@ -113,29 +113,47 @@ decisión "solo índice por huella" sigue vigente, con este parseo puntual encim
 
 ---
 
-## 4. Flujo de una ronda
+## 4. Flujo de una ronda — PIVOTADO (2026-07-21)
+
+> **Cambio de concepto:** el juego **no juzga** quién acertó. Los jugadores adivinan la canción **fuera
+> de la app** (en la misma pieza, o por voz). El juego reproduce, revela, y registra el **veredicto del
+> grupo**: los participantes votan entre ellos quién ganó la ronda. El juego es escribano, no árbitro.
+> Con esto, revelar-antes-de-votar es el orden correcto (el grupo necesita ver la respuesta para juzgar).
 
 | Fase | Duración | Qué pasa |
 |---|---|---|
 | Precarga (lobby de ronda) | variable | Sync de reloj, precarga, ack de todos. Recién aquí se fija `start_at`. |
-| Clip | 10 s | Suena el audio desde el punto de inicio (~30%); solo audio, sin nada visible aún. |
-| Revelar | 5 s | Se muestra **carátula + título**; el audio sigue sonando desde donde iba. |
-| Votación | 10 s (o hasta que todos voten) | 4 opciones (correcta + 3 distractores del mismo pool); cada jugador vota una. |
-| Tabla de puntos | 5 s | Se revela la correcta y se actualiza el marcador (+1 a cada acierto). |
+| Clip | 10 s | Suena el audio desde el punto de inicio (~30%); solo audio, nada identificable visible. Los jugadores adivinan de viva voz, fuera de la app. |
+| Revelar | 5 s | Se muestra **carátula + título**; el audio sigue sonando desde donde iba. Ahora todos saben cuál era. |
+| Votación | 10 s (o hasta que todos voten) | Cada jugador vota por el **participante** que cree que ganó la ronda (la adivinó primero / mejor). Auto-voto permitido. |
+| Tabla de puntos | 5 s | Se computa la mayoría y se actualiza el marcador. |
 
-Al terminar tabla de puntos → nueva canción, vuelta a Precarga. Si nadie acertó, nadie suma y se sigue.
+Al terminar tabla de puntos → nueva canción, vuelta a Precarga.
+
+**Modo entrenamiento (1 jugador):** sin votación — el flujo es Precarga → Clip → Revelar → (siguiente),
+saltando de canción en canción. Es un reproductor de práctica.
 
 ---
 
-## 5. Votación y puntuación — CERRADO
+## 5. Votación y puntuación — PIVOTADO (2026-07-21)
 
-- **4 opciones:** título correcto + 3 distractores de **otras canciones del mismo pool** (mismo origen
-  ⇒ parecidos en género/época, no se sacan por descarte).
-- **El host ya conoce la respuesta** (metadatos ID3). El voto es el mecanismo de respuesta del jugador,
-  no una votación para determinar la verdad grupal.
+- **Se vota por JUGADOR, no por título.** Las opciones son los participantes de la partida. No hay
+  distractores ni alternativas de canción — eso pertenecía al concepto anterior (quiz autónomo) y quedó
+  eliminado.
+- **El juego no conoce "la respuesta".** Los metadatos ID3 solo sirven para revelar la canción; el
+  ganador lo determina el grupo, no el motor.
 - **Cierre anticipado:** si todos votaron antes del tiempo, se cierra la ventana de inmediato.
-- **Puntaje PLANO:** **cada acierto vale 1 punto. No hay bonus por velocidad.** Terminan los 10 s de
-  clip, se vota, y quien la adivinó suma 1; si nadie la adivinó, nadie suma. Nada más.
+- **Resolución: mayoría simple.** El jugador con más votos suma **1 punto**. **Empate = nadie suma** y
+  se sigue. Auto-voto **permitido**.
+- **Riesgo conocido (aceptado por ahora):** con 2 jugadores y auto-voto permitido, si ambos se votan a
+  sí mismos hay empate perpetuo y nadie suma nunca. Se asume que con amigos no se juega así; si en la
+  práctica molesta, la corrección candidata es prohibir auto-voto solo cuando hay 2 jugadores.
+- **Sin voto = no participa del conteo** de esa ronda (el desconectado o el que no votó no aporta voto).
+
+> **Invariantes de S1 tras el pivote:** "título oculto hasta revelar" **sigue vigente** (no mostrar la
+> respuesta mientras suena el clip — protege la gracia del juego, ya no una votación). El `pistaId`
+> opaco **sigue vigente** por la misma razón. El "voto por id de opción" muta a "voto por id de
+> jugador".
 
 ---
 
@@ -147,9 +165,9 @@ Al terminar tabla de puntos → nueva canción, vuelta a Precarga. Si nadie acer
   comparten el puesto).
 - **Mín / máx jugadores:** propuesto **2 / 8** (ajustable).
 - **¿El host vota?** **Sí** — cliente igual con el control extra de iniciar rondas.
-- **Modo entrenamiento (1 jugador, opt-in) — CERRADO en S3.** Para poder probar en solitario sin bajar
-  el mínimo general, hay un modo de 1 jugador activable desde el lobby, que viaja como config opaca
-  `{entrenamiento: true}` por el mismo seam que usa Rumble. **Comportamiento del ack/timeout:** con 1
+- **Modo entrenamiento (1 jugador, opt-in) — CERRADO en S3, ajustado por el pivote.** Modo de 1 jugador
+  activable desde el lobby, config opaca `{entrenamiento: true}` por el mismo seam que Rumble. **Tras el
+  pivote (§4): sin votación** — salta de canción en canción (Precarga → Clip → Revelar → siguiente). **Comportamiento del ack/timeout:** con 1
   jugador el ack de precarga cierra al instante (el set de listos se completa con el único jugador), así
   que el timeout de precarga nunca corre. **Restricción para S4:** la sync de reloj real no debe romper
   este camino — con 1 jugador el offset es 0 y el ack sigue siendo instantáneo; el modo entrenamiento

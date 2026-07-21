@@ -1,6 +1,6 @@
 // La restricción CRÍTICA de MeloQuiz multijugador (REGLAS §1): ningún archivo
 // de audio ni carátula viaja del host a los peers — solo id de pista + start_at
-// + opciones. Este test la afirma sobre el CABLE: captura cada frame crudo tal
+// + votos. Este test la afirma sobre el CABLE: captura cada frame crudo tal
 // como salió del transporte, antes de parsear, así atrapa también campos que el
 // analizador del cliente ignoraría.
 //
@@ -155,22 +155,21 @@ async function jugarPartidaCompleta(rondas: number) {
     await asentar();
     expect(j1.ultimaVista().fase).toBe("clip");
 
-    reloj.avanzar(); // clip → voto
-    await asentar();
-    expect(j1.ultimaVista().fase).toBe("voto");
-
-    // Ambos votan (cierre anticipado → revelar, la fase de la carátula).
-    const opciones = j1.ultimaVista().opciones;
-    const primera = opciones[0];
-    if (primera === undefined) throw new Error("la ronda no trajo opciones");
-    j1.enviar({ tipo: "votar", opcionId: primera.id });
-    await asentar();
-    j2.enviar({ tipo: "votar", opcionId: primera.id });
+    reloj.avanzar(); // clip → revelar (la fase de la carátula, ANTES de votar)
     await asentar();
     expect(j1.ultimaVista().fase).toBe("revelar");
 
-    reloj.avanzar(); // revelar → puntaje
+    reloj.avanzar(); // revelar → voto
     await asentar();
+    expect(j1.ultimaVista().fase).toBe("voto");
+
+    // Ambos votan por un JUGADOR (cierre anticipado → tabla de puntos).
+    j1.enviar({ tipo: "votar", votadoId: j1.jugadorId });
+    await asentar();
+    j2.enviar({ tipo: "votar", votadoId: j1.jugadorId });
+    await asentar();
+    expect(j1.ultimaVista().fase).toBe("puntaje");
+
     reloj.avanzar(); // puntaje → precarga siguiente (o final)
     await asentar();
   }
@@ -231,9 +230,7 @@ describe("aislamiento host↛peer (REGLAS §1): solo la orden viaja, jamás byte
 
     reloj.avanzar(); // precarga → clip (por timeout, sin acks)
     await asentar();
-    reloj.avanzar(); // clip → voto
-    await asentar();
-    reloj.avanzar(); // voto → revelar (por timeout, sin votos)
+    reloj.avanzar(); // clip → revelar
     await asentar();
 
     const revelada = j1.ultimaVista();

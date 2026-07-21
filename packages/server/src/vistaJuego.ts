@@ -57,10 +57,12 @@ export type { Carta as CartaUno, Color as ColorUno } from "@juegos/uno-core";
 
 // Re-exporta la forma de MeloQuiz (y sus tipos) para que el cliente la use SIN
 // depender directamente de @juegos/meloquiz-core.
-export type { VistaMeloquizSala } from "./juegos/meloquiz/vistaMeloquiz.js";
+export type {
+  JugadorVistaMeloquizSala,
+  VistaMeloquizSala,
+} from "./juegos/meloquiz/vistaMeloquiz.js";
 export type {
   ClaveFase,
   JugadorVistaMeloquiz,
-  OpcionVista,
   VistaMeloquiz,
 } from "@juegos/meloquiz-core";

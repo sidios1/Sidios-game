@@ -39,7 +39,8 @@ import { construirVistaMeloquizSala } from "./vistaMeloquiz.js";
 /** Acciones de MeloQuiz ya validadas en su forma; opacas fuera de este módulo. */
 export type AccionMeloquiz =
   | { readonly tipo: "listoPrecarga" }
-  | { readonly tipo: "votar"; readonly opcionId: string };
+  /** Voto por JUGADOR (REGLAS §5, pivote): `votadoId` es un id de jugador. */
+  | { readonly tipo: "votar"; readonly votadoId: string };
 
 export interface OpcionesMotorMeloquiz {
   /** Rondas a jugar; por defecto, tantas como canciones tenga el pool. */
@@ -97,9 +98,9 @@ export function crearMotorMeloquiz(
         case "listoPrecarga":
           return { tipo: "listoPrecarga" };
         case "votar": {
-          const opcionId = crudo["opcionId"];
-          if (typeof opcionId === "string" && opcionId.length > 0) {
-            return { tipo: "votar", opcionId };
+          const votadoId = crudo["votadoId"];
+          if (typeof votadoId === "string" && votadoId.length > 0) {
+            return { tipo: "votar", votadoId };
           }
           return null;
         }
@@ -117,7 +118,7 @@ export function crearMotorMeloquiz(
         case "listoPrecarga":
           return marcarListo(estado, jugadorId, ahora());
         case "votar":
-          return votar(estado, jugadorId, accion.opcionId, ahora());
+          return votar(estado, jugadorId, accion.votadoId, ahora());
       }
     },
 

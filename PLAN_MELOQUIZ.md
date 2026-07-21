@@ -11,11 +11,47 @@
 ## Estado
 
 ```
-S0 Spike ✓ ─► S1 Núcleo ✓ ─► S1b Reloj de fases ✓ ─► S2 Fuente LOCAL ✓ ─► S3 Render 1-cliente ✓ ─► [N] Normalización ─► S4 Multiplayer ─► [T] Empaquetado Tauri
+S0 ✓ ─► S1 ✓ ─► S1b ✓ ─► S2 ✓ ─► S3 ✓ ─► S4 ✓ ─► [P] Pivote de votación ✓ ─► (prueba de oído) ─► [N] Normalización ─► [T] Empaquetado Tauri
 ```
 
-MeloQuiz es **jugable en solitario de punta a punta** en web/dev (render DOM, `<audio>`, contador de
-fase, carátula perezosa, orden de fases correcto). Falta: pulir normalización, multiplayer, y empaquetar.
+**Nota de secuencia:** S4 se ejecutó ANTES que [P] (sobre la votación vieja de 4 opciones). No es
+problema: sync, planArranque, huella cruzada, aislamiento y reconexión viven en fases/capas que [P] no
+toca. [P] reworkea votación/puntaje del núcleo y la UI de voto; el cable de S4 queda igual. La **prueba
+de oído** ("se siente simultáneo", criterio pendiente de S4) se hace DESPUÉS de [P], sobre el juego
+final, para no validar dos veces.
+
+**PIVOTE (2026-07-21, REGLAS §4/§5):** el juego ya no juzga aciertos — los jugadores adivinan fuera de
+la app, el juego revela y el grupo **vota qué participante ganó** (mayoría simple, empate = nadie suma,
+auto-voto permitido). Orden nuevo: `Precarga → Clip → Revelar → Votación → Tabla`. Entrenamiento = sin
+votación, salta de canción en canción. Esto reworkea las fases votación/puntaje del núcleo (S1) y la UI
+de voto (S3); sobreviven intactos máquina de fases, sync, fuente, huella y carátula.
+
+---
+
+## [P] — Sesión de pivote: voto entre participantes ✓ COMPLETADA
+
+- **Depende de:** S3 (lógica) — y convive con S4 ya hecho. **Rige:** REGLAS §4/§5 pivotadas.
+- **Convivencia con S4 (no tocar):** sync, `planArranque`, huella, aislamiento y reconexión no se
+  modifican. Verificar que `aislamientoMeloquiz.test.ts` y los tests de arranque sigan verdes tras el
+  reorden de fases, y que la vista de votación publique **jugadores**, no opciones de canción.
+- **Produce (núcleo):** opciones de voto = jugadores de la partida (auto-voto permitido); eliminar
+  distractores/opciones de canción; resolución por mayoría simple, empate = nadie suma, sin-voto no
+  cuenta; reordenar fases a Clip → **Revelar** → **Votación** → Tabla; entrenamiento sin fase de
+  votación.
+- **Produce (UI):** botones de voto = participantes (nombre/avatar); revelar antes de votar; tabla con
+  el conteo de votos.
+- **Invariantes que persisten:** título oculto hasta revelar; `pistaId` opaco; reloj inyectado.
+- **Criterio de hecho:** partida multiventana-lista a nivel de lógica (tests del núcleo reflejan el
+  nuevo flujo, incluidos empate y auto-voto); entrenamiento salta canciones sin votar; suite verde.
+- **Resultado (2026-07-21):** hecho tal cual. Núcleo: `resolverVotacion` (mayoría en un solo lugar,
+  la usan puntaje y vista), voto por `votadoId` (error `VOTADO_DESCONOCIDO`), fases
+  `precarga → clip → revelar → voto → puntaje`, flag `entrenamiento` en el estado (revelar salta a la
+  ronda siguiente). Vista: sin `opciones`/`opcionCorrectaId`/`acerto`; `tuVotoJugadorId`,
+  `votosRecibidos` (null hasta `puntaje`, voto secreto) y `ganadorRonda`. Server: acción
+  `{tipo:"votar", votadoId}`; `vistaMeloquiz` inyecta `avatar` (patrón `vistaMentiroso`). UI: botones
+  de voto = participantes con avatar (auto-voto habilitado), revelar antes de votar, tabla con conteo.
+  El único archivo de S4 tocado fue el GUION de `aislamientoMeloquiz.test.ts` (pasos y forma del voto);
+  sus 3 capas de aserciones quedaron byte a byte. Suite completa del monorepo verde (669 tests).
 
 ---
 
@@ -32,6 +68,17 @@ fase, carátula perezosa, orden de fases correcto). Falta: pulir normalización,
 - **S3 Render 1-cliente:** modo entrenamiento (1 jugador), alta en registro/CATALOGO, pool desde disco
   vía `CARPETA_MUSICA`, adaptador FS sobre File API, índice por huella, `<audio>`, UI de fases, contador
   interpolado 200ms, carátula perezosa. Jugable en solitario en web/dev contra carpeta real.
+- **S4 Multiplayer:** `sincroniaReloj.ts` (espejo de `latido.ts`, frames `__sinc` por `startsWith`,
+  fórmula NTP con filtro de mínimo RTT, ráfaga al conectar + cadencia 5 s + `visibilitychange`),
+  offset 100% local en `relojHost.ts` con generaciones de sesión; **arranque**: `faseInicioMs` siempre
+  está en el pasado ⇒ `instanteArranqueHost() = faseInicioMs + MARGEN_ARRANQUE_MS (500)`, y
+  `planArranque.ts` puro (programar / ya-mismo-con-seek para reconexión a mitad de clip / omitir;
+  `pointerdown` replanifica si autoplay bloqueado); huella Node↔File API bit-idéntica con vector dorado
+  + test cruzado sobre fixture real; `aislamientoMeloquiz.test.ts` (3 capas: marca secreta / presupuesto
+  8 KB / walker de forma) — de paso se eliminó `claveCaratula` (campo muerto que filtraba catálogo);
+  entrenamiento degenera formalmente al caso trivial (reloj identidad, offset 0). Los 5 adaptadores
+  consumen los frames; el orquestador nunca los ve. **Pendiente de S4: la prueba de oído** (se hace
+  tras [P]).
 
 **Decisiones cerradas en el camino** (ya reflejadas en REGLAS): orden de fases
 `Precarga → Clip → Votación → Revelar → Tabla` (corrige el bug de votación trivial); carátula = peer lee
@@ -50,11 +97,13 @@ su archivo local en revelar (§3); modo entrenamiento con ack instantáneo (§6)
 - **Produce:** manejo de corchetes/paréntesis desbalanceados y otros restos de puntuación, con los
   casos reales de la carpeta como fixtures de test.
 - **Criterio de hecho:** los títulos problemáticos salen limpios; tests nuevos verdes; nada más tocado.
-- **Nota:** es chica y toca la experiencia de juego visible ahora; conviene hacerla **antes** de S4.
+- **Nota (post-pivote):** bajó de prioridad — el título ya no es botón de voto, solo la revelación.
+  Sigue valiendo el fix (es lo que todos leen al revelar), pero va después de [P] y de la prueba de
+  oído.
 
 ---
 
-## S4 — Multiplayer (host-autoridad + sync)
+## S4 — Multiplayer (host-autoridad + sync) ✓ COMPLETADA (ver resumen arriba)
 
 - **Depende de:** S3 (+ idealmente [N]).
 - **Rige:** REGLAS §1 (host↛peer), §3 (sync + carátula), §6 (entrenamiento), §7; SPIKE §2, §3.

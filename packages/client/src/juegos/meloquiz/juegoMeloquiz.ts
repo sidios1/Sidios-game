@@ -19,8 +19,13 @@
 // play(), sonar ya con seek adelante (reconexión a mitad de clip) u omitir.
 // Todos los clientes derivan el MISMO instante físico ⇒ se escucha simultáneo.
 
-import type { ClaveFase, VistaMeloquizSala } from "@juegos/server/vistaJuego";
+import type {
+  ClaveFase,
+  JugadorVistaMeloquizSala,
+  VistaMeloquizSala,
+} from "@juegos/server/vistaJuego";
 import type { ContextoJuego, IJuego, SenalJuego } from "../../juego/ijuego.js";
+import { avatarPorDefecto, crearAvatar } from "../../perfil/avatares.js";
 import { relojHost } from "../../red/relojHost.js";
 import { indiceLocal } from "./indiceLocal.js";
 import { planificarArranque } from "./planArranque.js";
@@ -28,11 +33,19 @@ import { planificarArranque } from "./planArranque.js";
 const ROTULO_FASE: Record<ClaveFase, string> = {
   precarga: "Preparando…",
   clip: "¡Escuchá!",
-  voto: "¿Cuál es?",
   revelar: "Era…",
+  voto: "¿Quién ganó?",
   puntaje: "Marcador",
   final: "Fin de la partida",
 };
+
+/** Lado del avatar en los botones de voto, en px. */
+const TAM_AVATAR_VOTO = 28;
+
+/** El avatar elegido en el lobby, o uno determinista por id (patrón del HUD). */
+function avatarDe(jugador: JugadorVistaMeloquizSala): string {
+  return jugador.avatar ?? avatarPorDefecto(jugador.id);
+}
 
 export class JuegoMeloquiz implements IJuego {
   private contexto: ContextoJuego | null = null;
@@ -352,12 +365,13 @@ export class JuegoMeloquiz implements IJuego {
       case "clip":
         raiz.appendChild(this.panelClip());
         break;
-      case "voto":
-        raiz.appendChild(this.panelOpciones(vista));
-        break;
       case "revelar":
+        // La respuesta ANTES de la votación (§4): el grupo juzga viéndola.
         raiz.appendChild(this.panelRevelar(vista));
-        raiz.appendChild(this.panelOpciones(vista));
+        break;
+      case "voto":
+        raiz.appendChild(this.panelRevelar(vista));
+        raiz.appendChild(this.panelVotoJugadores(vista));
         break;
       case "puntaje":
         raiz.appendChild(this.panelRevelar(vista));
@@ -425,27 +439,28 @@ export class JuegoMeloquiz implements IJuego {
     return panel;
   }
 
-  private panelOpciones(vista: VistaMeloquizSala): HTMLElement {
+  /** Un botón por PARTICIPANTE (§5): se vota quién ganó la ronda, no un título. */
+  private panelVotoJugadores(vista: VistaMeloquizSala): HTMLElement {
     const lista = document.createElement("div");
     lista.className = "meloquiz-opciones";
 
-    for (const opcion of vista.opciones) {
+    for (const jugador of vista.jugadores) {
       const boton = document.createElement("button");
       boton.className = "meloquiz-opcion";
-      boton.textContent = opcion.titulo;
+      boton.appendChild(crearAvatar(avatarDe(jugador), TAM_AVATAR_VOTO));
 
-      const esCorrecta = vista.opcionCorrectaId === opcion.id;
-      const esTuVoto = vista.tuVotoId === opcion.id;
-      if (esTuVoto) boton.classList.add("votada");
-      // opcionCorrectaId solo llega desde `revelar` (la vista lo oculta antes).
-      if (vista.opcionCorrectaId !== null) {
-        boton.classList.add(esCorrecta ? "correcta" : "incorrecta");
-      }
+      const nombre = document.createElement("span");
+      nombre.textContent =
+        jugador.id === vista.tuJugadorId ? `${jugador.nombre} (vos)` : jugador.nombre;
+      boton.appendChild(nombre);
+
+      if (vista.tuVotoJugadorId === jugador.id) boton.classList.add("votada");
 
       // Cortesía de UI; el servidor revalida igual (una sola votación por ronda).
-      boton.disabled = vista.fase !== "voto" || vista.tuVotoId !== null;
+      // El botón PROPIO queda habilitado: el auto-voto está permitido (§5).
+      boton.disabled = vista.fase !== "voto" || vista.tuVotoJugadorId !== null;
       boton.addEventListener("click", () => {
-        this.contexto?.enviar({ tipo: "votar", opcionId: opcion.id });
+        this.contexto?.enviar({ tipo: "votar", votadoId: jugador.id });
       });
       lista.appendChild(boton);
     }
@@ -480,14 +495,23 @@ export class JuegoMeloquiz implements IJuego {
     artista.className = "meloquiz-artista";
     artista.textContent = vista.artistaCorrecto ?? "";
 
-    const veredicto = document.createElement("p");
-    veredicto.className = "meloquiz-veredicto";
-    const yo = vista.jugadores.find((j) => j.id === vista.tuJugadorId);
-    if (yo?.acerto === true) veredicto.textContent = "¡Acertaste! +1";
-    else if (vista.tuVotoId === null) veredicto.textContent = "No votaste.";
-    else veredicto.textContent = "Fallaste.";
+    panel.append(arte, titulo, artista);
 
-    panel.append(arte, titulo, artista, veredicto);
+    // El veredicto del GRUPO, solo en la tabla (§5): el juego es escribano, no
+    // árbitro — acá no existe "acertaste/fallaste", existe el más votado.
+    if (vista.fase === "puntaje") {
+      const veredicto = document.createElement("p");
+      veredicto.className = "meloquiz-veredicto";
+      if (vista.ganadorRonda !== null) {
+        const ganador = vista.jugadores.find((j) => j.id === vista.ganadorRonda);
+        veredicto.textContent = `¡${ganador?.nombre ?? "—"} se lleva la ronda! +1`;
+      } else {
+        const votosEmitidos = vista.jugadores.reduce((n, j) => n + (j.votosRecibidos ?? 0), 0);
+        veredicto.textContent =
+          votosEmitidos === 0 ? "Nadie votó: nadie suma." : "Empate: nadie suma.";
+      }
+      panel.appendChild(veredicto);
+    }
     return panel;
   }
 
@@ -522,7 +546,7 @@ export class JuegoMeloquiz implements IJuego {
       if (vista.estadosConexion[jugador.id] !== "conectado") {
         item.classList.add("desconectado");
       }
-      if (jugador.acerto === true) item.classList.add("acerto");
+      if (vista.ganadorRonda === jugador.id) item.classList.add("ganador");
 
       const nombre = document.createElement("span");
       nombre.textContent = jugador.id === vista.tuJugadorId ? `${jugador.nombre} (vos)` : jugador.nombre;
@@ -531,11 +555,15 @@ export class JuegoMeloquiz implements IJuego {
       puntos.className = "meloquiz-puntos";
       puntos.textContent = String(jugador.puntos);
 
-      // En precarga interesa quién ya ackeó; en votación, quién ya votó.
+      // En precarga interesa quién ya ackeó; en votación, quién ya votó; en la
+      // tabla, el CONTEO de votos que recibió cada uno (§5).
       const marca = document.createElement("span");
       marca.className = "meloquiz-marca";
       if (vista.fase === "precarga") marca.textContent = vista.listos.includes(jugador.id) ? "✓" : "…";
       else if (vista.fase === "voto") marca.textContent = jugador.haVotado ? "✓" : "…";
+      else if (vista.fase === "puntaje" && jugador.votosRecibidos !== null) {
+        marca.textContent = `${jugador.votosRecibidos} voto${jugador.votosRecibidos === 1 ? "" : "s"}`;
+      }
 
       item.append(nombre, marca, puntos);
       lista.appendChild(item);

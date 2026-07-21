@@ -1812,8 +1812,12 @@ button.perfil-avatar.seleccionado {
   gap: 0.5rem;
 }
 
+/* Botón de voto por PARTICIPANTE (§5): avatar + nombre. */
 .meloquiz-opcion {
-  padding: 0.7rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 1rem;
   border-radius: 10px;
   background: rgba(13, 18, 24, 0.9);
   border: 1px solid #2a3442;
@@ -1821,6 +1825,11 @@ button.perfil-avatar.seleccionado {
   font-size: 0.95rem;
   text-align: left;
   cursor: pointer;
+}
+
+.meloquiz-opcion canvas {
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .meloquiz-opcion:hover:not(:disabled) {
@@ -1833,15 +1842,6 @@ button.perfil-avatar.seleccionado {
 
 .meloquiz-opcion.votada {
   box-shadow: 0 0 0 1px rgba(122, 92, 196, 0.6);
-}
-
-.meloquiz-opcion.correcta {
-  border-color: #2f8a57;
-  color: #9fd0ae;
-}
-
-.meloquiz-opcion.incorrecta {
-  opacity: 0.55;
 }
 
 .meloquiz-jugadores {
@@ -1865,7 +1865,8 @@ button.perfil-avatar.seleccionado {
   font-size: 0.95rem;
 }
 
-.meloquiz-jugador.acerto {
+/* El ganador de la ronda por mayoría (§5), resaltado en la tabla. */
+.meloquiz-jugador.ganador {
   border-color: #2f8a57;
 }
 

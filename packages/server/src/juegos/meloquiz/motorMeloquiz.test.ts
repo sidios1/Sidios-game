@@ -93,7 +93,7 @@ describe("motor de MeloQuiz (costura con MotorJuego)", () => {
   });
 
   it("faseTemporizada se apaga (null) cuando la partida termina", () => {
-    // 1 sola ronda: precarga → clip → voto → revelar → puntaje → final.
+    // 1 sola ronda: precarga → clip → revelar → voto → puntaje → final.
     const motor = crearMotorMeloquiz(poolMock(), { rondas: 1, ahora: () => 0 });
     const creado = motor.crear(JUGADORES, rngFijo());
     if (!creado.ok) throw new Error("no se pudo crear");
@@ -111,12 +111,12 @@ describe("motor de MeloQuiz (costura con MotorJuego)", () => {
   it("parsea el ack de precarga y el voto; rechaza lo demás", () => {
     const { motor } = motorYEstado();
     expect(motor.parsearAccion({ tipo: "listoPrecarga" })).toEqual({ tipo: "listoPrecarga" });
-    expect(motor.parsearAccion({ tipo: "votar", opcionId: "1-op2" })).toEqual({
+    expect(motor.parsearAccion({ tipo: "votar", votadoId: "j2" })).toEqual({
       tipo: "votar",
-      opcionId: "1-op2",
+      votadoId: "j2",
     });
     expect(motor.parsearAccion({ tipo: "votar" })).toBeNull();
-    expect(motor.parsearAccion({ tipo: "votar", opcionId: 7 })).toBeNull();
+    expect(motor.parsearAccion({ tipo: "votar", votadoId: 7 })).toBeNull();
     expect(motor.parsearAccion({ tipo: "robar" })).toBeNull();
   });
 
@@ -142,6 +142,6 @@ describe("motor de MeloQuiz (costura con MotorJuego)", () => {
     expect(vista.estadosConexion).toEqual({ j1: "conectado", j2: "conectado" });
     // La invariante del núcleo sigue en pie a través del envoltorio.
     expect(vista.tituloCorrecto).toBeNull();
-    expect(vista.opciones).toEqual([]);
+    expect("opciones" in vista).toBe(false);
   });
 });

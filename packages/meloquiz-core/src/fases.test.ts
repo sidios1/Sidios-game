@@ -13,7 +13,7 @@ import {
   type EstadoMeloquiz,
 } from "./partida.js";
 import { REGLAS_MELOQUIZ } from "./reglas.js";
-import { JUGADORES, exito, opcionCorrecta, poolDePrueba, relojFalso } from "./apoyoPruebas.js";
+import { JUGADORES, exito, poolDePrueba, relojFalso } from "./apoyoPruebas.js";
 
 const rng = (): (() => number) => crearGeneradorSemilla(1234);
 
@@ -32,7 +32,7 @@ describe("máquina de fases: orden y duraciones (§4)", () => {
     expect(estado.faseIniciadaEnMs).toBe(0);
   });
 
-  it("recorre precarga → clip → voto → revelar → puntaje y abre la ronda 2", () => {
+  it("recorre precarga → clip → revelar → voto → puntaje y abre la ronda 2", () => {
     const reloj = relojFalso();
     let estado = partidaNueva(2);
     const recorrido: string[] = [estado.fase];
@@ -44,7 +44,7 @@ describe("máquina de fases: orden y duraciones (§4)", () => {
       recorrido.push(estado.fase);
     }
 
-    expect(recorrido).toEqual(["precarga", "clip", "voto", "revelar", "puntaje", "precarga"]);
+    expect(recorrido).toEqual(["precarga", "clip", "revelar", "voto", "puntaje", "precarga"]);
     expect(estado.ronda).toBe(2);
   });
 
@@ -60,8 +60,8 @@ describe("máquina de fases: orden y duraciones (§4)", () => {
     const esperado: readonly [string, number][] = [
       ["1:precarga", duraciones.precarga],
       ["1:clip", duraciones.clip],
-      ["1:voto", duraciones.voto],
       ["1:revelar", duraciones.revelar],
+      ["1:voto", duraciones.voto],
       ["1:puntaje", duraciones.puntaje],
     ];
     for (const [clave, duracionMs] of esperado) {
@@ -73,11 +73,12 @@ describe("máquina de fases: orden y duraciones (§4)", () => {
   it("la clave NO cambia por una acción dentro de la misma fase (no reinicia el timer)", () => {
     let estado = partidaNueva();
     estado = exito(expirarFase(estado, 0, rng())); // clip
+    estado = exito(expirarFase(estado, 0, rng())); // revelar
     estado = exito(expirarFase(estado, 0, rng())); // voto
     const antes = faseTemporizada(estado);
 
     // Vota UNO solo: la fase sigue siendo la misma, así que la clave no cambia.
-    estado = exito(votar(estado, "j1", opcionCorrecta(estado), 100));
+    estado = exito(votar(estado, "j1", "j2", 100));
     expect(estado.fase).toBe("voto");
     expect(faseTemporizada(estado)).toEqual(antes);
   });
