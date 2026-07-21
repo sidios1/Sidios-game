@@ -264,8 +264,15 @@ export class Coordinador {
   private async crearPartidaEmbebida(): Promise<void> {
     let codigo: string;
     try {
+      // Recursos previos del juego (p. ej. MeloQuiz pide la carpeta de música);
+      // null = el usuario canceló, se queda en la portada sin error.
+      const recursos = await this.juegoSeleccionado?.prepararHosteo?.("local");
+      if (recursos === null) return;
       // El host arranca el sidecar con SU juego seleccionado (env JUEGO).
-      codigo = await iniciarServidorEmbebido(this.juegoSeleccionado?.id ?? "carioca");
+      codigo = await iniciarServidorEmbebido(
+        this.juegoSeleccionado?.id ?? "carioca",
+        recursos?.env,
+      );
     } catch (error) {
       this.conexionUI.mostrarError(
         error instanceof Error ? error.message : "no se pudo iniciar el servidor",
@@ -283,7 +290,12 @@ export class Coordinador {
   private async crearPartidaOnline(): Promise<void> {
     let codigo: string;
     try {
-      codigo = await iniciarHostOnline(this.juegoSeleccionado?.id ?? "carioca");
+      const recursos = await this.juegoSeleccionado?.prepararHosteo?.("online");
+      if (recursos === null) return;
+      codigo = await iniciarHostOnline(
+        this.juegoSeleccionado?.id ?? "carioca",
+        recursos?.opcionesSala ?? {},
+      );
     } catch (error) {
       this.conexionUI.mostrarError(
         error instanceof Error ? error.message : "no se pudo crear la sala online",

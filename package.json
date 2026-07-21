@@ -1,6 +1,6 @@
 {
   "name": "juegos-rapidos",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
   "description": "Plataforma de juegos de cartas multijugador para escritorio",
   "workspaces": [

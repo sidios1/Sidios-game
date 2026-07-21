@@ -6,6 +6,7 @@
 // sincronizarEstado y emite intenciones por contexto.enviar; jamás decide reglas.
 
 import type { MensajeCliente } from "@juegos/server/protocolo";
+import type { OpcionesSala } from "@juegos/server/registroMotores";
 import type { VistaJuego } from "@juegos/server/vistaJuego";
 import type { PanelConfigLobby } from "./configLobby.js";
 import type { FichaCatalogo } from "./ficha.js";
@@ -26,6 +27,19 @@ export interface ContextoJuego {
 
 /** Señal del servidor dirigida al juego que NO es estado completo. */
 export type SenalJuego = { readonly tipo: "aviso"; readonly mensaje: string };
+
+/** Opciones de sala que un juego puede aportar al hostear (sin el transporte). */
+export type OpcionesSalaHosteo = Omit<OpcionesSala, "transporte" | "programar">;
+
+/**
+ * Recursos que un juego reúne ANTES de que el host cree su sala (p. ej. MeloQuiz
+ * pide la carpeta de música). El coordinador los pasa tal cual al lanzador:
+ * `env` va al sidecar LAN embebido; `opcionesSala` a `crearSala` del host online.
+ */
+export interface RecursosHosteo {
+  readonly env?: Readonly<Record<string, string>>;
+  readonly opcionesSala?: OpcionesSalaHosteo;
+}
 
 /**
  * Ciclo de vida de un juego dentro del hub:
@@ -63,4 +77,12 @@ export interface DefinicionJuego extends FichaCatalogo {
    * (`FichaCatalogo`) sigue siendo solo presentación: la config vive aquí.
    */
   crearConfigLobby?(alCambiar: (valor: Record<string, unknown>) => void): PanelConfigLobby;
+  /**
+   * Opcional: reúne los recursos que el HOST necesita antes de crear la sala
+   * (hoy MeloQuiz: la carpeta de música). `modo` distingue el sidecar LAN
+   * embebido ("local", solo en la app Tauri) del cliente-host online. Devuelve
+   * `null` si el usuario canceló (el coordinador vuelve a la portada sin error);
+   * lanza para reportar un problema real. Los juegos sin recursos lo omiten.
+   */
+  prepararHosteo?(modo: "local" | "online"): Promise<RecursosHosteo | null>;
 }

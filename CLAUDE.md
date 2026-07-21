@@ -77,11 +77,15 @@ npm run tauri:build -w @juegos/client         # ejecutable/instalador distribuib
   ejecutable autocontenido con **Node SEA** vía `packages/server/scripts/construir-sidecar.mjs`
   (esbuild → blob SEA → postject) y queda en `packages/client/src-tauri/binaries/`
   con el target triple que exige `bundle.externalBin` de Tauri.
-- **Lanzador (cliente):** `packages/client/src/red/servidorEmbebido.ts` es el ÚNICO
-  módulo del cliente que conoce `@tauri-apps/*` (vía `import()` dinámico, para no
-  arrastrar Tauri al bundle web ni a los tests). `hayServidorEmbebido()` detecta la
-  app; `iniciarServidorEmbebido()` lanza el sidecar (`Command.sidecar`) y resuelve
-  con su código; `detenerServidorEmbebido()` lo apaga al volver al hub.
+- **Lanzador (cliente):** `packages/client/src/red/servidorEmbebido.ts` conoce
+  `@tauri-apps/*` vía `import()` dinámico (para no arrastrar Tauri al bundle web
+  ni a los tests). `hayServidorEmbebido()` detecta la app; `iniciarServidorEmbebido()`
+  lanza el sidecar (`Command.sidecar`, con env extra opcional del juego, p. ej.
+  `CARPETA_MUSICA`) y resuelve con su código; `detenerServidorEmbebido()` lo apaga
+  al volver al hub. El único otro módulo que toca `@tauri-apps/*` (también
+  dinámico) es `juegos/meloquiz/elegirCarpeta.ts` (plugin-dialog: la carpeta del
+  host). Los juegos aportan recursos de hosteo con `DefinicionJuego.prepararHosteo`
+  (ver `juego/ijuego.ts`); el coordinador los pasa tal cual, sin conocer el juego.
 - **Puerto:** constante `PUERTO_EMBEBIDO` en `servidorEmbebido.ts` (default `35711`),
   que se pasa al sidecar como env `PUERTO`. Cámbialo en ese único lugar.
 - **Permiso/seguridad Tauri:** `src-tauri/capabilities/default.json` autoriza ejecutar
@@ -166,7 +170,7 @@ npm run tauri:build -w @juegos/client         # ejecutable/instalador distribuib
 ```
 client ──> carioca-core (solo tipos/validaciones de presentación)
 client ──> rumble-core (solo config §6 + catálogo de habilidades para el panel del lobby)
-client ──> meloquiz-fuente-local (SOLO subpaths puros: /huella, /sistemaArchivos, /metadatos*)
+client ──> meloquiz-fuente-local (SOLO subpaths puros: /fuenteLocal, /huella, /sistemaArchivos, /metadatos*)
 client ──> server (solo protocolo, vista e interfaz TransporteCliente)
 server ──> carioca-core, mentiroso-core, rumble-core, meloquiz-core, meloquiz-fuente-local
 rumble-core ──> carioca-core (solo tipos: Carta/Pinta y el RNG determinista)
@@ -178,10 +182,13 @@ meloquiz-core ──> (nada)
 - `meloquiz-fuente-local` lee una carpeta de audio del disco y produce el
   `PoolPartida` (REGLAS_MELOQUIZ §1, §2). El SERVIDOR la usa entera (adaptadores de
   Node) para armar el pool de la sala; el CLIENTE importa SOLO los subpaths puros
-  (`/huella`, `/sistemaArchivos`, `/metadatos`, `/metadatosMusicMetadata`), que
-  corren con WebCrypto + File API. La raíz del paquete está PROHIBIDA en el
-  cliente: su barrel reexporta `sistemaArchivosNode.ts` y arrastraría `node:fs`
-  al bundle.
+  (`/fuenteLocal`, `/huella`, `/sistemaArchivos`, `/metadatos`,
+  `/metadatosMusicMetadata`), que corren con WebCrypto + File API. La raíz del
+  paquete está PROHIBIDA en el cliente: su barrel reexporta `sistemaArchivosNode.ts`
+  y arrastraría `node:fs` al bundle. `/fuenteLocal` es puro (FS y lector van
+  inyectados) y es como el HOST ONLINE arma el `poolMeloquiz` de su sala en el
+  webview (`client/src/juegos/meloquiz/poolLocal.ts`, gemelo del `cargarPool.ts`
+  de Node del server).
   El cliente reusa `calcularHuella` en vez de reimplementarla porque la huella
   del cliente TIENE que coincidir con la del servidor: es lo que traduce el
   `pistaId` que difunde el host al archivo de la carpeta propia de cada jugador.

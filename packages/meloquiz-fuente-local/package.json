@@ -6,11 +6,15 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "//exports": "El barrel (.) arrastra sistemaArchivosNode.js, que importa node:fs. Los subpaths son PUROS (WebCrypto/File API), así el cliente los importa sin meter Node en el bundle del navegador. EXCEPCIÓN: ./sistemaArchivosNode existe SOLO para tests (el test cruzado de huella del cliente compara el adaptador Node real contra la File API); arrastra node:fs y está PROHIBIDO en código de producción del cliente.",
+  "//exports": "El barrel (.) arrastra sistemaArchivosNode.js, que importa node:fs. Los subpaths son PUROS (WebCrypto/File API), así el cliente los importa sin meter Node en el bundle del navegador. ./fuenteLocal es puro (FS y lector INYECTADOS): el host online lo usa para armar el pool en el webview. EXCEPCIÓN: ./sistemaArchivosNode existe SOLO para tests (el test cruzado de huella del cliente compara el adaptador Node real contra la File API); arrastra node:fs y está PROHIBIDO en código de producción del cliente.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./fuenteLocal": {
+      "types": "./dist/fuenteLocal.d.ts",
+      "default": "./dist/fuenteLocal.js"
     },
     "./huella": {
       "types": "./dist/huella.d.ts",

@@ -9,7 +9,7 @@
 
 import type { TransporteCliente } from "@juegos/server/transporte";
 import { crearSala } from "@juegos/server/registroMotores";
-import type { SalaJuego } from "@juegos/server/registroMotores";
+import type { OpcionesSala, SalaJuego } from "@juegos/server/registroMotores";
 import { SenalizacionPeerJs } from "./online/senalizacionPeerJs.js";
 import { TransporteOnlineServidor } from "./online/transporteOnlineServidor.js";
 import { TransporteServidorObservado } from "./transporteServidorObservado.js";
@@ -20,14 +20,20 @@ let servidorActivo: TransporteOnlineServidor | null = null;
 /**
  * Crea una sala online: registra al host en el broker y corre su orquestador.
  * Devuelve el código corto que los amigos usan para unirse (de cualquier red).
+ * `opciones` son los recursos de sala que el juego reunió antes de hostear
+ * (p. ej. el `poolMeloquiz` que el host armó de su carpeta, vía `prepararHosteo`).
  */
-export async function iniciarHostOnline(juego = "carioca"): Promise<string> {
+export async function iniciarHostOnline(
+  juego = "carioca",
+  opciones: Omit<OpcionesSala, "transporte"> = {},
+): Promise<string> {
   await detenerHostOnline(); // por si quedó una sala anterior viva.
   const servidor = new TransporteOnlineServidor(new SenalizacionPeerJs());
   // La sala (orquestador) corre sobre un decorador OBSERVE-ONLY que registra la
   // conexión/desconexión de cada peer remoto; servidorActivo guarda el real para
   // el cliente loopback del host (crearClienteLocal).
   const sala = crearSala(juego, {
+    ...opciones,
     transporte: new TransporteServidorObservado(servidor),
   });
   if (sala === undefined) throw new Error(`juego desconocido: ${juego}`);

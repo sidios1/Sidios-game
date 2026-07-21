@@ -1,14 +1,14 @@
 [package]
 name = "juegos-rapidos"
-version = "0.8.0"
-description = "Sidios Game â€” plataforma de juegos de cartas LAN"
+version = "0.9.0"
+description = "Sidios Game — plataforma de juegos de cartas LAN"
 authors = ["Sidios"]
 homepage = "https://sidios.cl"
 edition = "2021"
 rust-version = "1.77.2"
 
 [lib]
-# El nombre del crate de librerÃ­a que main.rs invoca (run()).
+# El nombre del crate de librería que main.rs invoca (run()).
 name = "juegos_rapidos_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
@@ -19,3 +19,6 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 # Plugin shell: necesario para arrancar el sidecar del servidor LAN (Command.sidecar).
 tauri-plugin-shell = "2"
+# Plugin dialog: el host de MeloQuiz elige la carpeta de música con el diálogo
+# nativo (la File API no da rutas absolutas, y el sidecar necesita una).
+tauri-plugin-dialog = "2"

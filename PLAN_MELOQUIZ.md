@@ -11,8 +11,12 @@
 ## Estado
 
 ```
-S0 ✓ ─► S1 ✓ ─► S1b ✓ ─► S2 ✓ ─► S3 ✓ ─► S4 ✓ ─► [P] Pivote de votación ✓ ─► (prueba de oído) ─► [N] Normalización ─► [T] Empaquetado Tauri
+S0 ✓ ─► S1 ✓ ─► S1b ✓ ─► S2 ✓ ─► S3 ✓ ─► S4 ✓ ─► [P] Pivote de votación ✓ ─► [T] Empaquetado Tauri + cable online ✓ ─► (prueba de oído) ─► [N] Normalización
 ```
+
+**Nota:** [T] se adelantó a la prueba de oído y a [N] (pedido 2026-07-21: "no puedo jugar en la app
+instalada"), y absorbió además el **cable online** (el `poolMeloquiz` del cliente-host, que no estaba
+en el alcance original).
 
 **Nota de secuencia:** S4 se ejecutó ANTES que [P] (sobre la votación vieja de 4 opciones). No es
 problema: sync, planArranque, huella cruzada, aislamiento y reconexión viven en fases/capas que [P] no
@@ -125,16 +129,30 @@ su archivo local en revelar (§3); modo entrenamiento con ack instantáneo (§6)
 
 ---
 
-## [T] — Empaquetado Tauri (al final)
+## [T] — Empaquetado Tauri + cable online ✓ COMPLETADA (2026-07-21, v0.9.0)
 
-- **Depende de:** S4 (empaquetar cuando el juego está completo).
-- **Rige:** REGLAS §8 (render/empaquetado).
-- **Motivo:** S3 corrió en web/dev; `src-tauri` no tiene `plugin-fs`/`plugin-dialog` y el CSP no tiene
-  `media-src` (un `<audio>` quedaría bloqueado).
-- **Produce:** adaptador `crearSistemaArchivosTauri` sobre `plugin-fs`/`plugin-dialog`, `assetProtocol`
-  + `media-src` en el CSP, `CARPETA_MUSICA` desde `servidorEmbebido.ts`, selección de carpeta antes de
-  spawnear el sidecar.
-- **Criterio de hecho:** MeloQuiz jugable en la app Tauri empaquetada, no solo en web/dev.
+- **Dependía de:** S4. **Rige:** REGLAS §8 (render/empaquetado) y §1 (el pool lo arma el host).
+- **Motivo:** S3 corrió en web/dev; en la app instalada "Crear partida" moría (el sidecar exigía
+  `CARPETA_MUSICA` y nadie se la pasaba) y en online faltaba el `poolMeloquiz` de `crearSala`.
+- **Resultado (difiere del plan original, decisión razonada):** NO hicieron falta `plugin-fs`,
+  `crearSistemaArchivosTauri` ni `assetProtocol` — el webview es WebView2 (Chromium): el picker
+  `webkitdirectory`, la File API y los blob URLs del pipeline S3/S4 funcionan igual que en el
+  navegador. Los huecos reales eran tres y se cerraron así:
+  1. **`media-src 'self' blob:`** en el CSP (`tauri.conf.json`): sin esto el `<audio>` moría.
+  2. **Hook genérico `DefinicionJuego.prepararHosteo(modo)`** (`juego/ijuego.ts`): recursos que el
+     juego reúne ANTES de crear la sala; el coordinador los pasa a ciegas (sigue sin conocer juegos).
+     MeloQuiz (`definicion.ts`): en **"local"** (app Tauri) el diálogo NATIVO (`plugin-dialog`, único
+     agregado Rust: Cargo.toml + lib.rs + capability `dialog:default`) da la RUTA absoluta que viaja
+     al sidecar como env `CARPETA_MUSICA` (`iniciarServidorEmbebido(juego, envExtra)`); en **"online"**
+     el pool se arma EN EL WEBVIEW (`poolLocal.ts` sobre el subpath puro nuevo
+     `@juegos/meloquiz-fuente-local/fuenteLocal` + File API) y va a
+     `iniciarHostOnline(juego, {poolMeloquiz})`; la misma carpeta se indexa en `indiceLocal`, así el
+     host online no la re-elige en el lobby. Cancelar el picker devuelve `null` = ni sala ni error.
+  3. **Doble elección solo en LAN-Tauri** (ruta para el sidecar + File input del lobby para
+     reproducir): la File API no puede leer una ruta absoluta; pulido posible a futuro, documentado.
+- **Tests:** `poolLocal.test.ts` (pool válido, `pistaId` resuelve contra el índice de los MISMOS File,
+  mínimo §2, descartes) + `coordinador.embebido.test.ts` extendido (env del hook, cancelación).
+- **Criterio de hecho:** MeloQuiz jugable en la app Tauri empaquetada (v0.9.0), local y online.
 
 ---
 

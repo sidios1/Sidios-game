@@ -1,10 +1,11 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permisos base de la ventana + ejecución del sidecar del servidor LAN embebido.",
+  "description": "Permisos base de la ventana + ejecución del sidecar del servidor LAN embebido + diálogo nativo de carpeta (host de MeloQuiz).",
   "windows": ["main"],
   "permissions": [
     "core:default",
+    "dialog:default",
     {
       "identifier": "shell:allow-spawn",
       "allow": [

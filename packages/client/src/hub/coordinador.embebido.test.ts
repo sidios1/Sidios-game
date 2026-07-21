@@ -106,8 +106,9 @@ describe("Coordinador con servidor embebido (escritorio)", () => {
 
     await vi.waitFor(() => expect(transporte.codigo).toBe("192.168.1.50:35711"));
     expect(iniciarServidorEmbebido).toHaveBeenCalledTimes(1);
-    // El host arranca el sidecar con SU juego seleccionado (game-id).
-    expect(iniciarServidorEmbebido).toHaveBeenCalledWith("falso");
+    // El host arranca el sidecar con SU juego seleccionado (game-id); sin
+    // prepararHosteo no hay env extra.
+    expect(iniciarServidorEmbebido).toHaveBeenCalledWith("falso", undefined);
     expect(transporte.enviados.map((d) => JSON.parse(d))).toContainEqual({
       tipo: "unirse",
       nombre: "Ana",
@@ -118,5 +119,51 @@ describe("Coordinador con servidor embebido (escritorio)", () => {
     // Al volver al hub, el host apaga su servidor embebido.
     coordinador.volverAlHub();
     expect(detenerServidorEmbebido).toHaveBeenCalled();
+  });
+
+  it("prepararHosteo aporta el env del sidecar; si devuelve null (canceló), no arranca", async () => {
+    const transporte = new TransporteFalso();
+    let respuesta: { env: Record<string, string> } | null = {
+      env: { CARPETA_MUSICA: "C:\\musica" },
+    };
+    const definicion: DefinicionJuego = {
+      ...definicionFalsa(),
+      prepararHosteo: () => Promise.resolve(respuesta),
+    };
+    const contenedorEscena = document.createElement("div");
+    const contenedorHud = document.createElement("div");
+    document.body.append(contenedorEscena, contenedorHud);
+    const almacenPerfil = almacenFalso();
+    guardarPerfil(almacenPerfil, { nickname: "Ana", avatarId: AVATAR });
+    const coordinador = new Coordinador({
+      contenedorEscena,
+      contenedorHud,
+      catalogo: [definicion],
+      crearTransporte: () => transporte,
+      almacen: almacenFalso(),
+      almacenPerfil,
+    });
+    coordinador.iniciar();
+    coordinador.elegirJuego(definicion);
+    boton(contenedorHud, "Local").click();
+
+    const llamadas = vi.mocked(iniciarServidorEmbebido).mock.calls.length;
+    boton(contenedorHud, "Crear partida").click();
+    await vi.waitFor(() =>
+      expect(iniciarServidorEmbebido).toHaveBeenCalledWith("falso", {
+        CARPETA_MUSICA: "C:\\musica",
+      }),
+    );
+
+    // Segundo intento: el usuario cancela la selección → ni sidecar ni error.
+    respuesta = null;
+    transporte.codigo = null;
+    boton(contenedorHud, "Crear partida").click();
+    await Promise.resolve(); // deja correr el prepararHosteo
+    await Promise.resolve();
+    expect(vi.mocked(iniciarServidorEmbebido).mock.calls.length).toBe(llamadas + 1);
+    expect(transporte.codigo).toBeNull();
+
+    coordinador.volverAlHub();
   });
 });
