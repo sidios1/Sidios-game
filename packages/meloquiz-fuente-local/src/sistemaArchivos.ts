@@ -14,10 +14,21 @@ export interface ArchivoLocal {
   /** Nombre con extensión; es la base del fallback de título cuando falta el tag. */
   readonly nombre: string;
   readonly tamanoBytes: number;
+  /**
+   * Nombre de la subcarpeta INMEDIATA que contiene el archivo (REGLAS_MELOQUIZ
+   * §11), o `null` si está directo en la carpeta raíz. No hay más de un nivel:
+   * un archivo dos niveles abajo queda etiquetado con su subcarpeta directa,
+   * no con la raíz.
+   */
+  readonly categoria: string | null;
 }
 
 export interface ISistemaArchivos {
-  /** Archivos directamente dentro de la carpeta (no recursivo); ignora subcarpetas. */
+  /**
+   * Archivos directamente dentro de la carpeta (categoria: null) MÁS los
+   * directamente dentro de cada subcarpeta inmediata (categoria: nombre de
+   * esa subcarpeta) — un nivel de profundidad, sin bajar más (§11).
+   */
   listar(carpeta: string): Promise<readonly ArchivoLocal[]>;
   /** Primeros `bytes` del archivo (menos si es más corto). Para la huella del id. */
   leerPrefijo(clave: string, bytes: number): Promise<Uint8Array>;

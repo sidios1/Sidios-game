@@ -249,3 +249,34 @@ Ver el spike para el detalle con referencias de código.
 - Android (diferido; depende de Session 1c — throttling de timers en background).
 - Migración de host ante caída.
 - Chat (eliminado; única interacción es el voto).
+
+---
+
+## 11. Selección de categorías (subcarpetas) — CERRADO (2026-07-23)
+
+Librerías reales de MeloQuiz organizan las pistas en subcarpetas (p. ej.
+`Facil/`, `Normal/`, `Dificil/`, `Extremo/`); el host quiere poder incluir solo
+algunas en la partida.
+
+- **Categoría = nombre de la subcarpeta de primer nivel** que contiene el
+  archivo. Un solo nivel: subcarpetas dentro de subcarpetas NO se distinguen
+  entre sí (§1/§2 siguen leyendo "una carpeta", ahora con un nivel de
+  profundidad extra, no un árbol arbitrario).
+- **Archivos sueltos directamente en la carpeta raíz** (sin subcarpeta) no
+  tienen categoría (`null`) y **siempre entran al pool**, sin importar la
+  selección: no hay forma de excluirlos por categoría porque no pertenecen a
+  ninguna.
+- **Quién elige:** solo el **host**, **antes de iniciar la partida** — en el
+  mismo momento en que hoy elige la carpeta (no es una opción de cada jugador,
+  no cambia en caliente durante la partida).
+- **Multi-selección:** el host marca cero, una o varias categorías; el pool
+  final es la unión de las canciones de las categorías marcadas (más los
+  archivos sueltos, siempre).
+- **Sin selección explícita (host no interactúa, o carpeta sin subcarpetas):
+  entran TODAS las categorías** — compatibilidad con carpetas planas
+  existentes, que siguen funcionando exactamente igual que antes de esta
+  sección.
+- **No es config de partida:** a diferencia de "modo entrenamiento" (§6), la
+  selección de categorías es un filtro sobre QUÉ ARCHIVOS SE LEEN al armar el
+  `PoolPartida`, resuelto antes de que la sala exista — no viaja como blob
+  opaco de `PanelConfigLobby` ni la revalida el motor en `iniciarPartida`.

@@ -23,6 +23,19 @@ function archivos(n: number): File[] {
   return files;
 }
 
+/**
+ * Un File con `webkitRelativePath` fijado, como lo entregaría un
+ * `<input webkitdirectory>` real. La API de `File` no lo deja setear por
+ * constructor: se define la propiedad después (§11).
+ */
+function archivoDeCategoria(nombre: string, categoria: string | null, contenido: string): File {
+  const file = new File([contenido.repeat(100)], nombre, { type: "audio/mpeg" });
+  const relativePath =
+    categoria === null ? `Canciones/${nombre}` : `Canciones/${categoria}/${nombre}`;
+  Object.defineProperty(file, "webkitRelativePath", { value: relativePath });
+  return file;
+}
+
 /** Lector falso: tags legibles para todos (sin fixtures binarios). */
 const lectorFalso: ILectorMetadatos = {
   leer: (archivo) =>
@@ -71,5 +84,35 @@ describe("armarPoolDeFiles (host online, REGLAS §1)", () => {
     if (!carga.ok) return;
     expect(carga.valor.pool.canciones).toHaveLength(4);
     expect(carga.valor.descartados.porFormatoNoSoportado).toBe(1);
+  });
+});
+
+describe("armarPoolDeFiles — selección de categorías (§11)", () => {
+  function archivosDeDosCategorias(): File[] {
+    // 3 Facil + 1 suelto = 4 (justo el mínimo del reglamento §2), para poder
+    // filtrar a una sola categoría sin que el pool quede insuficiente.
+    return [
+      archivoDeCategoria("Facil 1.mp3", "Facil", "facil-1"),
+      archivoDeCategoria("Facil 2.mp3", "Facil", "facil-2"),
+      archivoDeCategoria("Facil 3.mp3", "Facil", "facil-3"),
+      archivoDeCategoria("Dificil 1.mp3", "Dificil", "dificil-1"),
+      archivoDeCategoria("Dificil 2.mp3", "Dificil", "dificil-2"),
+      archivoDeCategoria("Suelto.mp3", null, "suelto"),
+    ];
+  }
+
+  it("sin selección, entran todas las categorías", async () => {
+    const carga = await armarPoolDeFiles(archivosDeDosCategorias(), lectorFalso);
+    expect(carga.ok).toBe(true);
+    if (!carga.ok) return;
+    expect(carga.valor.pool.canciones).toHaveLength(6);
+  });
+
+  it("filtra a la categoría marcada, dejando pasar los sueltos", async () => {
+    const carga = await armarPoolDeFiles(archivosDeDosCategorias(), lectorFalso, ["Facil"]);
+    expect(carga.ok).toBe(true);
+    if (!carga.ok) return;
+    const titulos = carga.valor.pool.canciones.map((c) => c.titulo).sort();
+    expect(titulos).toEqual(["Facil 1", "Facil 2", "Facil 3", "Suelto"]);
   });
 });

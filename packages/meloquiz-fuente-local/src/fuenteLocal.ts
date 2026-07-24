@@ -65,6 +65,13 @@ export interface OpcionesFuenteLocal {
   readonly carpeta: string;
   readonly sistemaArchivos: ISistemaArchivos;
   readonly lectorMetadatos: ILectorMetadatos;
+  /**
+   * Categorías (subcarpetas de primer nivel, REGLAS_MELOQUIZ §11) a incluir;
+   * `null`/`undefined` = todas. Los archivos sueltos en la raíz (categoria
+   * `null` en `ArchivoLocal`) SIEMPRE entran, no pertenecen a ninguna
+   * categoría filtrable.
+   */
+  readonly categoriasSeleccionadas?: readonly string[] | null;
 }
 
 /**
@@ -91,11 +98,24 @@ interface Descartes {
 
 type MotivoDescarte = Exclude<keyof Descartes, "nombres">;
 
+/** ¿Entra `categoria` según la selección del host (§11)? Sueltos siempre entran. */
+function categoriaSeleccionada(
+  categoria: string | null,
+  categoriasSeleccionadas: readonly string[] | null | undefined,
+): boolean {
+  if (categoria === null) return true;
+  if (categoriasSeleccionadas === null || categoriasSeleccionadas === undefined) return true;
+  return categoriasSeleccionadas.includes(categoria);
+}
+
 export function crearFuenteLocal(opciones: OpcionesFuenteLocal): FuenteLocal {
-  const { carpeta, sistemaArchivos, lectorMetadatos } = opciones;
+  const { carpeta, sistemaArchivos, lectorMetadatos, categoriasSeleccionadas } = opciones;
 
   async function cargarDetallado(): Promise<Resultado<CargaLocal>> {
-    const entradas = await sistemaArchivos.listar(carpeta);
+    const listado = await sistemaArchivos.listar(carpeta);
+    const entradas = listado.filter((archivo) =>
+      categoriaSeleccionada(archivo.categoria, categoriasSeleccionadas),
+    );
 
     const descartes: Descartes = {
       porFormatoNoSoportado: 0,
@@ -184,6 +204,7 @@ export function crearFuenteLocal(opciones: OpcionesFuenteLocal): FuenteLocal {
         claveArchivo: archivo.nombre,
         segundoInicio: duracion * FRACCION_INICIO,
         claveCaratula,
+        categoria: archivo.categoria,
       });
     }
 

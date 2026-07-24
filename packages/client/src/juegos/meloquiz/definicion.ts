@@ -15,15 +15,33 @@
 //  - "online": no hay proceso aparte (el orquestador corre en el webview), así
 //    que el pool se arma acá con la File API (poolLocal.ts) y de paso se indexa
 //    la MISMA carpeta en indiceLocal: el host online no la vuelve a elegir.
+//
+// Selección de categorías (REGLAS_MELOQUIZ §11): el host la resuelve en ESTE
+// mismo paso, justo después de elegir la carpeta y antes de que la sala
+// exista — no es config de partida (§6/§11), es un filtro sobre qué archivos
+// se leen al armar el pool. Cada modo enumera las subcarpetas con lo que ya
+// tiene a mano: "local" con `listarCategoriasTauri` (la File API no puede leer
+// una ruta absoluta), "online" con los `File[]` que ya trajo el picker.
 
 import type { DefinicionJuego, RecursosHosteo } from "../../juego/ijuego.js";
 import { hayServidorEmbebido } from "../../red/servidorEmbebido.js";
 import { elegirCarpetaTauri, elegirCarpetaWeb } from "./elegirCarpeta.js";
 import { indiceLocal } from "./indiceLocal.js";
 import { JuegoMeloquiz } from "./juegoMeloquiz.js";
+import { listarCategoriasTauri } from "./listarCategoriasTauri.js";
 import { PanelConfigMeloquiz } from "./panelConfig.js";
 import { armarPoolDeFiles } from "./poolLocal.js";
 import { portadaMeloquiz } from "./portada.js";
+import { categoriasDeArchivos } from "./sistemaArchivosFiles.js";
+import { mostrarSelectorCategorias } from "./selectorCategorias.js";
+
+/** Muestra el checklist solo si hay categorías; `undefined` = sin elegir nada. */
+async function elegirCategorias(
+  categoriasDisponibles: readonly string[],
+): Promise<readonly string[] | null | undefined> {
+  if (categoriasDisponibles.length === 0) return undefined; // carpeta plana: como hoy.
+  return mostrarSelectorCategorias(categoriasDisponibles);
+}
 
 async function prepararHosteo(modo: "local" | "online"): Promise<RecursosHosteo | null> {
   if (modo === "local") {
@@ -34,12 +52,27 @@ async function prepararHosteo(modo: "local" | "online"): Promise<RecursosHosteo 
     }
     const carpeta = await elegirCarpetaTauri();
     if (carpeta === null) return null; // canceló: sin sala y sin error.
-    return { env: { CARPETA_MUSICA: carpeta } };
+
+    const categoriasDisponibles = await listarCategoriasTauri(carpeta);
+    const categorias = await elegirCategorias(categoriasDisponibles);
+    if (categorias === null) return null; // canceló el checklist.
+
+    return {
+      env: {
+        CARPETA_MUSICA: carpeta,
+        ...(categorias !== undefined ? { CATEGORIAS_MELOQUIZ: JSON.stringify(categorias) } : {}),
+      },
+    };
   }
 
   const files = await elegirCarpetaWeb();
   if (files === null) return null;
-  const carga = await armarPoolDeFiles(files);
+
+  const categoriasDisponibles = categoriasDeArchivos(files);
+  const categorias = await elegirCategorias(categoriasDisponibles);
+  if (categorias === null) return null; // canceló el checklist.
+
+  const carga = await armarPoolDeFiles(files, undefined, categorias);
   if (!carga.ok) {
     throw new Error(`No se pudo armar el catálogo: ${carga.error.mensaje}`);
   }

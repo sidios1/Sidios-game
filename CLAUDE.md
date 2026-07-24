@@ -81,11 +81,14 @@ npm run tauri:build -w @juegos/client         # ejecutable/instalador distribuib
   `@tauri-apps/*` vía `import()` dinámico (para no arrastrar Tauri al bundle web
   ni a los tests). `hayServidorEmbebido()` detecta la app; `iniciarServidorEmbebido()`
   lanza el sidecar (`Command.sidecar`, con env extra opcional del juego, p. ej.
-  `CARPETA_MUSICA`) y resuelve con su código; `detenerServidorEmbebido()` lo apaga
-  al volver al hub. El único otro módulo que toca `@tauri-apps/*` (también
-  dinámico) es `juegos/meloquiz/elegirCarpeta.ts` (plugin-dialog: la carpeta del
-  host). Los juegos aportan recursos de hosteo con `DefinicionJuego.prepararHosteo`
-  (ver `juego/ijuego.ts`); el coordinador los pasa tal cual, sin conocer el juego.
+  `CARPETA_MUSICA`/`CATEGORIAS_MELOQUIZ`) y resuelve con su código;
+  `detenerServidorEmbebido()` lo apaga al volver al hub. Los otros módulos que
+  tocan `@tauri-apps/*` (también dinámico) son `juegos/meloquiz/elegirCarpeta.ts`
+  (plugin-dialog: la carpeta del host) y `juegos/meloquiz/listarCategoriasTauri.ts`
+  (plugin-fs de solo lectura: lista las subcarpetas de esa carpeta para el
+  checklist de categorías, REGLAS_MELOQUIZ §11). Los juegos aportan recursos de
+  hosteo con `DefinicionJuego.prepararHosteo` (ver `juego/ijuego.ts`); el
+  coordinador los pasa tal cual, sin conocer el juego.
 - **Puerto:** constante `PUERTO_EMBEBIDO` en `servidorEmbebido.ts` (default `35711`),
   que se pasa al sidecar como env `PUERTO`. Cámbialo en ese único lugar.
 - **Permiso/seguridad Tauri:** `src-tauri/capabilities/default.json` autoriza ejecutar

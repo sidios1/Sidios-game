@@ -21,16 +21,21 @@ type ResultadoCarga = Awaited<ReturnType<ReturnType<typeof crearFuenteLocal>["ca
 /**
  * Arma el pool de la sala desde los File de la carpeta elegida. El `lector` es
  * inyectable para tests (por defecto, music-metadata: el real del navegador).
+ * `categoriasSeleccionadas` es la elección del host (§11); `null`/`undefined`
+ * = todas las categorías.
  */
 export function armarPoolDeFiles(
   files: readonly File[],
   lector: ILectorMetadatos = crearLectorMusicMetadata(),
+  categoriasSeleccionadas?: readonly string[] | null,
 ): Promise<ResultadoCarga> {
   const { sistema } = crearSistemaArchivosFiles(files);
   const fuente = crearFuenteLocal({
     carpeta: "(carpeta elegida)",
     sistemaArchivos: sistema,
     lectorMetadatos: lector,
+    // exactOptionalPropertyTypes: se omite la clave si no vino selección.
+    ...(categoriasSeleccionadas !== undefined ? { categoriasSeleccionadas } : {}),
   });
   return fuente.cargarDetallado();
 }

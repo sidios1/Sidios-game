@@ -15,6 +15,7 @@ export function poolMock(n = 4): PoolPartida {
       claveArchivo: `archivo-${i + 1}.mp3`,
       segundoInicio: 30 + i,
       claveCaratula: null,
+      categoria: null,
     })),
   };
 }
@@ -37,6 +38,7 @@ export function poolMarcado(n = 4): PoolPartida {
       claveArchivo: `${MARCA_SECRETA}-ruta-${i + 1}.mp3`,
       segundoInicio: 30 + i,
       claveCaratula: `${MARCA_SECRETA}-caratula-${i + 1}`,
+      categoria: null,
     })),
   };
 }

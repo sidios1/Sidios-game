@@ -29,13 +29,21 @@ afterAll(async () => {
 });
 
 describe("crearSistemaArchivosNode", () => {
-  it("lista los archivos de la carpeta con su tamaño real, sin recursión", async () => {
+  it("lista los archivos de la raíz y de un nivel de subcarpetas, con su categoría", async () => {
     const archivos = await sistemaArchivos.listar(carpeta);
     const porNombre = new Map(archivos.map((a) => [a.nombre, a]));
 
-    expect([...porNombre.keys()].sort()).toEqual(["dos.flac", "notas.txt", "uno.mp3"]);
+    expect([...porNombre.keys()].sort()).toEqual([
+      "dos.flac",
+      "notas.txt",
+      "tres.mp3",
+      "uno.mp3",
+    ]);
     expect(porNombre.get("uno.mp3")?.tamanoBytes).toBe("contenido-de-uno".length);
     expect(porNombre.get("uno.mp3")?.clave).toBe(join(carpeta, "uno.mp3"));
+    expect(porNombre.get("uno.mp3")?.categoria).toBeNull();
+    expect(porNombre.get("tres.mp3")?.categoria).toBe("subcarpeta");
+    expect(porNombre.get("tres.mp3")?.clave).toBe(join(carpeta, "subcarpeta", "tres.mp3"));
   });
 
   it("leerPrefijo devuelve solo los primeros bytes pedidos", async () => {

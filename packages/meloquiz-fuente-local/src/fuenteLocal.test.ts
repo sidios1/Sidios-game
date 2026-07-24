@@ -17,6 +17,8 @@ interface ArchivoFalso {
   readonly tamanoBytes?: number;
   /** Metadatos que devuelve el lector, o `"ilegible"` para que reviente. */
   readonly metadatos: MetadatosCrudos | "ilegible";
+  /** Categoría (subcarpeta simulada, §11); por defecto suelto (`null`). */
+  readonly categoria?: string | null;
 }
 
 function bytes(texto: string): Uint8Array {
@@ -51,6 +53,7 @@ function crearDobles(archivos: readonly ArchivoFalso[]): {
           clave: a.nombre,
           nombre: a.nombre,
           tamanoBytes: a.tamanoBytes ?? a.contenido.length,
+          categoria: a.categoria ?? null,
         })),
       );
     },
@@ -75,8 +78,15 @@ function crearDobles(archivos: readonly ArchivoFalso[]): {
   return { sistemaArchivos, lectorMetadatos };
 }
 
-function cargar(archivos: readonly ArchivoFalso[]) {
-  return crearFuenteLocal({ carpeta: "/musica", ...crearDobles(archivos) }).cargarDetallado();
+function cargar(
+  archivos: readonly ArchivoFalso[],
+  categoriasSeleccionadas?: readonly string[] | null,
+) {
+  return crearFuenteLocal({
+    carpeta: "/musica",
+    ...crearDobles(archivos),
+    ...(categoriasSeleccionadas !== undefined ? { categoriasSeleccionadas } : {}),
+  }).cargarDetallado();
 }
 
 /** Cuatro canciones sanas: el mínimo del reglamento. */
@@ -293,6 +303,62 @@ describe("crearFuenteLocal — mínimo de canciones (§2)", () => {
       ...crearDobles(cuatroSanas().slice(0, 2)),
     });
     await expect(fuente.cargar()).rejects.toThrow(/al menos 4 canciones/);
+  });
+});
+
+describe("crearFuenteLocal — selección de categorías (§11)", () => {
+  function archivosDeDosCategorias(): ArchivoFalso[] {
+    // 3 Facil + 1 suelto = 4 (justo el mínimo del reglamento §2), para poder
+    // filtrar a una sola categoría sin que el pool quede insuficiente.
+    const facil = [1, 2, 3].map((n) => ({
+      nombre: `Facil ${n}.mp3`,
+      contenido: bytes(`facil-${n}`),
+      metadatos: metadatos({ titulo: `Facil ${n}` }),
+      categoria: "Facil",
+    }));
+    const dificil = [1, 2].map((n) => ({
+      nombre: `Dificil ${n}.mp3`,
+      contenido: bytes(`dificil-${n}`),
+      metadatos: metadatos({ titulo: `Dificil ${n}` }),
+      categoria: "Dificil",
+    }));
+    const suelto = {
+      nombre: "Suelto.mp3",
+      contenido: bytes("suelto"),
+      metadatos: metadatos({ titulo: "Suelto" }),
+      categoria: null,
+    };
+    return [...facil, ...dificil, suelto];
+  }
+
+  it("sin selección (undefined/null), entran todas las categorías", async () => {
+    const resultado = await cargar(archivosDeDosCategorias());
+    expect(resultado.ok).toBe(true);
+    if (!resultado.ok) return;
+    expect(resultado.valor.pool.canciones).toHaveLength(6);
+  });
+
+  it("filtra a solo la categoría marcada, pero deja pasar los sueltos", async () => {
+    const resultado = await cargar(archivosDeDosCategorias(), ["Facil"]);
+    expect(resultado.ok).toBe(true);
+    if (!resultado.ok) return;
+    const titulos = resultado.valor.pool.canciones.map((c) => c.titulo).sort();
+    expect(titulos).toEqual(["Facil 1", "Facil 2", "Facil 3", "Suelto"]);
+  });
+
+  it("propaga la categoría de cada archivo al CancionPool", async () => {
+    const resultado = await cargar(archivosDeDosCategorias());
+    expect(resultado.ok).toBe(true);
+    if (!resultado.ok) return;
+    const porTitulo = new Map(resultado.valor.pool.canciones.map((c) => [c.titulo, c.categoria]));
+    expect(porTitulo.get("Facil 1")).toBe("Facil");
+    expect(porTitulo.get("Dificil 1")).toBe("Dificil");
+    expect(porTitulo.get("Suelto")).toBeNull();
+  });
+
+  it("una selección de categorías inexistentes deja solo los sueltos", async () => {
+    const resultado = await cargar(archivosDeDosCategorias(), ["Extremo"]);
+    expect(resultado.ok).toBe(false); // 1 suelto < mínimo de 4 (§2)
   });
 });
 

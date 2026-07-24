@@ -20,6 +20,7 @@ export function poolDePrueba(n: number): PoolPartida {
       claveArchivo: `archivo-${i}.mp3`,
       segundoInicio: 30 + i,
       claveCaratula: `caratula-${i}`,
+      categoria: null,
     });
   }
   return { canciones };

@@ -11,22 +11,40 @@ import { Readable } from "node:stream";
 
 import type { ArchivoLocal, ISistemaArchivos } from "./sistemaArchivos.js";
 
+/** Agrega a `archivos` los archivos directos de `carpeta`, con `categoria` fija. */
+async function listarArchivosDirectos(
+  carpeta: string,
+  categoria: string | null,
+  archivos: ArchivoLocal[],
+): Promise<void> {
+  const entradas = await readdir(carpeta, { withFileTypes: true });
+  for (const entrada of entradas) {
+    if (!entrada.isFile()) continue;
+    const clave = join(carpeta, entrada.name);
+    const manejador = await open(clave, "r");
+    try {
+      const { size } = await manejador.stat();
+      archivos.push({ clave, nombre: entrada.name, tamanoBytes: size, categoria });
+    } finally {
+      await manejador.close();
+    }
+  }
+}
+
 export function crearSistemaArchivosNode(): ISistemaArchivos {
   return {
     async listar(carpeta: string): Promise<readonly ArchivoLocal[]> {
-      const entradas = await readdir(carpeta, { withFileTypes: true });
       const archivos: ArchivoLocal[] = [];
-      for (const entrada of entradas) {
-        if (!entrada.isFile()) continue; // no recursivo: subcarpetas fuera
-        const clave = join(carpeta, entrada.name);
-        const manejador = await open(clave, "r");
-        try {
-          const { size } = await manejador.stat();
-          archivos.push({ clave, nombre: entrada.name, tamanoBytes: size });
-        } finally {
-          await manejador.close();
-        }
+      await listarArchivosDirectos(carpeta, null, archivos);
+
+      // Un nivel de subcarpetas (§11): cada una es una categoría; no se baja
+      // más profundo que eso.
+      const entradasRaiz = await readdir(carpeta, { withFileTypes: true });
+      for (const entrada of entradasRaiz) {
+        if (!entrada.isDirectory()) continue;
+        await listarArchivosDirectos(join(carpeta, entrada.name), entrada.name, archivos);
       }
+
       return archivos;
     },
 

@@ -22,3 +22,7 @@ tauri-plugin-shell = "2"
 # Plugin dialog: el host de MeloQuiz elige la carpeta de música con el diálogo
 # nativo (la File API no da rutas absolutas, y el sidecar necesita una).
 tauri-plugin-dialog = "2"
+# Plugin fs (solo lectura): el host de MeloQuiz lista las subcarpetas de la
+# carpeta elegida para armar el checklist de categorías (REGLAS §11), antes de
+# arrancar el sidecar. La File API no sirve acá porque solo tenemos la ruta.
+tauri-plugin-fs = "2"

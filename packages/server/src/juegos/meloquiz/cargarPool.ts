@@ -22,12 +22,20 @@ import type { Resultado } from "@juegos/meloquiz-core";
  * Arma el `PoolPartida` leyendo `carpeta`. Devuelve la `CargaLocal` completa
  * (pool + descartes) para que el llamador pueda reportar por consola qué entró y
  * qué se descartó; el error de pool insuficiente ya lo da `validarPool`.
+ *
+ * `categoriasSeleccionadas` es la elección del host de qué subcarpetas de
+ * primer nivel incluir (REGLAS_MELOQUIZ §11); `null`/`undefined` = todas.
  */
-export function cargarPoolDeCarpeta(carpeta: string): Promise<Resultado<CargaLocal>> {
+export function cargarPoolDeCarpeta(
+  carpeta: string,
+  categoriasSeleccionadas?: readonly string[] | null,
+): Promise<Resultado<CargaLocal>> {
   const fuente = crearFuenteLocal({
     carpeta,
     sistemaArchivos: crearSistemaArchivosNode(),
     lectorMetadatos: crearLectorMusicMetadata(),
+    // exactOptionalPropertyTypes: se omite la clave si no vino selección.
+    ...(categoriasSeleccionadas !== undefined ? { categoriasSeleccionadas } : {}),
   });
   return fuente.cargarDetallado();
 }

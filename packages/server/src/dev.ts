@@ -34,8 +34,19 @@ if (juego === "meloquiz") {
     );
     process.exit(1);
   }
+  const categoriasCrudas = process.env["CATEGORIAS_MELOQUIZ"];
+  let categoriasSeleccionadas: readonly string[] | null = null;
+  if (categoriasCrudas !== undefined && categoriasCrudas.length > 0) {
+    try {
+      categoriasSeleccionadas = JSON.parse(categoriasCrudas) as readonly string[];
+    } catch {
+      console.error(`CATEGORIAS_MELOQUIZ no es JSON válido: ${categoriasCrudas}`);
+      process.exit(1);
+    }
+  }
+
   console.log(`Leyendo catálogo de ${carpeta}…`);
-  const carga = await cargarPoolDeCarpeta(carpeta);
+  const carga = await cargarPoolDeCarpeta(carpeta, categoriasSeleccionadas);
   if (!carga.ok) {
     console.error(`No se pudo armar el catálogo: ${carga.error.mensaje}`);
     process.exit(1);

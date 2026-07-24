@@ -41,6 +41,7 @@ function sistemaEnMemoria(entradas: ReadonlyMap<string, Uint8Array>): ISistemaAr
           clave,
           nombre: clave,
           tamanoBytes: bytes.length,
+          categoria: null,
         })),
       ),
     leerPrefijo: (clave, n) => Promise.resolve(buscar(clave).subarray(0, n)),
@@ -66,6 +67,7 @@ describe("huella del cliente vs. la del servidor", () => {
       clave: nombre,
       nombre,
       tamanoBytes: bytes.length,
+      categoria: null,
     };
     const huellaServidor = await calcularHuella(servidor, archivoServidor);
 

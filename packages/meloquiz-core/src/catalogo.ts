@@ -33,6 +33,13 @@ export interface CancionPool {
   readonly segundoInicio: number;
   /** Clave de la carátula embebida; null ⇒ el cliente usa un placeholder (§1). */
   readonly claveCaratula: string | null;
+  /**
+   * Categoría de origen (nombre de la subcarpeta de primer nivel, §11); null
+   * si el archivo estaba suelto en la raíz. Cosmética: no la valida
+   * `validarPool`, y el filtro de selección de categorías ya se aplicó antes
+   * de llegar acá (la fuente local solo deja pasar lo elegido por el host).
+   */
+  readonly categoria: string | null;
 }
 
 /** El material de una partida: las canciones válidas de la fuente. */

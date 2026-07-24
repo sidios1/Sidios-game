@@ -1703,6 +1703,67 @@ button.perfil-avatar.seleccionado {
   font-size: 0.82rem;
 }
 
+/* ── MeloQuiz: checklist de categorías (host, antes de crear la sala) ──────
+   Mismo lenguaje visual que .rumble-selector, pero standalone sobre
+   document.body: se usa en prepararHosteo, antes de que exista el HUD. */
+
+.meloquiz-selector-categorias {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.meloquiz-selector-categorias-panel {
+  background: rgba(13, 18, 24, 0.94);
+  border: 1px solid #2a3442;
+  border-radius: 14px;
+  padding: 1.1rem 1.3rem;
+  color: #e8e4da;
+  max-width: 24rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.meloquiz-selector-categorias-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.meloquiz-selector-categorias-ayuda {
+  margin: 0 0 0.7rem;
+  font-size: 0.8rem;
+  color: #9aa5b1;
+  line-height: 1.35;
+}
+
+.meloquiz-selector-categorias-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.meloquiz-selector-categorias-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.meloquiz-selector-categorias-botones {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.meloquiz-selector-categorias-botones button {
+  flex: 1;
+}
+
 /* ── MeloQuiz (UI de DOM + <audio> HTML5) ───────────────────────────────── */
 
 .meloquiz {
