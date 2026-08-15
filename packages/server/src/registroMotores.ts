@@ -8,6 +8,7 @@
 // con estados distintos conviven en el mismo mapa.
 
 import type { PoolPartida } from "@juegos/meloquiz-core";
+import type { PoolSobres } from "@juegos/monopoly-core";
 import type { GeneradorAleatorio } from "./motor.js";
 import { Orquestador } from "./orquestador.js";
 import type { Programador } from "./orquestador.js";
@@ -16,6 +17,7 @@ import { crearMotorCarioca } from "./juegos/carioca/motorCarioca.js";
 import { crearMotorRumble } from "./juegos/carioca/motorRumble.js";
 import { crearMotorMeloquiz } from "./juegos/meloquiz/motorMeloquiz.js";
 import { crearMotorMentiroso } from "./juegos/mentiroso/motorMentiroso.js";
+import { crearMotorMonopoly } from "./juegos/monopoly/motorMonopoly.js";
 import { crearMotorUno } from "./juegos/uno/motorUno.js";
 
 /** Lo que el exterior necesita de una sala ya armada con su juego. */
@@ -42,6 +44,8 @@ export interface OpcionesSala {
    * composición: el único lugar del servidor que conoce juegos concretos.
    */
   readonly poolMeloquiz?: PoolPartida;
+  /** Recurso de CONSTRUCCIÓN del motor de Monopoly (S2, ver juegos/monopoly/cargarPool.ts): mismo rol que `poolMeloquiz`. */
+  readonly poolMonopoly?: PoolSobres;
 }
 
 type FabricaSala = (opciones: OpcionesSala) => SalaJuego;
@@ -61,6 +65,14 @@ const REGISTRO: Readonly<Record<string, FabricaSala>> = {
       throw new Error("meloquiz requiere `poolMeloquiz` en las opciones de sala");
     }
     return new Orquestador({ ...opciones, motor: crearMotorMeloquiz(opciones.poolMeloquiz) });
+  },
+  // Monopoly también necesita un recurso para construirse: el PoolSobres que
+  // arma monopoly-fuente-datos leyendo datos/*.json (ver juegos/monopoly/cargarPool.ts).
+  monopoly: (opciones) => {
+    if (opciones.poolMonopoly === undefined) {
+      throw new Error("monopoly requiere `poolMonopoly` en las opciones de sala");
+    }
+    return new Orquestador({ ...opciones, motor: crearMotorMonopoly(opciones.poolMonopoly) });
   },
 };
 

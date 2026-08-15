@@ -12,6 +12,8 @@
     { "path": "../carioca-core" },
     { "path": "../rumble-core" },
     { "path": "../meloquiz-fuente-local" },
+    { "path": "../monopoly-core" },
+    { "path": "../monopoly-fuente-datos" },
     { "path": "../server" }
   ]
 }

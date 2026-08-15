@@ -1,0 +1,2091 @@
+{
+  "generadoEl": "2026-08-14T07:23:13.325Z",
+  "fuente": "https://fctoolshub.com/en/database/fc25/clubs",
+  "filtrosAplicados": {
+    "ligas": [
+      "Premier League",
+      "LALIGA EA SPORTS",
+      "Bundesliga",
+      "Serie A TIM",
+      "Ligue 1 McDonald's",
+      "Liga Profesional de Fútbol",
+      "Major League Soccer",
+      "Liga Portugal",
+      "ROSHN Saudi League",
+      "Eredivisie"
+    ]
+  },
+  "total": 207,
+  "clubes": [
+    {
+      "id": 169,
+      "nombre": "1. FSV Mainz 05",
+      "nombreOficial": "1. FSV Mainz 05",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/169.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/169.png"
+    },
+    {
+      "id": 22,
+      "nombre": "Borussia Dortmund",
+      "nombreOficial": "Borussia Dortmund",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/22.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/22.png"
+    },
+    {
+      "id": 100409,
+      "nombre": "FC Augsburg",
+      "nombreOficial": "FC Augsburg",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/100409.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/100409.png"
+    },
+    {
+      "id": 21,
+      "nombre": "FC Bayern München",
+      "nombreOficial": "FC Bayern München",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/21.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/21.png"
+    },
+    {
+      "id": 110329,
+      "nombre": "FC St. Pauli",
+      "nombreOficial": "FC St. Pauli",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/110329.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/110329.png"
+    },
+    {
+      "id": 1824,
+      "nombre": "Frankfurt",
+      "nombreOficial": "Frankfurt",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1824.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1824.png"
+    },
+    {
+      "id": 111235,
+      "nombre": "Heidenheim",
+      "nombreOficial": "Heidenheim",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111235.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111235.png"
+    },
+    {
+      "id": 576,
+      "nombre": "Holstein Kiel",
+      "nombreOficial": "Holstein Kiel",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/576.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/576.png"
+    },
+    {
+      "id": 32,
+      "nombre": "Leverkusen",
+      "nombreOficial": "Bayer 04 Leverkusen",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/32.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/32.png"
+    },
+    {
+      "id": 23,
+      "nombre": "M'gladbach",
+      "nombreOficial": "M'gladbach",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/23.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/23.png"
+    },
+    {
+      "id": 112172,
+      "nombre": "RB Leipzig",
+      "nombreOficial": "RB Leipzig",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112172.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112172.png"
+    },
+    {
+      "id": 25,
+      "nombre": "SC Freiburg",
+      "nombreOficial": "SC Freiburg",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/25.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/25.png"
+    },
+    {
+      "id": 38,
+      "nombre": "SV Werder Bremen",
+      "nombreOficial": "SV Werder Bremen",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/38.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/38.png"
+    },
+    {
+      "id": 10029,
+      "nombre": "TSG Hoffenheim",
+      "nombreOficial": "TSG Hoffenheim",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/10029.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/10029.png"
+    },
+    {
+      "id": 1831,
+      "nombre": "Union Berlin",
+      "nombreOficial": "Union Berlin",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1831.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1831.png"
+    },
+    {
+      "id": 36,
+      "nombre": "VfB Stuttgart",
+      "nombreOficial": "VfB Stuttgart",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/36.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/36.png"
+    },
+    {
+      "id": 160,
+      "nombre": "VfL Bochum",
+      "nombreOficial": "VfL Bochum",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/160.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/160.png"
+    },
+    {
+      "id": 175,
+      "nombre": "VfL Wolfsburg",
+      "nombreOficial": "VfL Wolfsburg",
+      "ligaId": 19,
+      "liga": "Bundesliga",
+      "nacionId": 21,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/175.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/175.png"
+    },
+    {
+      "id": 245,
+      "nombre": "Ajax",
+      "nombreOficial": "Ajax",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/245.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/245.png"
+    },
+    {
+      "id": 111380,
+      "nombre": "Almere City FC",
+      "nombreOficial": "Almere City FC",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111380.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111380.png"
+    },
+    {
+      "id": 1906,
+      "nombre": "AZ",
+      "nombreOficial": "AZ Alkmaar",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1906.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1906.png"
+    },
+    {
+      "id": 1915,
+      "nombre": "FC Groningen",
+      "nombreOficial": "FC Groningen",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1915.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1915.png"
+    },
+    {
+      "id": 1908,
+      "nombre": "FC Twente",
+      "nombreOficial": "FC Twente",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1908.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1908.png"
+    },
+    {
+      "id": 1903,
+      "nombre": "FC Utrecht",
+      "nombreOficial": "FC Utrecht",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1903.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1903.png"
+    },
+    {
+      "id": 246,
+      "nombre": "Feyenoord",
+      "nombreOficial": "Feyenoord",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/246.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/246.png"
+    },
+    {
+      "id": 634,
+      "nombre": "Fortuna Sittard",
+      "nombreOficial": "Fortuna Sittard",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/634.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/634.png"
+    },
+    {
+      "id": 100632,
+      "nombre": "Go Ahead Eagles",
+      "nombreOficial": "Go Ahead Eagles",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/100632.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/100632.png"
+    },
+    {
+      "id": 100634,
+      "nombre": "Heracles Almelo",
+      "nombreOficial": "Heracles Almelo",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/100634.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/100634.png"
+    },
+    {
+      "id": 1910,
+      "nombre": "N.E.C. Nijmegen",
+      "nombreOficial": "N.E.C. Nijmegen",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1910.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1910.png"
+    },
+    {
+      "id": 1904,
+      "nombre": "NAC Breda",
+      "nombreOficial": "NAC Breda",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1904.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1904.png"
+    },
+    {
+      "id": 1914,
+      "nombre": "PEC Zwolle",
+      "nombreOficial": "PEC Zwolle",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1914.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1914.png"
+    },
+    {
+      "id": 247,
+      "nombre": "PSV",
+      "nombreOficial": "PSV",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/247.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/247.png"
+    },
+    {
+      "id": 1905,
+      "nombre": "RKC Waalwijk",
+      "nombreOficial": "RKC Waalwijk",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1905.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1905.png"
+    },
+    {
+      "id": 1913,
+      "nombre": "sc Heerenveen",
+      "nombreOficial": "sc Heerenveen",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1913.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1913.png"
+    },
+    {
+      "id": 100646,
+      "nombre": "Sparta Rotterdam",
+      "nombreOficial": "Sparta Rotterdam",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/100646.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/100646.png"
+    },
+    {
+      "id": 1907,
+      "nombre": "Willem II",
+      "nombreOficial": "Willem II",
+      "ligaId": 10,
+      "liga": "Eredivisie",
+      "nacionId": 34,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1907.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1907.png"
+    },
+    {
+      "id": 448,
+      "nombre": "Athletic Club",
+      "nombreOficial": "Athletic Club",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/448.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/448.png"
+    },
+    {
+      "id": 240,
+      "nombre": "Atlético de Madrid",
+      "nombreOficial": "Atlético de Madrid",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/240.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/240.png"
+    },
+    {
+      "id": 479,
+      "nombre": "CA Osasuna",
+      "nombreOficial": "CA Osasuna",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/479.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/479.png"
+    },
+    {
+      "id": 100888,
+      "nombre": "CD Leganés",
+      "nombreOficial": "CD Leganés",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/100888.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/100888.png"
+    },
+    {
+      "id": 463,
+      "nombre": "D. Alavés",
+      "nombreOficial": "D. Alavés",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/463.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/463.png"
+    },
+    {
+      "id": 241,
+      "nombre": "FC Barcelona",
+      "nombreOficial": "FC Barcelona",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/241.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/241.png"
+    },
+    {
+      "id": 1860,
+      "nombre": "Getafe CF",
+      "nombreOficial": "Getafe CF",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1860.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1860.png"
+    },
+    {
+      "id": 110062,
+      "nombre": "Girona FC",
+      "nombreOficial": "Girona FC",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/110062.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/110062.png"
+    },
+    {
+      "id": 462,
+      "nombre": "R. Valladolid CF",
+      "nombreOficial": "R. Valladolid CF",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/462.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/462.png"
+    },
+    {
+      "id": 480,
+      "nombre": "Rayo Vallecano",
+      "nombreOficial": "Rayo Vallecano",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/480.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/480.png"
+    },
+    {
+      "id": 450,
+      "nombre": "RC Celta",
+      "nombreOficial": "RC Celta",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/450.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/450.png"
+    },
+    {
+      "id": 452,
+      "nombre": "RCD Espanyol",
+      "nombreOficial": "RCD Espanyol",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/452.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/452.png"
+    },
+    {
+      "id": 453,
+      "nombre": "RCD Mallorca",
+      "nombreOficial": "RCD Mallorca",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/453.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/453.png"
+    },
+    {
+      "id": 449,
+      "nombre": "Real Betis",
+      "nombreOficial": "Real Betis",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/449.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/449.png"
+    },
+    {
+      "id": 243,
+      "nombre": "Real Madrid",
+      "nombreOficial": "Real Madrid",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/243.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/243.png"
+    },
+    {
+      "id": 457,
+      "nombre": "Real Sociedad",
+      "nombreOficial": "Real Sociedad",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/457.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/457.png"
+    },
+    {
+      "id": 481,
+      "nombre": "Sevilla FC",
+      "nombreOficial": "Sevilla FC",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/481.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/481.png"
+    },
+    {
+      "id": 472,
+      "nombre": "UD Las Palmas",
+      "nombreOficial": "UD Las Palmas",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/472.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/472.png"
+    },
+    {
+      "id": 461,
+      "nombre": "Valencia CF",
+      "nombreOficial": "Valencia CF",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/461.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/461.png"
+    },
+    {
+      "id": 483,
+      "nombre": "Villarreal CF",
+      "nombreOficial": "Villarreal CF",
+      "ligaId": 53,
+      "liga": "LALIGA EA SPORTS",
+      "nacionId": 45,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/483.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/483.png"
+    },
+    {
+      "id": 112513,
+      "nombre": "Arouca",
+      "nombreOficial": "Arouca",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112513.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112513.png"
+    },
+    {
+      "id": 131463,
+      "nombre": "AVS",
+      "nombreOficial": "AVS",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/131463.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/131463.png"
+    },
+    {
+      "id": 1898,
+      "nombre": "Boavista FC",
+      "nombreOficial": "Boavista FC",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1898.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1898.png"
+    },
+    {
+      "id": 114510,
+      "nombre": "Casa Pia AC",
+      "nombreOficial": "Casa Pia AC",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/114510.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/114510.png"
+    },
+    {
+      "id": 10020,
+      "nombre": "Estoril Praia",
+      "nombreOficial": "Estoril Praia",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/10020.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/10020.png"
+    },
+    {
+      "id": 718,
+      "nombre": "Estrela Amadora",
+      "nombreOficial": "Estrela Amadora",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/718.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/718.png"
+    },
+    {
+      "id": 489,
+      "nombre": "Farense",
+      "nombreOficial": "Farense",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/489.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/489.png"
+    },
+    {
+      "id": 112809,
+      "nombre": "FC Famalicão",
+      "nombreOficial": "FC Famalicão",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112809.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112809.png"
+    },
+    {
+      "id": 236,
+      "nombre": "FC Porto",
+      "nombreOficial": "FC Porto",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/236.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/236.png"
+    },
+    {
+      "id": 1888,
+      "nombre": "Gil Vicente",
+      "nombreOficial": "Gil Vicente",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1888.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1888.png"
+    },
+    {
+      "id": 1900,
+      "nombre": "Moreirense FC",
+      "nombreOficial": "Moreirense FC",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1900.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1900.png"
+    },
+    {
+      "id": 1891,
+      "nombre": "Nacional",
+      "nombreOficial": "Nacional",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1891.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1891.png"
+    },
+    {
+      "id": 744,
+      "nombre": "Rio Ave FC",
+      "nombreOficial": "Rio Ave FC",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/744.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/744.png"
+    },
+    {
+      "id": 1438,
+      "nombre": "Santa Clara",
+      "nombreOficial": "Santa Clara",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1438.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1438.png"
+    },
+    {
+      "id": 1896,
+      "nombre": "SC Braga",
+      "nombreOficial": "SC Braga",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1896.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1896.png"
+    },
+    {
+      "id": 234,
+      "nombre": "SL Benfica",
+      "nombreOficial": "SL Benfica",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/234.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/234.png"
+    },
+    {
+      "id": 237,
+      "nombre": "Sporting CP",
+      "nombreOficial": "Sporting Clube de Portugal",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/237.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/237.png"
+    },
+    {
+      "id": 1887,
+      "nombre": "Vitória SC",
+      "nombreOficial": "Vitória SC",
+      "ligaId": 308,
+      "liga": "Liga Portugal",
+      "nacionId": 38,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1887.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1887.png"
+    },
+    {
+      "id": 111019,
+      "nombre": "Argentinos Jrs.",
+      "nombreOficial": "Argentinos Jrs.",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111019.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111019.png"
+    },
+    {
+      "id": 111708,
+      "nombre": "Atlético Tucumán",
+      "nombreOficial": "Atlético Tucumán",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111708.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111708.png"
+    },
+    {
+      "id": 110404,
+      "nombre": "Banfield",
+      "nombreOficial": "Banfield",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/110404.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/110404.png"
+    },
+    {
+      "id": 113044,
+      "nombre": "Barracas Central",
+      "nombreOficial": "Barracas Central",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/113044.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/113044.png"
+    },
+    {
+      "id": 111022,
+      "nombre": "Belgrano",
+      "nombreOficial": "Belgrano",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111022.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111022.png"
+    },
+    {
+      "id": 1877,
+      "nombre": "Boca Juniors",
+      "nombreOficial": "Boca Juniors",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1877.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1877.png"
+    },
+    {
+      "id": 112965,
+      "nombre": "Central Córdoba",
+      "nombreOficial": "Central Córdoba",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112965.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112965.png"
+    },
+    {
+      "id": 115472,
+      "nombre": "Club Deportivo Riestra",
+      "nombreOficial": "Club Deportivo Riestra",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/115472.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/115472.png"
+    },
+    {
+      "id": 111710,
+      "nombre": "Defensa",
+      "nombreOficial": "Defensa",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111710.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111710.png"
+    },
+    {
+      "id": 101083,
+      "nombre": "Estudiantes",
+      "nombreOficial": "Estudiantes",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/101083.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/101083.png"
+    },
+    {
+      "id": 101084,
+      "nombre": "Gimnasia",
+      "nombreOficial": "Gimnasia",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/101084.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/101084.png"
+    },
+    {
+      "id": 111706,
+      "nombre": "Godoy Cruz",
+      "nombreOficial": "Godoy Cruz",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111706.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111706.png"
+    },
+    {
+      "id": 111711,
+      "nombre": "Huracán",
+      "nombreOficial": "Huracán",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111711.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111711.png"
+    },
+    {
+      "id": 110093,
+      "nombre": "Independiente",
+      "nombreOficial": "Independiente",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/110093.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/110093.png"
+    },
+    {
+      "id": 111020,
+      "nombre": "Independiente Rivadavia",
+      "nombreOficial": "Independiente Rivadavia",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111020.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111020.png"
+    },
+    {
+      "id": 110953,
+      "nombre": "Instituto",
+      "nombreOficial": "Instituto",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/110953.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/110953.png"
+    },
+    {
+      "id": 110395,
+      "nombre": "Lanús",
+      "nombreOficial": "Lanús",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/110395.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/110395.png"
+    },
+    {
+      "id": 110396,
+      "nombre": "Newell's",
+      "nombreOficial": "Newell's",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/110396.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/110396.png"
+    },
+    {
+      "id": 112689,
+      "nombre": "Platense",
+      "nombreOficial": "Platense",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112689.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112689.png"
+    },
+    {
+      "id": 101085,
+      "nombre": "Racing Club",
+      "nombreOficial": "Racing Club",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/101085.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/101085.png"
+    },
+    {
+      "id": 1876,
+      "nombre": "River Plate",
+      "nombreOficial": "River Plate",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1876.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1876.png"
+    },
+    {
+      "id": 110580,
+      "nombre": "Rosario Central ",
+      "nombreOficial": "Rosario Central ",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/110580.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/110580.png"
+    },
+    {
+      "id": 1013,
+      "nombre": "San Lorenzo",
+      "nombreOficial": "San Lorenzo",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1013.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1013.png"
+    },
+    {
+      "id": 112713,
+      "nombre": "Sarmiento",
+      "nombreOficial": "Sarmiento",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112713.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112713.png"
+    },
+    {
+      "id": 112670,
+      "nombre": "Talleres",
+      "nombreOficial": "Talleres",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112670.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112670.png"
+    },
+    {
+      "id": 111715,
+      "nombre": "Tigre",
+      "nombreOficial": "Tigre",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111715.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111715.png"
+    },
+    {
+      "id": 111716,
+      "nombre": "Unión",
+      "nombreOficial": "Unión",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111716.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111716.png"
+    },
+    {
+      "id": 101088,
+      "nombre": "Vélez Sarsfield",
+      "nombreOficial": "Vélez Sarsfield",
+      "ligaId": 353,
+      "liga": "Liga Profesional de Fútbol",
+      "nacionId": 52,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/101088.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/101088.png"
+    },
+    {
+      "id": 57,
+      "nombre": "AJ Auxerre",
+      "nombreOficial": "AJ Auxerre",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/57.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/57.png"
+    },
+    {
+      "id": 1530,
+      "nombre": "Angers SCO",
+      "nombreOficial": "Angers SCO",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1530.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1530.png"
+    },
+    {
+      "id": 69,
+      "nombre": "AS Monaco",
+      "nombreOficial": "AS Monaco",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/69.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/69.png"
+    },
+    {
+      "id": 1819,
+      "nombre": "AS Saint-Étienne",
+      "nombreOficial": "AS Saint-Étienne",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1819.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1819.png"
+    },
+    {
+      "id": 71,
+      "nombre": "FC Nantes",
+      "nombreOficial": "FC Nantes",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/71.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/71.png"
+    },
+    {
+      "id": 1738,
+      "nombre": "Havre AC",
+      "nombreOficial": "Havre AC",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1738.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1738.png"
+    },
+    {
+      "id": 65,
+      "nombre": "LOSC Lille",
+      "nombreOficial": "LOSC Lille",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/65.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/65.png"
+    },
+    {
+      "id": 70,
+      "nombre": "Montpellier",
+      "nombreOficial": "Montpellier",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/70.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/70.png"
+    },
+    {
+      "id": 72,
+      "nombre": "OGC Nice",
+      "nombreOficial": "OGC Nice",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/72.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/72.png"
+    },
+    {
+      "id": 66,
+      "nombre": "OL",
+      "nombreOficial": "Olympique Lyonnais",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/66.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/66.png"
+    },
+    {
+      "id": 219,
+      "nombre": "OM",
+      "nombreOficial": "OM",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/219.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/219.png"
+    },
+    {
+      "id": 73,
+      "nombre": "Paris SG",
+      "nombreOficial": "Paris SG",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/73.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/73.png"
+    },
+    {
+      "id": 64,
+      "nombre": "RC Lens",
+      "nombreOficial": "RC Lens",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/64.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/64.png"
+    },
+    {
+      "id": 378,
+      "nombre": "Stade Brestois 29",
+      "nombreOficial": "Stade Brestois 29",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/378.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/378.png"
+    },
+    {
+      "id": 379,
+      "nombre": "Stade de Reims",
+      "nombreOficial": "Stade de Reims",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/379.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/379.png"
+    },
+    {
+      "id": 74,
+      "nombre": "Stade Rennais FC",
+      "nombreOficial": "Stade Rennais FC",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/74.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/74.png"
+    },
+    {
+      "id": 76,
+      "nombre": "Strasbourg",
+      "nombreOficial": "Strasbourg",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/76.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/76.png"
+    },
+    {
+      "id": 1809,
+      "nombre": "Toulouse FC",
+      "nombreOficial": "Toulouse FC",
+      "ligaId": 16,
+      "liga": "Ligue 1 McDonald's",
+      "nacionId": 18,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1809.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1809.png"
+    },
+    {
+      "id": 112885,
+      "nombre": "Atlanta United",
+      "nombreOficial": "Atlanta United",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112885.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112885.png"
+    },
+    {
+      "id": 114161,
+      "nombre": "Austin FC",
+      "nombreOficial": "Austin FC",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/114161.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/114161.png"
+    },
+    {
+      "id": 111139,
+      "nombre": "CF Montréal",
+      "nombreOficial": "CF Montréal",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111139.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111139.png"
+    },
+    {
+      "id": 114640,
+      "nombre": "Charlotte FC",
+      "nombreOficial": "Charlotte FC",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/114640.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/114640.png"
+    },
+    {
+      "id": 693,
+      "nombre": "Chicago Fire FC",
+      "nombreOficial": "Chicago Fire FC",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/693.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/693.png"
+    },
+    {
+      "id": 694,
+      "nombre": "Colorado Rapids",
+      "nombreOficial": "Colorado Rapids",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/694.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/694.png"
+    },
+    {
+      "id": 687,
+      "nombre": "Columbus Crew",
+      "nombreOficial": "Columbus Crew",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/687.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/687.png"
+    },
+    {
+      "id": 688,
+      "nombre": "D.C. United",
+      "nombreOficial": "D.C. United",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/688.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/688.png"
+    },
+    {
+      "id": 113149,
+      "nombre": "FC Cincinnati",
+      "nombreOficial": "FC Cincinnati",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/113149.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/113149.png"
+    },
+    {
+      "id": 695,
+      "nombre": "FC Dallas",
+      "nombreOficial": "FC Dallas",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/695.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/695.png"
+    },
+    {
+      "id": 698,
+      "nombre": "Houston Dynamo",
+      "nombreOficial": "Houston Dynamo",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/698.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/698.png"
+    },
+    {
+      "id": 112893,
+      "nombre": "Inter Miami CF",
+      "nombreOficial": "Inter Miami CF",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112893.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112893.png"
+    },
+    {
+      "id": 697,
+      "nombre": "LA Galaxy",
+      "nombreOficial": "LA Galaxy",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/697.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/697.png"
+    },
+    {
+      "id": 112996,
+      "nombre": "LAFC",
+      "nombreOficial": "LAFC",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112996.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112996.png"
+    },
+    {
+      "id": 111138,
+      "nombre": "Minnesota United",
+      "nombreOficial": "Minnesota United",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111138.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111138.png"
+    },
+    {
+      "id": 114162,
+      "nombre": "Nashville SC",
+      "nombreOficial": "Nashville SC",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/114162.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/114162.png"
+    },
+    {
+      "id": 691,
+      "nombre": "New England",
+      "nombreOficial": "New England",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/691.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/691.png"
+    },
+    {
+      "id": 112828,
+      "nombre": "New York City FC",
+      "nombreOficial": "New York City FC",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112828.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112828.png"
+    },
+    {
+      "id": 112606,
+      "nombre": "Orlando City",
+      "nombreOficial": "Orlando City",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112606.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112606.png"
+    },
+    {
+      "id": 112134,
+      "nombre": "Philadelphia",
+      "nombreOficial": "Philadelphia",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112134.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112134.png"
+    },
+    {
+      "id": 111140,
+      "nombre": "Portland Timbers",
+      "nombreOficial": "Portland Timbers",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111140.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111140.png"
+    },
+    {
+      "id": 111065,
+      "nombre": "Real Salt Lake",
+      "nombreOficial": "Real Salt Lake",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111065.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111065.png"
+    },
+    {
+      "id": 689,
+      "nombre": "Red Bulls",
+      "nombreOficial": "Red Bulls",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/689.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/689.png"
+    },
+    {
+      "id": 111928,
+      "nombre": "SJ Earthquakes",
+      "nombreOficial": "SJ Earthquakes",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111928.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111928.png"
+    },
+    {
+      "id": 111144,
+      "nombre": "Sounders FC",
+      "nombreOficial": "Sounders FC",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111144.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111144.png"
+    },
+    {
+      "id": 696,
+      "nombre": "Sporting KC",
+      "nombreOficial": "Sporting KC",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/696.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/696.png"
+    },
+    {
+      "id": 113018,
+      "nombre": "St. Louis CITY SC",
+      "nombreOficial": "St. Louis CITY SC",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/113018.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/113018.png"
+    },
+    {
+      "id": 111651,
+      "nombre": "Toronto FC",
+      "nombreOficial": "Toronto FC",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111651.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111651.png"
+    },
+    {
+      "id": 101112,
+      "nombre": "Whitecaps FC",
+      "nombreOficial": "Whitecaps FC",
+      "ligaId": 39,
+      "liga": "Major League Soccer",
+      "nacionId": 95,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/101112.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/101112.png"
+    },
+    {
+      "id": 1943,
+      "nombre": "AFC Bournemouth",
+      "nombreOficial": "AFC Bournemouth",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1943.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1943.png"
+    },
+    {
+      "id": 1,
+      "nombre": "Arsenal",
+      "nombreOficial": "Arsenal",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1.png"
+    },
+    {
+      "id": 2,
+      "nombre": "Aston Villa",
+      "nombreOficial": "Aston Villa",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/2.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/2.png"
+    },
+    {
+      "id": 1925,
+      "nombre": "Brentford",
+      "nombreOficial": "Brentford",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1925.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1925.png"
+    },
+    {
+      "id": 1808,
+      "nombre": "Brighton",
+      "nombreOficial": "Brighton",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1808.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1808.png"
+    },
+    {
+      "id": 5,
+      "nombre": "Chelsea",
+      "nombreOficial": "Chelsea",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/5.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/5.png"
+    },
+    {
+      "id": 1799,
+      "nombre": "Crystal Palace",
+      "nombreOficial": "Crystal Palace",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1799.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1799.png"
+    },
+    {
+      "id": 7,
+      "nombre": "Everton",
+      "nombreOficial": "Everton",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/7.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/7.png"
+    },
+    {
+      "id": 144,
+      "nombre": "Fulham",
+      "nombreOficial": "Fulham",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/144.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/144.png"
+    },
+    {
+      "id": 94,
+      "nombre": "Ipswich",
+      "nombreOficial": "Ipswich",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/94.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/94.png"
+    },
+    {
+      "id": 95,
+      "nombre": "Leicester City",
+      "nombreOficial": "Leicester City",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/95.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/95.png"
+    },
+    {
+      "id": 9,
+      "nombre": "Liverpool",
+      "nombreOficial": "Liverpool",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/9.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/9.png"
+    },
+    {
+      "id": 10,
+      "nombre": "Manchester City",
+      "nombreOficial": "Manchester City",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/10.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/10.png"
+    },
+    {
+      "id": 11,
+      "nombre": "Manchester Utd",
+      "nombreOficial": "Manchester Utd",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/11.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/11.png"
+    },
+    {
+      "id": 13,
+      "nombre": "Newcastle Utd",
+      "nombreOficial": "Newcastle Utd",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/13.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/13.png"
+    },
+    {
+      "id": 14,
+      "nombre": "Nott'm Forest",
+      "nombreOficial": "Nott'm Forest",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/14.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/14.png"
+    },
+    {
+      "id": 17,
+      "nombre": "Southampton",
+      "nombreOficial": "Southampton",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/17.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/17.png"
+    },
+    {
+      "id": 18,
+      "nombre": "Spurs",
+      "nombreOficial": "Tottenham Hotspur",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/18.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/18.png"
+    },
+    {
+      "id": 19,
+      "nombre": "West Ham",
+      "nombreOficial": "West Ham",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/19.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/19.png"
+    },
+    {
+      "id": 110,
+      "nombre": "Wolves",
+      "nombreOficial": "Wolves",
+      "ligaId": 13,
+      "liga": "Premier League",
+      "nacionId": 14,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/110.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/110.png"
+    },
+    {
+      "id": 112387,
+      "nombre": "Al Ahli",
+      "nombreOficial": "Al Ahli",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112387.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112387.png"
+    },
+    {
+      "id": 112390,
+      "nombre": "Al Fateh",
+      "nombreOficial": "Al Fateh",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112390.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112390.png"
+    },
+    {
+      "id": 113057,
+      "nombre": "Al Fayha",
+      "nombreOficial": "Al Fayha",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/113057.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/113057.png"
+    },
+    {
+      "id": 605,
+      "nombre": "Al Hilal",
+      "nombreOficial": "Al Hilal",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/605.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/605.png"
+    },
+    {
+      "id": 607,
+      "nombre": "Al Ittihad",
+      "nombreOficial": "Al Ittihad",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/607.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/607.png"
+    },
+    {
+      "id": 112883,
+      "nombre": "Al Khaleej",
+      "nombreOficial": "Al Khaleej",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112883.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112883.png"
+    },
+    {
+      "id": 112139,
+      "nombre": "Al Nassr",
+      "nombreOficial": "Al Nassr",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112139.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112139.png"
+    },
+    {
+      "id": 113060,
+      "nombre": "Al Okhdood",
+      "nombreOficial": "Al Okhdood",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/113060.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/113060.png"
+    },
+    {
+      "id": 112391,
+      "nombre": "Al Qadisiyah",
+      "nombreOficial": "Al Qadisiyah",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112391.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112391.png"
+    },
+    {
+      "id": 112392,
+      "nombre": "Al Raed",
+      "nombreOficial": "Al Raed",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112392.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112392.png"
+    },
+    {
+      "id": 113037,
+      "nombre": "Al Riyadh",
+      "nombreOficial": "Al Riyadh",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/113037.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/113037.png"
+    },
+    {
+      "id": 111674,
+      "nombre": "Al Shabab",
+      "nombreOficial": "Al Shabab",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111674.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111674.png"
+    },
+    {
+      "id": 112393,
+      "nombre": "Al Taawoun",
+      "nombreOficial": "Al Taawoun",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112393.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112393.png"
+    },
+    {
+      "id": 112408,
+      "nombre": "Al Wehda",
+      "nombreOficial": "Al Wehda",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112408.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112408.png"
+    },
+    {
+      "id": 131735,
+      "nombre": "Al-Kholood",
+      "nombreOficial": "Al-Kholood",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/131735.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/131735.png"
+    },
+    {
+      "id": 112675,
+      "nombre": "Al-Orobah",
+      "nombreOficial": "Al-Orobah",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112675.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112675.png"
+    },
+    {
+      "id": 113217,
+      "nombre": "Damac FC",
+      "nombreOficial": "Damac FC",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/113217.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/113217.png"
+    },
+    {
+      "id": 112096,
+      "nombre": "Ettifaq FC",
+      "nombreOficial": "Ettifaq FC",
+      "ligaId": 350,
+      "liga": "ROSHN Saudi League",
+      "nacionId": 183,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/112096.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/112096.png"
+    },
+    {
+      "id": 115845,
+      "nombre": "Bergamo Calcio",
+      "nombreOficial": "Atalanta",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/115845.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/115845.png"
+    },
+    {
+      "id": 189,
+      "nombre": "Bologna",
+      "nombreOficial": "Bologna",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/189.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/189.png"
+    },
+    {
+      "id": 1842,
+      "nombre": "Cagliari",
+      "nombreOficial": "Cagliari",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1842.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1842.png"
+    },
+    {
+      "id": 1745,
+      "nombre": "Como",
+      "nombreOficial": "Como",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1745.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1745.png"
+    },
+    {
+      "id": 1746,
+      "nombre": "Empoli",
+      "nombreOficial": "Empoli",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/1746.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/1746.png"
+    },
+    {
+      "id": 110374,
+      "nombre": "Fiorentina",
+      "nombreOficial": "Fiorentina",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/110374.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/110374.png"
+    },
+    {
+      "id": 110556,
+      "nombre": "Genoa",
+      "nombreOficial": "Genoa",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/110556.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/110556.png"
+    },
+    {
+      "id": 206,
+      "nombre": "Hellas Verona",
+      "nombreOficial": "Hellas Verona",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/206.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/206.png"
+    },
+    {
+      "id": 45,
+      "nombre": "Juventus",
+      "nombreOficial": "Juventus",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/45.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/45.png"
+    },
+    {
+      "id": 115841,
+      "nombre": "Latium",
+      "nombreOficial": "Lazio",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/115841.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/115841.png"
+    },
+    {
+      "id": 347,
+      "nombre": "Lecce",
+      "nombreOficial": "Lecce",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/347.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/347.png"
+    },
+    {
+      "id": 131682,
+      "nombre": "Lombardia FC",
+      "nombreOficial": "Inter Milan",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/131682.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/131682.png"
+    },
+    {
+      "id": 131681,
+      "nombre": "Milano FC",
+      "nombreOficial": "Milan AC",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/131681.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/131681.png"
+    },
+    {
+      "id": 111811,
+      "nombre": "Monza",
+      "nombreOficial": "Monza",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/111811.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/111811.png"
+    },
+    {
+      "id": 48,
+      "nombre": "Napoli",
+      "nombreOficial": "Napoli",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/48.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/48.png"
+    },
+    {
+      "id": 50,
+      "nombre": "Parma",
+      "nombreOficial": "Parma",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/50.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/50.png"
+    },
+    {
+      "id": 52,
+      "nombre": "Roma",
+      "nombreOficial": "AS Roma",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/52.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/52.png"
+    },
+    {
+      "id": 54,
+      "nombre": "Torino",
+      "nombreOficial": "Torino",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/54.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/54.png"
+    },
+    {
+      "id": 55,
+      "nombre": "Udinese",
+      "nombreOficial": "Udinese",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/55.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/55.png"
+    },
+    {
+      "id": 205,
+      "nombre": "Venezia",
+      "nombreOficial": "Venezia",
+      "ligaId": 31,
+      "liga": "Serie A TIM",
+      "nacionId": 27,
+      "imagenClaraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/light/205.png",
+      "imagenOscuraUrl": "https://generacion-fut.ams3.cdn.digitaloceanspaces.com/game_assets/fc25/clubs/dark/205.png"
+    }
+  ]
+}

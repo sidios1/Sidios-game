@@ -2,7 +2,8 @@
 // que compone los motores). El canal de vista del orquestador/protocolo es
 // GENÉRICO: viaja una `VistaJuego`, la unión DISCRIMINADA de las formas de vista
 // de cada juego. El discriminante es el campo `juego` (= game-id) presente en las
-// cinco variantes: "carioca", "carioca-rumble", "mentiroso", "uno", "meloquiz".
+// seis variantes: "carioca", "carioca-rumble", "mentiroso", "uno", "meloquiz",
+// "monopoly".
 // Cada juego
 // del cliente narra su propia forma (por método bivariante) confiando en su
 // selección local del hub; el discriminante hace ese narrowing SEGURO y permite
@@ -16,6 +17,7 @@ import type { VistaRumble } from "./juegos/carioca/vistaRumble.js";
 import type { VistaMentiroso } from "./juegos/mentiroso/vistaMentiroso.js";
 import type { VistaUno } from "@juegos/uno-core";
 import type { VistaMeloquizSala } from "./juegos/meloquiz/vistaMeloquiz.js";
+import type { VistaMonopoly } from "./juegos/monopoly/vistaMonopoly.js";
 
 /** La vista que viaja por el canal genérico: la de cualquiera de los juegos. */
 export type VistaJuego =
@@ -23,7 +25,8 @@ export type VistaJuego =
   | VistaRumble
   | VistaMentiroso
   | VistaUno
-  | VistaMeloquizSala;
+  | VistaMeloquizSala
+  | VistaMonopoly;
 
 // Re-exporta la forma de Rumble (y sus tipos) para que el cliente la use por
 // `@juegos/server/vistaJuego` SIN depender directamente de rumble-core.
@@ -66,3 +69,16 @@ export type {
   JugadorVistaMeloquiz,
   VistaMeloquiz,
 } from "@juegos/meloquiz-core";
+
+// Re-exporta la forma de Monopoly Ultimate Team (y sus tipos de Mi Club) para
+// que el cliente la use SIN depender directamente de @juegos/monopoly-core.
+export type {
+  JugadorVistaMonopoly,
+  VistaMonopoly,
+} from "./juegos/monopoly/vistaMonopoly.js";
+export type {
+  CartaMiClub,
+  DecisionPendiente,
+  SubastaEnCurso,
+  VentanaRenegociacion,
+} from "@juegos/monopoly-core";

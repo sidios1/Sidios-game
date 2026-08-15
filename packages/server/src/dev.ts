@@ -3,10 +3,12 @@
 // En la Fase 5 esto lo reemplaza el servidor embebido en la app del host.
 // No se exporta desde index.ts: es un ejecutable, no parte de la librería.
 
+import path from "node:path";
 import { crearSala } from "./registroMotores.js";
 import type { OpcionesSala } from "./registroMotores.js";
 import { TransporteLanServidor } from "./transporteLan.js";
 import { cargarPoolDeCarpeta } from "./juegos/meloquiz/cargarPool.js";
+import { cargarPoolDeCarpeta as cargarPoolMonopolyDeCarpeta } from "./juegos/monopoly/cargarPool.js";
 
 const PUERTO_POR_DEFECTO = 35711;
 
@@ -65,11 +67,37 @@ if (juego === "meloquiz") {
   poolMeloquiz = pool;
 }
 
+// Monopoly necesita su PoolSobres para construir el motor: el proceso servidor lee
+// datos/*.json (ver juegos/monopoly/cargarPool.ts). CARPETA_DATOS es opcional: por
+// defecto apunta a la carpeta datos/ del repo (dos niveles arriba de packages/server,
+// el cwd de este script cuando corre vía `npm run dev --workspace=@juegos/server`).
+let poolMonopoly: OpcionesSala["poolMonopoly"];
+if (juego === "monopoly") {
+  const carpeta = process.env["CARPETA_DATOS"] ?? path.resolve(process.cwd(), "../../datos");
+  console.log(`Leyendo catálogo de ${carpeta}…`);
+  try {
+    poolMonopoly = await cargarPoolMonopolyDeCarpeta(carpeta);
+  } catch (error) {
+    console.error(
+      `No se pudo armar el catálogo de Monopoly desde "${carpeta}"` +
+        ` (¿existen jugadores_monopoly.json y tecnicos_monopoly.json ahí? usa CARPETA_DATOS` +
+        ` para apuntar a otra carpeta):`,
+      error,
+    );
+    process.exit(1);
+  }
+  console.log(
+    `Catálogo listo: ${poolMonopoly.restoDelMundo.length} de Resto del Mundo,` +
+      ` ${poolMonopoly.tecnicos.length} técnicos.`,
+  );
+}
+
 const transporte = new TransporteLanServidor({ puerto });
 const orquestador = crearSala(juego, {
   transporte,
   // exactOptionalPropertyTypes: se omite la clave si no hay pool.
   ...(poolMeloquiz !== undefined ? { poolMeloquiz } : {}),
+  ...(poolMonopoly !== undefined ? { poolMonopoly } : {}),
 });
 if (orquestador === undefined) {
   console.error(`juego desconocido: ${juego}`);

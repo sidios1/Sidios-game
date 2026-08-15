@@ -8,6 +8,7 @@ import { definicionCarioca } from "../juegos/carioca/definicion.js";
 import { definicionRumble } from "../juegos/carioca-rumble/definicion.js";
 import { definicionMeloquiz } from "../juegos/meloquiz/definicion.js";
 import { definicionMentiroso } from "../juegos/mentiroso/definicion.js";
+import { definicionMonopoly } from "../juegos/monopoly/definicion.js";
 import { definicionUno } from "../juegos/uno/definicion.js";
 
 export const CATALOGO: readonly DefinicionJuego[] = [
@@ -15,5 +16,6 @@ export const CATALOGO: readonly DefinicionJuego[] = [
   definicionRumble,
   definicionMeloquiz,
   definicionMentiroso,
+  definicionMonopoly,
   definicionUno,
 ];

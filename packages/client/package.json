@@ -18,6 +18,8 @@
   "dependencies": {
     "@juegos/carioca-core": "*",
     "@juegos/meloquiz-fuente-local": "*",
+    "@juegos/monopoly-core": "*",
+    "@juegos/monopoly-fuente-datos": "*",
     "@juegos/rumble-core": "*",
     "@juegos/server": "*",
     "@tauri-apps/api": "^2.0.0",

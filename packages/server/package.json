@@ -61,6 +61,8 @@
     "@juegos/meloquiz-core": "*",
     "@juegos/meloquiz-fuente-local": "*",
     "@juegos/mentiroso-core": "*",
+    "@juegos/monopoly-core": "*",
+    "@juegos/monopoly-fuente-datos": "*",
     "@juegos/uno-core": "*",
     "ws": "^8.18.0"
   },

@@ -174,13 +174,17 @@ npm run tauri:build -w @juegos/client         # ejecutable/instalador distribuib
 client ──> carioca-core (solo tipos/validaciones de presentación)
 client ──> rumble-core (solo config §6 + catálogo de habilidades para el panel del lobby)
 client ──> meloquiz-fuente-local (SOLO subpaths puros: /fuenteLocal, /huella, /sistemaArchivos, /metadatos*)
+client ──> monopoly-core (solo tipos/tablero: TABLERO_MONOPOLY, tipos de celda, PosicionJugador)
+client ──> monopoly-fuente-datos (SOLO subpaths puros: /clubes, /tiposCrudos)
 client ──> server (solo protocolo, vista e interfaz TransporteCliente)
-server ──> carioca-core, mentiroso-core, rumble-core, meloquiz-core, meloquiz-fuente-local
+server ──> carioca-core, mentiroso-core, rumble-core, meloquiz-core, meloquiz-fuente-local, monopoly-core, monopoly-fuente-datos
 rumble-core ──> carioca-core (solo tipos: Carta/Pinta y el RNG determinista)
 meloquiz-fuente-local ──> meloquiz-core
+monopoly-fuente-datos ──> monopoly-core
 carioca-core ──> (nada)
 mentiroso-core ──> (nada)
 meloquiz-core ──> (nada)
+monopoly-core ──> (nada)
 ```
 - `meloquiz-fuente-local` lee una carpeta de audio del disco y produce el
   `PoolPartida` (REGLAS_MELOQUIZ §1, §2). El SERVIDOR la usa entera (adaptadores de
@@ -203,6 +207,18 @@ meloquiz-core ──> (nada)
   de config del lobby (`ConfigRumble`, `CONFIG_DEFAULT`, `validarConfigRumble`,
   `HABILIDADES`): reusa el schema y la validación §6 sin duplicar reglas. El resto
   de Rumble (motor, vista) sigue viviendo en el server; el cliente NO lo importa.
+- `monopoly-core` es 100% browser-safe (sin dependencias de runtime, ni siquiera
+  de otro `*-core`), así que el CLIENTE lo importa DIRECTO para el layout del
+  tablero (`TABLERO_MONOPOLY`, `celdaEn`, `TipoCelda`, `NombreLiga`, `LIGAS`,
+  `PosicionJugador`, `POSICIONES`): el render deriva el color/etiqueta de cada
+  celda de esa fuente en vez de duplicar el layout de 40 celdas.
+  `monopoly-fuente-datos` en cambio tiene una raíz Node-only (`fuenteDatosArchivo.ts`
+  usa `node:fs`, igual que `meloquiz-fuente-local`): el cliente importa SOLO los
+  subpaths puros `/clubes` (`ClubPool`, `construirCatalogoClubes`) y `/tiposCrudos`
+  (las formas del JSON crudo), nunca la raíz. El catálogo de clubes (`datos/clubes_monopoly.json`)
+  se sirve al cliente como asset estático (`packages/client/public/datos/`) y se
+  parsea con esa misma función pura que usa el server, para no duplicar el mapeo
+  crudo→`ClubPool`.
 - El cliente importa SIEMPRE los subpaths `@juegos/server/protocolo`,
   `@juegos/server/vista`, `@juegos/server/vistaJuego`, `@juegos/server/transporte`,
   `@juegos/server/latido` y `@juegos/server/sincroniaReloj` (definidos en el

@@ -7,6 +7,8 @@
     { "path": "packages/uno-core" },
     { "path": "packages/meloquiz-core" },
     { "path": "packages/meloquiz-fuente-local" },
+    { "path": "packages/monopoly-core" },
+    { "path": "packages/monopoly-fuente-datos" },
     { "path": "packages/server" },
     { "path": "packages/client" }
   ]

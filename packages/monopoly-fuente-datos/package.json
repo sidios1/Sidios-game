@@ -1,0 +1,37 @@
+{
+  "name": "@juegos/monopoly-fuente-datos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fuente real de sobres para Monopoly Ultimate Team: datasets EA FC (datos/*.json) → PoolSobres",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "//exports": "El barrel (.) arrastra fuenteDatosArchivo.js (node:fs): solo lo usa el server. ./clubes y ./tiposCrudos son PUROS (sin fs), el CLIENTE los importa directo para construirCatalogoClubes/ClubPool sin meter Node en el bundle.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./clubes": {
+      "types": "./dist/clubes.d.ts",
+      "default": "./dist/clubes.js"
+    },
+    "./tiposCrudos": {
+      "types": "./dist/tiposCrudos.d.ts",
+      "default": "./dist/tiposCrudos.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@juegos/monopoly-core": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

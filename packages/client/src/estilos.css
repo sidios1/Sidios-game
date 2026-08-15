@@ -2000,3 +2000,280 @@ button.perfil-avatar.seleccionado {
   font-size: 0.78rem;
   color: #9aa5b1;
 }
+
+/* ── Monopoly Ultimate Team (overlay HTML sobre el canvas 3D) ───────────────
+   A diferencia de Carioca/UNO, la info de cada jugador vive en un panel FIJO
+   (no insignias proyectadas sobre la ficha 3D): simplificación de esta
+   sesión, ver hudMonopoly.ts. */
+.monopoly {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.monopoly-barra {
+  position: absolute;
+  top: 3.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.6rem;
+}
+
+.monopoly-chip {
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: rgba(13, 18, 24, 0.85);
+  border: 1px solid #2a3442;
+}
+
+.monopoly-chip-palco {
+  color: #d4af37;
+  border-color: #6b5620;
+}
+
+.monopoly-jugadores {
+  position: absolute;
+  top: 6rem;
+  left: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: 15rem;
+  pointer-events: auto;
+}
+
+.monopoly-jugador {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 10px;
+  background: rgba(13, 18, 24, 0.82);
+  border: 1px solid #2a3442;
+  flex-wrap: wrap;
+}
+
+.monopoly-jugador.en-turno {
+  border-color: #ffce54;
+  box-shadow: 0 0 12px rgba(255, 206, 84, 0.6);
+}
+
+.monopoly-jugador.desconectado {
+  opacity: 0.5;
+}
+
+.monopoly-jugador.en-quiebra {
+  opacity: 0.6;
+  filter: grayscale(0.6);
+}
+
+.monopoly-jugador-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #2a3442;
+  object-fit: contain;
+}
+
+.monopoly-jugador-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.monopoly-jugador-nombre {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.monopoly-jugador-presupuesto {
+  font-size: 0.78rem;
+  color: #9ad19a;
+}
+
+.monopoly-badge-descendido {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: #c0392b;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+}
+
+.monopoly-badge-quiebra {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: #4a525e;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+}
+
+.monopoly-libre {
+  position: absolute;
+  top: 6rem;
+  right: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: 16rem;
+  pointer-events: auto;
+}
+
+.monopoly-accion-libre {
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  background: #4a525e;
+}
+
+.monopoly-acciones {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 94vw;
+  pointer-events: auto;
+}
+
+.monopoly-accion-principal {
+  padding: 0.6rem 1.3rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1rem;
+  background: #1d6fd6;
+  border: 1px solid #2a3442;
+}
+
+.monopoly-accion-secundaria {
+  padding: 0.5rem 1.1rem;
+  border-radius: 10px;
+  font-weight: 700;
+  background: #4a525e;
+  border: 1px solid #2a3442;
+}
+
+.monopoly-espera,
+.monopoly-subaviso {
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: rgba(13, 18, 24, 0.82);
+  border: 1px solid #2a3442;
+  text-align: center;
+}
+
+.monopoly-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.9rem 1.1rem;
+  border-radius: 12px;
+  background: rgba(13, 18, 24, 0.94);
+  border: 1px solid #2a3442;
+  max-width: 90vw;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.monopoly-selector-titulo {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.monopoly-selector-subtitulo {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #cdd6e2;
+}
+
+.monopoly-selector-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.monopoly-selector-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.monopoly-selector-boton {
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  background: #2c3e5a;
+  border: 1px solid #3a567e;
+}
+
+.monopoly-subasta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.1rem;
+  border-radius: 12px;
+  background: rgba(13, 18, 24, 0.94);
+  border: 1px solid #2a3442;
+}
+
+.monopoly-subasta-fila {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.monopoly-subasta-fila input {
+  width: 5.5rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #3a567e;
+  background: #0d1218;
+  color: inherit;
+}
+
+.monopoly-fin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.4rem;
+  border-radius: 12px;
+  background: rgba(13, 18, 24, 0.92);
+  border: 1px solid #2a3442;
+}
+
+.monopoly-fin-titulo {
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.monopoly-fin-lista {
+  font-size: 0.9rem;
+  color: #cdd6e2;
+  padding-left: 1.4rem;
+}
+
+.monopoly-toast {
+  position: absolute;
+  top: 7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: rgba(36, 48, 70, 0.95);
+  border: 1px solid #3a567e;
+  max-width: min(560px, 90vw);
+  text-align: center;
+}
