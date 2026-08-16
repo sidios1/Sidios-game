@@ -11,12 +11,15 @@
 // descargaron a packages/client/public/datos/cartasFondo/ pero no se usan
 // todavía (candidata de pulido visual futuro: alinear texto sobre ese marco
 // en vez del degradado propio requiere inspeccionar el asset primero).
-// Placas de celda y caras de dado siguen siendo 100% canvas procedural.
+// Las placas de celda de tipo "liga" también componen el escudo real de la
+// liga (logosLiga.ts, Wikimedia Commons) como marca de agua detrás del
+// texto; el resto de las celdas y los dados siguen siendo 100% procedural.
 
 import * as THREE from "three";
 import type { CartaMiClub } from "@juegos/monopoly-core";
 import type { CeldaTablero } from "@juegos/monopoly-core";
 import { colorDeCelda, etiquetaDeCelda } from "./ligaColores.js";
+import { rutaLogoLiga } from "./logosLiga.js";
 
 const ANCHO_CARTA = 256;
 const ALTO_CARTA = 358;
@@ -180,6 +183,14 @@ function dibujarCartaTecnico(
   dibujarBandaNombre(ctx, nombre, apellido);
 }
 
+/** Carga `url`; llama `alCargar` si resuelve, o `alFallar` si no (404/red). */
+function cargarImagen(url: string, alCargar: (img: HTMLImageElement) => void, alFallar?: () => void): void {
+  const img = new Image();
+  img.onload = () => alCargar(img);
+  img.onerror = () => alFallar?.();
+  img.src = url;
+}
+
 /** Carga `/datos/<carpeta>/<id>.png` y compone la foto + reescribe texto encima; no-op si falla (404 esperado para ~15% del dataset). */
 function componerFoto(
   textura: THREE.CanvasTexture,
@@ -188,16 +199,11 @@ function componerFoto(
   id: string,
   redibujarTexto: () => void,
 ): void {
-  const img = new Image();
-  img.onload = () => {
+  cargarImagen(`/datos/${carpeta}/${id}.png`, (img) => {
     dibujarFoto(ctx, img);
     redibujarTexto();
     textura.needsUpdate = true;
-  };
-  img.onerror = () => {
-    // Sin foto en el dataset para este id: la carta se queda con el layout base.
-  };
-  img.src = `/datos/${carpeta}/${id}.png`;
+  });
 }
 
 const cacheCartas = new Map<string, THREE.CanvasTexture>();
@@ -260,16 +266,15 @@ const ANCHO_CELDA = 220;
 const ALTO_CELDA = 150;
 const cacheCeldas = new Map<number, THREE.CanvasTexture>();
 
-/** Placa de una celda del tablero: color de fondo + etiqueta, cacheada por índice. */
-export function texturaCelda(celda: CeldaTablero): THREE.CanvasTexture {
-  const existente = cacheCeldas.get(celda.indice);
-  if (existente !== undefined) return existente;
-  const ctx = crearLienzo(ANCHO_CELDA, ALTO_CELDA);
+function dibujarFondoCelda(ctx: CanvasRenderingContext2D, celda: CeldaTablero): void {
   ctx.fillStyle = colorDeCelda(celda);
   ctx.fillRect(0, 0, ANCHO_CELDA, ALTO_CELDA);
   ctx.strokeStyle = "#1a1a1a";
   ctx.lineWidth = 3;
   ctx.strokeRect(1.5, 1.5, ANCHO_CELDA - 3, ALTO_CELDA - 3);
+}
+
+function dibujarTextoCelda(ctx: CanvasRenderingContext2D, celda: CeldaTablero): void {
   ctx.fillStyle = "#fbf9f4";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -277,7 +282,39 @@ export function texturaCelda(celda: CeldaTablero): THREE.CanvasTexture {
   const lineas = etiquetaDeCelda(celda).split("\n");
   const inicioY = ALTO_CELDA / 2 - ((lineas.length - 1) * 24) / 2;
   lineas.forEach((linea, i) => ctx.fillText(linea, ANCHO_CELDA / 2, inicioY + i * 24));
+}
+
+/** Escudo de la liga como marca de agua semitransparente, centrado ("contain": nunca se recorta). */
+function dibujarLogoLiga(ctx: CanvasRenderingContext2D, img: HTMLImageElement): void {
+  ctx.save();
+  ctx.globalAlpha = 0.35;
+  const margen = 14;
+  const escala = Math.min(
+    (ANCHO_CELDA - margen * 2) / img.naturalWidth,
+    (ALTO_CELDA - margen * 2) / img.naturalHeight,
+  );
+  const w = img.naturalWidth * escala;
+  const h = img.naturalHeight * escala;
+  ctx.drawImage(img, (ANCHO_CELDA - w) / 2, (ALTO_CELDA - h) / 2, w, h);
+  ctx.restore();
+}
+
+/** Placa de una celda del tablero: color de fondo + etiqueta (+ escudo real si es de liga), cacheada por índice. */
+export function texturaCelda(celda: CeldaTablero): THREE.CanvasTexture {
+  const existente = cacheCeldas.get(celda.indice);
+  if (existente !== undefined) return existente;
+  const ctx = crearLienzo(ANCHO_CELDA, ALTO_CELDA);
+  dibujarFondoCelda(ctx, celda);
+  dibujarTextoCelda(ctx, celda);
   const textura = aTextura(ctx);
+  if (celda.tipo === "liga") {
+    cargarImagen(rutaLogoLiga(celda.liga), (img) => {
+      dibujarFondoCelda(ctx, celda);
+      dibujarLogoLiga(ctx, img);
+      dibujarTextoCelda(ctx, celda);
+      textura.needsUpdate = true;
+    });
+  }
   cacheCeldas.set(celda.indice, textura);
   return textura;
 }
