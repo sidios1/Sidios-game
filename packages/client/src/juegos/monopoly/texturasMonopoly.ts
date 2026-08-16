@@ -1,8 +1,17 @@
-// Texturas generadas 100% por canvas 2D (sin assets externos), mismo patrón que
-// escena/texturasCarta.ts: cartas de Mi Club (jugador/técnico), placas de celda
-// y caras de dado. No hay imágenes reales de jugador/técnico en el dataset que
-// llega al cliente (deliberado, ver SPIKE_DATOS_JUGADORES.md sobre no republicar
-// assets de EA) — los logos de club SÍ son reales, ver texturasClubes.ts aparte.
+// Cartas de Mi Club: fondo/textos por canvas 2D (mismo patrón que
+// escena/texturasCarta.ts), más la foto REAL del jugador/técnico compuesta
+// encima. Las fotos se descargaron una vez a packages/client/public/datos/
+// (jugadores/<jugadorId>.png, tecnicos/<id>.png — mismo motivo de CORS que
+// texturasClubes.ts) y se cargan async: la carta se ve completa de inmediato
+// con el layout base: dorado/degradado, y la foto se compone encima apenas
+// carga (`textura.needsUpdate`). Si el jugador no tiene foto en el dataset
+// (~15% de los 4200, HTTP 404 en la descarga), la carta se queda con el
+// layout base — degradación silenciosa, no es un error de la partida.
+// Los 3 fondos de carta reales del dataset (`imagenCartaUrl`) también se
+// descargaron a packages/client/public/datos/cartasFondo/ pero no se usan
+// todavía (candidata de pulido visual futuro: alinear texto sobre ese marco
+// en vez del degradado propio requiere inspeccionar el asset primero).
+// Placas de celda y caras de dado siguen siendo 100% canvas procedural.
 
 import * as THREE from "three";
 import type { CartaMiClub } from "@juegos/monopoly-core";
@@ -66,6 +75,84 @@ function fondoCarta(ctx: CanvasRenderingContext2D, claro: string, oscuro: string
   ctx.stroke();
 }
 
+/** Rectángulo donde se compone la foto (mismo lugar en jugador y técnico). */
+const FOTO = { x: 38, y: 88, w: ANCHO_CARTA - 76, h: 172, r: 14 };
+
+function dibujarMarcoFoto(ctx: CanvasRenderingContext2D): void {
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.5)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(FOTO.x, FOTO.y, FOTO.w, FOTO.h, FOTO.r);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Compone `img` recortada ("cover") dentro del rectángulo de foto. */
+function dibujarFoto(ctx: CanvasRenderingContext2D, img: HTMLImageElement): void {
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(FOTO.x, FOTO.y, FOTO.w, FOTO.h, FOTO.r);
+  ctx.clip();
+  const escala = Math.max(FOTO.w / img.naturalWidth, FOTO.h / img.naturalHeight);
+  const w = img.naturalWidth * escala;
+  const h = img.naturalHeight * escala;
+  ctx.drawImage(img, FOTO.x + (FOTO.w - w) / 2, FOTO.y + (FOTO.h - h) / 2, w, h);
+  ctx.restore();
+  dibujarMarcoFoto(ctx);
+}
+
+function dibujarBadgeRating(ctx: CanvasRenderingContext2D, rating: number, posicion: string): void {
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  ctx.beginPath();
+  ctx.roundRect(8, 8, 64, 68, 10);
+  ctx.fill();
+  ctx.fillStyle = "#fbf9f4";
+  ctx.textAlign = "center";
+  ctx.font = "bold 30px Georgia, serif";
+  ctx.fillText(String(rating), 40, 42);
+  ctx.font = "bold 15px Arial, sans-serif";
+  ctx.fillText(posicion, 40, 64);
+  ctx.restore();
+}
+
+function dibujarEtiquetaTecnico(ctx: CanvasRenderingContext2D): void {
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  ctx.beginPath();
+  ctx.roundRect(8, 8, 90, 30, 8);
+  ctx.fill();
+  ctx.fillStyle = "#fbf9f4";
+  ctx.textAlign = "center";
+  ctx.font = "bold 14px Arial, sans-serif";
+  ctx.fillText("TÉCNICO", 53, 28);
+  ctx.restore();
+}
+
+function dibujarBandaNombre(
+  ctx: CanvasRenderingContext2D,
+  nombre: string,
+  apellido: string,
+  pieDePagina?: string,
+): void {
+  const y0 = ALTO_CARTA - 90;
+  ctx.save();
+  ctx.fillStyle = "rgba(0,0,0,0.45)";
+  ctx.fillRect(0, y0, ANCHO_CARTA, ALTO_CARTA - y0);
+  ctx.fillStyle = "#fbf9f4";
+  ctx.textAlign = "center";
+  ctx.font = "bold 26px Arial, sans-serif";
+  ctx.fillText(nombre, ANCHO_CARTA / 2, y0 + 34);
+  ctx.font = "bold 28px Arial, sans-serif";
+  ctx.fillText(apellido, ANCHO_CARTA / 2, y0 + 66);
+  if (pieDePagina !== undefined) {
+    ctx.font = "18px Arial, sans-serif";
+    ctx.fillText(pieDePagina, ANCHO_CARTA / 2, ALTO_CARTA - 8);
+  }
+  ctx.restore();
+}
+
 function dibujarCartaJugador(
   ctx: CanvasRenderingContext2D,
   nombre: string,
@@ -76,20 +163,9 @@ function dibujarCartaJugador(
 ): void {
   const [claro, oscuro] = coloresPorCalidad(calidad);
   fondoCarta(ctx, claro, oscuro);
-  ctx.fillStyle = "#fbf9f4";
-  ctx.textAlign = "center";
-  ctx.font = "bold 56px Georgia, serif";
-  ctx.fillText(String(rating), ANCHO_CARTA / 2, 76);
-  ctx.font = "bold 26px Arial, sans-serif";
-  ctx.fillText(posicion, ANCHO_CARTA / 2, 112);
-  ctx.font = "bold 28px Arial, sans-serif";
-  ctx.fillText(nombre, ANCHO_CARTA / 2, ALTO_CARTA - 90);
-  ctx.font = "bold 30px Arial, sans-serif";
-  ctx.fillText(apellido, ANCHO_CARTA / 2, ALTO_CARTA - 56);
-  if (calidad === "Icon") {
-    ctx.font = "22px Arial, sans-serif";
-    ctx.fillText("★ ICON ★", ANCHO_CARTA / 2, ALTO_CARTA - 24);
-  }
+  dibujarMarcoFoto(ctx);
+  dibujarBadgeRating(ctx, rating, posicion);
+  dibujarBandaNombre(ctx, nombre, apellido, calidad === "Icon" ? "★ ICON ★" : undefined);
 }
 
 /** Técnicos: siempre fondo "dorado" (nota de diseño de SPIKE_DATOS_JUGADORES.md §8). */
@@ -99,14 +175,29 @@ function dibujarCartaTecnico(
   apellido: string,
 ): void {
   fondoCarta(ctx, ORO, ORO_OSCURO);
-  ctx.fillStyle = "#fbf9f4";
-  ctx.textAlign = "center";
-  ctx.font = "bold 24px Arial, sans-serif";
-  ctx.fillText("TÉCNICO", ANCHO_CARTA / 2, 90);
-  ctx.font = "bold 28px Arial, sans-serif";
-  ctx.fillText(nombre, ANCHO_CARTA / 2, ALTO_CARTA / 2);
-  ctx.font = "bold 30px Arial, sans-serif";
-  ctx.fillText(apellido, ANCHO_CARTA / 2, ALTO_CARTA / 2 + 36);
+  dibujarMarcoFoto(ctx);
+  dibujarEtiquetaTecnico(ctx);
+  dibujarBandaNombre(ctx, nombre, apellido);
+}
+
+/** Carga `/datos/<carpeta>/<id>.png` y compone la foto + reescribe texto encima; no-op si falla (404 esperado para ~15% del dataset). */
+function componerFoto(
+  textura: THREE.CanvasTexture,
+  ctx: CanvasRenderingContext2D,
+  carpeta: "jugadores" | "tecnicos",
+  id: string,
+  redibujarTexto: () => void,
+): void {
+  const img = new Image();
+  img.onload = () => {
+    dibujarFoto(ctx, img);
+    redibujarTexto();
+    textura.needsUpdate = true;
+  };
+  img.onerror = () => {
+    // Sin foto en el dataset para este id: la carta se queda con el layout base.
+  };
+  img.src = `/datos/${carpeta}/${id}.png`;
 }
 
 const cacheCartas = new Map<string, THREE.CanvasTexture>();
@@ -116,19 +207,22 @@ export function texturaCartaMiClub(carta: CartaMiClub): THREE.CanvasTexture {
   const existente = cacheCartas.get(carta.id);
   if (existente !== undefined) return existente;
   const ctx = crearLienzo(ANCHO_CARTA, ALTO_CARTA);
-  if (carta.tipo === "jugador") {
-    dibujarCartaJugador(
-      ctx,
-      carta.jugador.nombre,
-      carta.jugador.apellido,
-      carta.jugador.rating,
-      carta.jugador.posicion,
-      carta.jugador.calidad,
-    );
-  } else {
-    dibujarCartaTecnico(ctx, carta.tecnico.nombre, carta.tecnico.apellido);
-  }
   const textura = aTextura(ctx);
+  if (carta.tipo === "jugador") {
+    const { nombre, apellido, rating, posicion, calidad, jugadorId } = carta.jugador;
+    dibujarCartaJugador(ctx, nombre, apellido, rating, posicion, calidad);
+    componerFoto(textura, ctx, "jugadores", jugadorId, () => {
+      dibujarBadgeRating(ctx, rating, posicion);
+      dibujarBandaNombre(ctx, nombre, apellido, calidad === "Icon" ? "★ ICON ★" : undefined);
+    });
+  } else {
+    const { nombre, apellido, id } = carta.tecnico;
+    dibujarCartaTecnico(ctx, nombre, apellido);
+    componerFoto(textura, ctx, "tecnicos", id, () => {
+      dibujarEtiquetaTecnico(ctx);
+      dibujarBandaNombre(ctx, nombre, apellido);
+    });
+  }
   cacheCartas.set(carta.id, textura);
   return textura;
 }
