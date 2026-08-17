@@ -77,10 +77,15 @@ function fondoCarta(ctx: CanvasRenderingContext2D, claro: string, oscuro: string
   ctx.stroke();
 }
 
-/** Marco de carta real (dataset), 75 = corte exacto observado en el dataset (§oro/plata, sin overlap). */
+// MARCO_ICON sale del dataset (imagenCartaUrl real de las cartas Icon). Los
+// 2 fondos "Rare" del dataset (cards_bg_e_0_0_2/3.png) resultaron ser el
+// template COMÚN de EA (liso, sin el brillo/cinta característico de "Rare"
+// — el propio nombre "e_0_0_*" los delata: familia "0" = común), así que se
+// reemplazaron por el fondo Rare oro/plata real (cdn.futbin.com, mismo
+// criterio de uso privado que el resto de los assets de este dataset).
 const MARCO_ICON = "/datos/cartasFondo/cards_bg_e_1_12_0.png";
-const MARCO_RARE_ORO = "/datos/cartasFondo/cards_bg_e_0_0_3.png";
-const MARCO_RARE_PLATA = "/datos/cartasFondo/cards_bg_e_0_0_2.png";
+const MARCO_RARE_ORO = "/datos/cartasFondo/rare-oro.png";
+const MARCO_RARE_PLATA = "/datos/cartasFondo/rare-plata.png";
 const RATING_CORTE_ORO = 75;
 
 function rutaMarcoJugador(calidad: string, rating: number): string {
