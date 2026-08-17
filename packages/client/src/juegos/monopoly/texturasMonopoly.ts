@@ -81,8 +81,9 @@ function fondoCarta(ctx: CanvasRenderingContext2D, claro: string, oscuro: string
 // 2 fondos "Rare" del dataset (cards_bg_e_0_0_2/3.png) resultaron ser el
 // template COMÚN de EA (liso, sin el brillo/cinta característico de "Rare"
 // — el propio nombre "e_0_0_*" los delata: familia "0" = común), así que se
-// reemplazaron por el fondo Rare oro/plata real (cdn.futbin.com, mismo
-// criterio de uso privado que el resto de los assets de este dataset).
+// reemplazaron por el fondo Rare oro/plata de EA Sports FC 26 (cdn.futbin.com
+// /content/fifa26/…, mismo año que el resto del dataset — year:2026 en
+// jugadores_monopoly.json; mismo criterio de uso privado que los demás assets).
 const MARCO_ICON = "/datos/cartasFondo/cards_bg_e_1_12_0.png";
 const MARCO_RARE_ORO = "/datos/cartasFondo/rare-oro.png";
 const MARCO_RARE_PLATA = "/datos/cartasFondo/rare-plata.png";
