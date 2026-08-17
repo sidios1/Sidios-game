@@ -214,6 +214,36 @@ function cargarImagen(url: string, alCargar: (img: HTMLImageElement) => void, al
   img.src = url;
 }
 
+const cacheImagenes = new Map<string, HTMLImageElement>();
+
+/**
+ * Como `cargarImagen`, pero cacheada por url: si ya se cargó antes, llama
+ * `alCargar` de inmediato (sync). Los 3 marcos de carta (Icon/Rare-oro/
+ * Rare-plata) son un set fijo y chico que conviene precargar así — la
+ * revelación de sobre en 3D dura ~2s (ver DURACION_REVELACION_MS en
+ * juegoMonopoly.ts) y una carga async desde cero no siempre llega a tiempo
+ * antes de que la malla desaparezca; con el marco ya en caché, se compone
+ * en el primer repintado de cada carta nueva.
+ */
+function cargarImagenCacheada(url: string, alCargar: (img: HTMLImageElement) => void): void {
+  const existente = cacheImagenes.get(url);
+  if (existente !== undefined) {
+    alCargar(existente);
+    return;
+  }
+  cargarImagen(url, (img) => {
+    cacheImagenes.set(url, img);
+    alCargar(img);
+  });
+}
+
+/** Precarga los 3 marcos de carta reales; llamar una vez al arrancar el juego. */
+export function precargarMarcosCarta(): void {
+  for (const url of [MARCO_ICON, MARCO_RARE_ORO, MARCO_RARE_PLATA]) {
+    cargarImagenCacheada(url, () => undefined);
+  }
+}
+
 /**
  * Repinta una carta de Mi Club desde cero, en el orden fijo fondo→marco→foto→texto,
  * usando lo que ya haya cargado de `marco`/`foto` (cualquiera de los dos puede
@@ -261,7 +291,7 @@ export function texturaCartaMiClub(carta: CartaMiClub): THREE.CanvasTexture {
       textura.needsUpdate = true;
     };
     repintar();
-    cargarImagen(rutaMarcoJugador(calidad, rating), (img) => {
+    cargarImagenCacheada(rutaMarcoJugador(calidad, rating), (img) => {
       marco = img;
       repintar();
     });
@@ -280,7 +310,7 @@ export function texturaCartaMiClub(carta: CartaMiClub): THREE.CanvasTexture {
       textura.needsUpdate = true;
     };
     repintar();
-    cargarImagen(RUTA_MARCO_TECNICO, (img) => {
+    cargarImagenCacheada(RUTA_MARCO_TECNICO, (img) => {
       marco = img;
       repintar();
     });
@@ -368,7 +398,7 @@ export function texturaCelda(celda: CeldaTablero): THREE.CanvasTexture {
   dibujarTextoCelda(ctx, celda);
   const textura = aTextura(ctx);
   if (celda.tipo === "liga") {
-    cargarImagen(rutaLogoLiga(celda.liga), (img) => {
+    cargarImagenCacheada(rutaLogoLiga(celda.liga), (img) => {
       dibujarFondoCelda(ctx, celda);
       dibujarLogoLiga(ctx, img);
       dibujarTextoCelda(ctx, celda);

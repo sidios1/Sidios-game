@@ -43,6 +43,7 @@ import {
 } from "./mallaMonopoly.js";
 import { cargarCatalogoClubes } from "./catalogoClubes.js";
 import { clubDeJugador } from "./clubDeJugador.js";
+import { precargarMarcosCarta } from "./texturasMonopoly.js";
 import { HudMonopoly } from "./hudMonopoly.js";
 
 /** Estética del tablero: verde césped, sin las zonas clickeables de mazo/pozo de Carioca. */
@@ -60,7 +61,10 @@ const UMBRAL_PASO_A_PASO = 15;
 const DURACION_PASO = 0.13;
 const DURACION_ARCO = 0.55;
 const ALTURA_ARCO = 1.2;
-const DURACION_REVELACION_MS = 1600;
+// 2.2s en vez de un flourish más corto: le da margen a la foto del jugador/
+// técnico (única, no precargable como los 3 marcos) para llegar antes de que
+// la malla de revelación desaparezca — ver precargarMarcosCarta() en iniciar().
+const DURACION_REVELACION_MS = 2200;
 
 interface UltimaTiradaVista {
   readonly d1: number;
@@ -96,6 +100,7 @@ export class JuegoMonopoly implements IJuego {
 
   iniciar(contexto: ContextoJuego): void {
     this.contexto = contexto;
+    precargarMarcosCarta();
     const escena = new Escena(contexto.contenedorEscena, OPCIONES_ESCENA);
     this.escena = escena;
     escena.camara.position.set(0, MEDIO_LADO_TABLERO * 1.9, MEDIO_LADO_TABLERO * 1.35);
