@@ -1,16 +1,15 @@
-// Cartas de Mi Club: fondo/textos por canvas 2D (mismo patrón que
-// escena/texturasCarta.ts), más la foto REAL del jugador/técnico compuesta
-// encima. Las fotos se descargaron una vez a packages/client/public/datos/
-// (jugadores/<jugadorId>.png, tecnicos/<id>.png — mismo motivo de CORS que
-// texturasClubes.ts) y se cargan async: la carta se ve completa de inmediato
-// con el layout base: dorado/degradado, y la foto se compone encima apenas
-// carga (`textura.needsUpdate`). Si el jugador no tiene foto en el dataset
-// (~15% de los 4200, HTTP 404 en la descarga), la carta se queda con el
-// layout base — degradación silenciosa, no es un error de la partida.
-// Los 3 fondos de carta reales del dataset (`imagenCartaUrl`) también se
-// descargaron a packages/client/public/datos/cartasFondo/ pero no se usan
-// todavía (candidata de pulido visual futuro: alinear texto sobre ese marco
-// en vez del degradado propio requiere inspeccionar el asset primero).
+// Cartas de Mi Club: marco REAL del dataset (packages/client/public/datos/cartasFondo/,
+// 3 variantes: Icon mármol+dorado, Rare oro ≥75, Rare plata <75 — el corte de
+// rating es exacto en el dataset real, sin overlap, así que se deriva de
+// calidad+rating sin tocar el pipeline de datos) + la foto REAL del
+// jugador/técnico (packages/client/public/datos/{jugadores,tecnicos}/) compuestas
+// encima del degradado propio. Todo carga async — mismo motivo de CORS que
+// texturasClubes.ts — así que la carta se ve completa de inmediato con el
+// degradado de respaldo y se repinta cada vez que el marco o la foto
+// terminan de cargar (`textura.needsUpdate`), en cualquier orden. Si el
+// jugador no tiene foto en el dataset (~15% de los 4200, HTTP 404 en la
+// descarga), la carta se queda con el marco real pero sin foto —
+// degradación silenciosa, no es un error de la partida.
 // Las placas de celda de tipo "liga" también componen el escudo real de la
 // liga (logosLiga.ts, Wikimedia Commons) como marca de agua detrás del
 // texto; el resto de las celdas y los dados siguen siendo 100% procedural.
@@ -76,6 +75,30 @@ function fondoCarta(ctx: CanvasRenderingContext2D, claro: string, oscuro: string
   ctx.beginPath();
   ctx.roundRect(2, 2, ANCHO_CARTA - 4, ALTO_CARTA - 4, RADIO_ESQUINA);
   ctx.stroke();
+}
+
+/** Marco de carta real (dataset), 75 = corte exacto observado en el dataset (§oro/plata, sin overlap). */
+const MARCO_ICON = "/datos/cartasFondo/cards_bg_e_1_12_0.png";
+const MARCO_RARE_ORO = "/datos/cartasFondo/cards_bg_e_0_0_3.png";
+const MARCO_RARE_PLATA = "/datos/cartasFondo/cards_bg_e_0_0_2.png";
+const RATING_CORTE_ORO = 75;
+
+function rutaMarcoJugador(calidad: string, rating: number): string {
+  if (calidad === "Icon") return MARCO_ICON;
+  return rating >= RATING_CORTE_ORO ? MARCO_RARE_ORO : MARCO_RARE_PLATA;
+}
+
+/** Técnicos no tienen calidad/rating propios: siempre el marco dorado (SPIKE_DATOS_JUGADORES.md §8). */
+const RUTA_MARCO_TECNICO = MARCO_RARE_ORO;
+
+/** Fondo con el marco real, estirado al tamaño de la carta sobre una base sólida (por si el PNG tiene bordes transparentes). */
+function dibujarMarcoReal(ctx: CanvasRenderingContext2D, img: HTMLImageElement): void {
+  ctx.clearRect(0, 0, ANCHO_CARTA, ALTO_CARTA);
+  ctx.fillStyle = "#16283a";
+  ctx.beginPath();
+  ctx.roundRect(0, 0, ANCHO_CARTA, ALTO_CARTA, RADIO_ESQUINA);
+  ctx.fill();
+  ctx.drawImage(img, 0, 0, ANCHO_CARTA, ALTO_CARTA);
 }
 
 /** Rectángulo donde se compone la foto (mismo lugar en jugador y técnico). */
@@ -191,19 +214,27 @@ function cargarImagen(url: string, alCargar: (img: HTMLImageElement) => void, al
   img.src = url;
 }
 
-/** Carga `/datos/<carpeta>/<id>.png` y compone la foto + reescribe texto encima; no-op si falla (404 esperado para ~15% del dataset). */
-function componerFoto(
-  textura: THREE.CanvasTexture,
+/**
+ * Repinta una carta de Mi Club desde cero, en el orden fijo fondo→marco→foto→texto,
+ * usando lo que ya haya cargado de `marco`/`foto` (cualquiera de los dos puede
+ * llegar primero, o nunca si el fetch falla — degradación silenciosa).
+ */
+function repintarCarta(
   ctx: CanvasRenderingContext2D,
-  carpeta: "jugadores" | "tecnicos",
-  id: string,
-  redibujarTexto: () => void,
+  claro: string,
+  oscuro: string,
+  marco: HTMLImageElement | null,
+  foto: HTMLImageElement | null,
+  dibujarTexto: () => void,
 ): void {
-  cargarImagen(`/datos/${carpeta}/${id}.png`, (img) => {
-    dibujarFoto(ctx, img);
-    redibujarTexto();
-    textura.needsUpdate = true;
-  });
+  if (marco !== null) {
+    dibujarMarcoReal(ctx, marco);
+  } else {
+    fondoCarta(ctx, claro, oscuro);
+    dibujarMarcoFoto(ctx);
+  }
+  if (foto !== null) dibujarFoto(ctx, foto);
+  dibujarTexto();
 }
 
 const cacheCartas = new Map<string, THREE.CanvasTexture>();
@@ -214,19 +245,48 @@ export function texturaCartaMiClub(carta: CartaMiClub): THREE.CanvasTexture {
   if (existente !== undefined) return existente;
   const ctx = crearLienzo(ANCHO_CARTA, ALTO_CARTA);
   const textura = aTextura(ctx);
+
+  let marco: HTMLImageElement | null = null;
+  let foto: HTMLImageElement | null = null;
+
   if (carta.tipo === "jugador") {
     const { nombre, apellido, rating, posicion, calidad, jugadorId } = carta.jugador;
-    dibujarCartaJugador(ctx, nombre, apellido, rating, posicion, calidad);
-    componerFoto(textura, ctx, "jugadores", jugadorId, () => {
+    const [claro, oscuro] = coloresPorCalidad(calidad);
+    const dibujarTexto = (): void => {
       dibujarBadgeRating(ctx, rating, posicion);
       dibujarBandaNombre(ctx, nombre, apellido, calidad === "Icon" ? "★ ICON ★" : undefined);
+    };
+    const repintar = (): void => {
+      repintarCarta(ctx, claro, oscuro, marco, foto, dibujarTexto);
+      textura.needsUpdate = true;
+    };
+    repintar();
+    cargarImagen(rutaMarcoJugador(calidad, rating), (img) => {
+      marco = img;
+      repintar();
+    });
+    cargarImagen(`/datos/jugadores/${jugadorId}.png`, (img) => {
+      foto = img;
+      repintar();
     });
   } else {
     const { nombre, apellido, id } = carta.tecnico;
-    dibujarCartaTecnico(ctx, nombre, apellido);
-    componerFoto(textura, ctx, "tecnicos", id, () => {
+    const dibujarTexto = (): void => {
       dibujarEtiquetaTecnico(ctx);
       dibujarBandaNombre(ctx, nombre, apellido);
+    };
+    const repintar = (): void => {
+      repintarCarta(ctx, ORO, ORO_OSCURO, marco, foto, dibujarTexto);
+      textura.needsUpdate = true;
+    };
+    repintar();
+    cargarImagen(RUTA_MARCO_TECNICO, (img) => {
+      marco = img;
+      repintar();
+    });
+    cargarImagen(`/datos/tecnicos/${id}.png`, (img) => {
+      foto = img;
+      repintar();
     });
   }
   cacheCartas.set(carta.id, textura);
